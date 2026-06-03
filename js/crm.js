@@ -205,58 +205,90 @@ window.loadCRMData = () => {
 };
 
 // 8. دالة حسابات لوحة التحكم (الـ Dashboard) وتحليل الإحصائيات الحية
+// 8. دالة حسابات لوحة التحكم (الـ Dashboard) وتحليل الإحصائيات الحية المتكاملة
 window.calculateDashboardStats = () => {
     const now = new Date();
     const todayStr = now.toLocaleDateString('en-US');
 
-    // أ. حساب إحصائيات الطلبات
+    // أ. حساب إحصائيات الطلبات، الأصناف، والمناطق
     db.collection('orders').onSnapshot(snapshot => {
         let todaySales = 0;
         let todayOrdersCount = 0;
         let pendingOrdersCount = 0;
         
+        // متغيرات جرد الأصناف المحجوزة
         let reservedJumbo = 0;
         let reservedSpecial = 0;
         let reservedRoyal = 0;
 
+        // متغيرات تحليل المناطق
+        let hehiaSales = 0;
+        let zagazigSales = 0;
+        let othersSales = 0;
+
         snapshot.forEach(doc => {
             const order = doc.data();
+            const orderTotal = Number(order.total) || 0;
+            const zone = order.zone || '';
             
+            // 1. حساب مبيعات اليوم
             if (order.orderDate === todayStr || (order.createdAt && new Date(order.createdAt.toMillis()).toDateString() === now.toDateString())) {
-                todaySales += Number(order.total) || 0;
+                todaySales += orderTotal;
                 todayOrdersCount++;
             }
 
+            // 2. تحليل مبيعات المناطق (إجمالي تراكمي للمنطقة)
+            if (zone.includes('ههيا')) {
+                hehiaSales += orderTotal;
+            } else if (zone.includes('الزقازيق')) {
+                zagazigSales += orderTotal;
+            } else {
+                othersSales += orderTotal;
+            }
+
+            // 3. الطلبات المعلقة وجرد الفريزر التنبؤي
             if (order.status === 'new' || order.status === 'preparing' || order.status === 'shipping') {
                 pendingOrdersCount++;
                 
                 if (order.items) {
                     order.items.forEach(item => {
-                        const itemName = item.name.toLowerCase();
-                        if (itemName.includes('جامبو')) reservedJumbo += Number(item.quantity) || 0;
-                        if (itemName.includes('اسبيشيال') || itemName.includes('متميز')) reservedSpecial += Number(item.quantity) || 0;
-                        if (itemName.includes('رويال')) reservedRoyal += Number(item.quantity) || 0;
+                        const itemName = item.name || '';
+                        const qty = Number(item.quantity) || 0;
+                        
+                        if (itemName.includes('جامبو')) reservedJumbo += qty;
+                        if (itemName.includes('اسبيشيال') || itemName.includes('متميز')) reservedSpecial += qty;
+                        if (itemName.includes('رويال')) reservedRoyal += qty;
                     });
                 }
             }
         });
 
+        // حقن البيانات في شاشة الرئيسية المحدثة
         if(document.getElementById('stat-today-sales')) document.getElementById('stat-today-sales').innerText = todaySales + " ج";
         if(document.getElementById('stat-today-orders')) document.getElementById('stat-today-orders').innerText = todayOrdersCount;
         if(document.getElementById('stat-pending-orders')) document.getElementById('stat-pending-orders').innerText = pendingOrdersCount;
         
-        if(document.getElementById('reserved-jumbo')) document.getElementById('reserved-jumbo').innerText = reservedJumbo;
+        // حقن تحليل المناطق
+        if(document.getElementById('zone-hehia-sales')) document.getElementById('zone-hehia-sales').innerText = hehiaSales + " ج";
+        if(document.getElementById('zone-zagazig-sales')) document.getElementById('zone-zagazig-sales').innerText = zagazigSales + " ج";
+        if(document.getElementById('zone-others-sales')) document.getElementById('zone-others-sales').innerText = othersSales + " ج";
+
+        // حقن أرقام شاشة جرد الفريزر
+        if(document.getElementById('inv-reserved-jumbo')) document.getElementById('inv-reserved-jumbo').innerText = reservedJumbo;
+        if(document.getElementById('inv-reserved-special')) document.getElementById('inv-reserved-special').innerText = reservedSpecial;
+        if(document.getElementById('inv-reserved-royal')) document.getElementById('inv-reserved-royal').innerText = reservedRoyal;
         
-        let totalJumboInFreezer = 30; // مثال لسرعة الجرد الفعلي المتاح
-        let realLeftJumbo = totalJumboInFreezer - reservedJumbo;
-        if(document.getElementById('real-left-jumbo')) {
-            document.getElementById('real-left-jumbo').innerText = realLeftJumbo;
-            if(realLeftJumbo <= 8) {
-                document.getElementById('real-left-jumbo').className = "text-xl font-black text-red-600 animate-pulse";
-            } else {
-                document.getElementById('real-left-jumbo').className = "text-xl font-black text-brand-navy";
-            }
-        }
+        // حساب المتبقي الحقيقي (افتراضاً أن السعة الكلية المتاحة لكل نوع بالفريزر هي 50 طبق)
+        const maxStock = 50;
+        
+        let leftJumbo = maxStock - reservedJumbo;
+        let leftSpecial = maxStock - reservedSpecial;
+        let leftRoyal = maxStock - reservedRoyal;
+
+        // تحديث وعمل أنيميشن لو المخزون شارف على الانتهاء
+        updateStockUI('inv-real-jumbo', leftJumbo);
+        updateStockUI('inv-real-special', leftSpecial);
+        updateStockUI('inv-real-royal', leftRoyal);
     });
 
     // ب. حساب إحصائيات وتصنيفات العملاء مفقود / نشط
@@ -275,6 +307,20 @@ window.calculateDashboardStats = () => {
         if(document.getElementById('stat-lost-customers')) document.getElementById('stat-lost-customers').innerText = lostCustomersCount;
     });
 };
+
+// دالة مساعدة لتحديث ألوان المخزون حسب الخطر التنبؤي
+function updateStockUI(elementId, currentAmount) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    
+    el.innerText = currentAmount + " طبق";
+    if (currentAmount <= 8) {
+        el.className = "text-2xl font-black text-red-600 animate-pulse";
+    } else {
+        el.className = "text-2xl font-black text-brand-navy";
+    }
+}
+
 
 // 9. برمجة شاشة ملف العميل الذكي المتكاملة
 window.openCustomerProfile = async (phone) => {
