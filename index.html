@@ -1,9 +1,11 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سمان ههيا | نظام الإدارة الشامل (CRM)</title>
+    <title>سمان ههيا | الإدارة المركزية</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -11,234 +13,590 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: { navy: '#111827', cyanDark: '#0d9488', light: '#f3f4f6', yellow: '#fbbf24' }
+                        brand: {
+                            dark: '#0f172a',    // كحلي غامق
+                            primary: '#0d9488', // تيل (أخضر مزرق)
+                            secondary: '#f59e0b', // برتقالي ذهبي
+                            light: '#f8fafc'    // رمادي فاتح جداً للخلفية
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
                     }
                 }
             }
         }
     </script>
+    
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+
     <style>
-        body { font-family: 'Cairo', sans-serif; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; overflow: hidden; }
+        .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .hide-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        .hide-scrollbar::-webkit-scrollbar-track { background-color: transparent; }
+        
+        /* تأثيرات الانتقال بين الشاشات */
+        .page-view { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .page-view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-gray-100 text-brand-navy h-screen overflow-hidden">
+<body class="text-slate-800 flex h-screen">
 
-    <!-- 🔒 شاشة تسجيل الدخول -->
-    <div id="login-screen" class="absolute inset-0 z-50 bg-brand-navy flex flex-col justify-center items-center px-4 transition-opacity duration-300">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
-            <div class="w-20 h-20 bg-brand-cyanDark text-white rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">
-                <i class="fa-solid fa-user-shield"></i>
-            </div>
-            <h1 class="text-2xl font-black mb-1">سمان ههيا CRM</h1>
-            <p class="text-sm text-gray-500 font-bold mb-6">لوحة الإدارة والتحكم المركزي</p>
+    <!-- 📱 القائمة الجانبية (Sidebar) -->
+    <aside class="w-64 bg-brand-dark text-slate-300 flex flex-col shadow-2xl z-20">
+        <!-- اللوجو -->
+        <div class="h-16 flex items-center px-6 border-b border-slate-700/50 bg-slate-900/50">
+            <div class="w-8 h-8 rounded bg-brand-primary text-white flex items-center justify-center font-bold text-lg mr-3 shadow-lg shadow-brand-primary/20">س</div>
+            <h1 class="text-xl font-black text-white tracking-wide">سمان ههيا</h1>
+        </div>
+
+        <!-- الروابط -->
+        <nav class="flex-1 overflow-y-auto hide-scrollbar py-4 px-3 space-y-1" id="sidebar-nav">
+            <a href="#" onclick="switchPage('dashboard', this)" class="nav-link active flex items-center px-3 py-2.5 rounded-xl text-sm font-bold bg-brand-primary text-white transition-all">
+                <i class="fa-solid fa-house w-6 text-center"></i> الرئيسية
+            </a>
             
-            <div class="space-y-4 text-right">
+            <div class="pt-4 pb-1 px-3 text-[10px] uppercase font-black text-slate-500 tracking-wider">العمليات</div>
+            
+            <a href="#" onclick="switchPage('orders', this)" class="nav-link flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-box-open w-6 text-center"></i> الطلبات
+            </a>
+            <a href="#" onclick="switchPage('customers', this)" class="nav-link flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-users w-6 text-center"></i> العملاء (CRM)
+            </a>
+            <a href="#" onclick="switchPage('inventory', this)" class="nav-link flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-snowflake w-6 text-center text-blue-400"></i> المخزون
+            </a>
+
+            <div class="pt-4 pb-1 px-3 text-[10px] uppercase font-black text-slate-500 tracking-wider">التحليلات والمتابعة</div>
+
+            <a href="#" onclick="switchPage('sales', this)" class="nav-link flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-chart-line w-6 text-center text-green-400"></i> المبيعات
+            </a>
+            <a href="#" onclick="switchPage('followups', this)" class="nav-link flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-regular fa-calendar-check w-6 text-center text-yellow-400"></i> المتابعات
+            </a>
+            <a href="#" onclick="switchPage('alerts', this)" class="nav-link flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all relative">
+                <i class="fa-solid fa-bell w-6 text-center text-red-400"></i> التنبيهات
+                <span class="absolute left-3 top-2.5 w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+            </a>
+
+            <div class="pt-4 pb-1 px-3 text-[10px] uppercase font-black text-slate-500 tracking-wider">النظام</div>
+
+            <a href="#" onclick="switchPage('settings', this)" class="nav-link flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-gear w-6 text-center"></i> الإعدادات
+            </a>
+        </nav>
+
+        <!-- المستخدم الحالي -->
+        <div class="p-4 border-t border-slate-700/50 bg-slate-900/30">
+            <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+                <img src="https://ui-avatars.com/api/?name=Admin&background=0d9488&color=fff" alt="Admin" class="w-10 h-10 rounded-full border-2 border-slate-600">
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1">البريد الإلكتروني</label>
-                    <input type="email" id="login-email" class="w-full border-2 border-gray-200 rounded-xl p-3 font-bold text-left outline-none focus:border-brand-cyanDark transition-colors" dir="ltr" placeholder="admin@example.com">
+                    <p class="text-sm font-bold text-white leading-tight">المدير العام</p>
+                    <p class="text-[10px] text-brand-primary">متصل بالشبكة</p>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور</label>
-                    <input type="password" id="login-password" class="w-full border-2 border-gray-200 rounded-xl p-3 font-bold text-left outline-none focus:border-brand-cyanDark transition-colors" dir="ltr" placeholder="••••••••">
-                </div>
-                <button id="login-btn" onclick="loginToCRM()" class="w-full bg-brand-navy hover:bg-gray-800 text-white font-black py-3 rounded-xl transition-all shadow-md mt-2 flex justify-center items-center gap-2">
-                    تسجيل الدخول <i class="fa-solid fa-arrow-right-to-bracket"></i>
-                </button>
-                <div id="login-error" class="hidden bg-red-50 text-red-600 text-xs font-bold p-2 rounded-lg text-center mt-2 border border-red-200"></div>
             </div>
         </div>
-    </div>
+    </aside>
 
-    <!-- 📊 واجهة النظام (بعد تسجيل الدخول) -->
-    <div id="crm-layout" class="hidden h-full flex flex-col md:flex-row w-full">
+    <!-- 🖥 محتوى النظام الرئيسي -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-brand-light relative">
         
-        <!-- القائمة الجانبية (Sidebar) -->
-        <aside class="w-full md:w-64 bg-brand-navy text-white flex flex-col shadow-xl z-20 transition-all duration-300">
-            <div class="p-4 border-b border-gray-800 flex items-center gap-3">
-                <div class="bg-brand-cyanDark p-2 rounded-lg"><i class="fa-solid fa-chart-pie text-xl"></i></div>
-                <div>
-                    <h2 class="font-black text-lg leading-tight">مركز القيادة</h2>
-                    <p class="text-[10px] text-gray-400 font-bold">CRM System v1.0</p>
-                </div>
+        <!-- الشريط العلوي (Header) -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-10">
+            <div class="flex items-center gap-4">
+                <h2 id="page-title" class="text-xl font-black text-slate-800">الرئيسية (لوحة القيادة)</h2>
             </div>
             
-            <nav class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1 mt-2">
-                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="w-full text-right px-4 py-3 rounded-xl font-bold text-sm bg-brand-cyanDark text-white transition-colors flex items-center gap-3"><i class="fa-solid fa-house w-5 text-center"></i> الرئيسية (Dashboard)</button>
-                <button onclick="switchTab('customers')" id="tab-customers" class="w-full text-right px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:bg-gray-800 transition-colors flex items-center gap-3"><i class="fa-solid fa-users w-5 text-center"></i> عائلة سمان (العملاء)</button>
-                <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-right px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:bg-gray-800 transition-colors flex items-center gap-3"><i class="fa-solid fa-box-open w-5 text-center"></i> إدارة الطلبات</button>
-                <button onclick="switchTab('inventory')" id="tab-inventory" class="w-full text-right px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:bg-gray-800 transition-colors flex items-center gap-3"><i class="fa-solid fa-snowflake w-5 text-center"></i> جرد الفريزر</button>
-            </nav>
-
-            <div class="p-4 border-t border-gray-800">
-                <button onclick="logoutFromCRM()" class="w-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 rounded-lg transition-colors text-sm flex justify-center items-center gap-2">
-                    تسجيل الخروج <i class="fa-solid fa-power-off"></i>
+            <div class="flex items-center gap-4">
+                <!-- زر إنشاء سريع -->
+                <button onclick="openModal('new-order-modal')" class="bg-brand-primary hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md shadow-brand-primary/20 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> طلب جديد
+                </button>
+                
+                <div class="w-px h-6 bg-slate-200"></div>
+                
+                <!-- أيقونة الإشعارات -->
+                <button class="text-slate-400 hover:text-brand-primary transition-colors relative">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[8px] font-bold flex items-center justify-center border-2 border-white">3</span>
                 </button>
             </div>
-        </aside>
+        </header>
 
-        <!-- منطقة المحتوى الرئيسية -->
-        <main class="flex-1 flex flex-col h-full bg-gray-50 overflow-hidden relative">
-            <!-- شريط علوي -->
-            <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm z-10">
-                <h2 id="page-title" class="text-xl font-black text-brand-navy">الرئيسية</h2>
-                <div class="flex items-center gap-3">
-                    <span class="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-circle text-[8px] text-green-500 mr-1 animate-pulse"></i> متصل بقاعدة البيانات</span>
+        <!-- 📂 صفحات النظام (Views) -->
+        <div class="flex-1 overflow-y-auto hide-scrollbar p-6">
+
+            <!-- ===================== 1. الرئيسية (Dashboard) ===================== -->
+            <div id="page-dashboard" class="page-view active space-y-6">
+                <!-- كروت الإحصائيات -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- كارت 1 -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400">إجمالي العملاء</p>
+                            <h3 class="text-2xl font-black text-slate-800">1,245</h3>
+                        </div>
+                    </div>
+                    <!-- كارت 2 -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-teal-50 text-brand-primary flex items-center justify-center text-xl"><i class="fa-solid fa-wallet"></i></div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400">مبيعات الشهر</p>
+                            <h3 class="text-2xl font-black text-slate-800">45,200 ج</h3>
+                        </div>
+                    </div>
+                    <!-- كارت 3 -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center text-xl"><i class="fa-solid fa-box-open"></i></div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400">طلبات قيد التنفيذ</p>
+                            <h3 class="text-2xl font-black text-slate-800">18</h3>
+                        </div>
+                    </div>
+                    <!-- كارت 4 -->
+                    <div class="bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex items-center gap-4 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-1 h-full bg-red-500"></div>
+                        <div class="w-12 h-12 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-xl"><i class="fa-solid fa-user-minus"></i></div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400">عملاء مفقودين</p>
+                            <h3 class="text-2xl font-black text-red-600">42</h3>
+                        </div>
+                    </div>
                 </div>
-            </header>
 
-            <!-- الشاشات -->
-            <div class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 relative">
-                <!-- شاشة الرئيسية -->
-<!-- استبدل اللي جوه view-dashboard بده -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <!-- كارت مبيعات اليوم -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div class="text-gray-400 font-bold text-sm mb-1">مبيعات اليوم</div>
-        <div id="stat-today-sales" class="text-2xl font-black text-brand-cyanDark">0 ج</div>
-    </div>
-    <!-- كارت طلبات اليوم -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div class="text-gray-400 font-bold text-sm mb-1">طلبات اليوم</div>
-        <div id="stat-today-orders" class="text-2xl font-black text-brand-navy">0</div>
-    </div>
-    <!-- كارت الطلبات المعلقة -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div class="text-gray-400 font-bold text-sm mb-1">قيد التجهيز</div>
-        <div id="stat-pending-orders" class="text-2xl font-black text-yellow-500">0</div>
-    </div>
-    <!-- كارت العملاء المفقودين -->
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div class="text-gray-400 font-bold text-sm mb-1">عملاء مفقودين</div>
-        <div id="stat-lost-customers" class="text-2xl font-black text-red-500">0</div>
-    </div>
-</div>
+                <!-- قسمين: طلبات اليوم + تنبيهات سريعة -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- طلبات اليوم -->
+                    <div class="col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                        <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                            <h3 class="font-black text-lg text-slate-800">أحدث الطلبات (اليوم)</h3>
+                            <button onclick="switchPage('orders', document.querySelectorAll('.nav-link')[1])" class="text-sm font-bold text-brand-primary hover:underline">عرض الكل</button>
+                        </div>
+                        <div class="p-0 overflow-x-auto">
+                            <table class="w-full text-right text-sm">
+                                <thead class="bg-slate-50 text-slate-500">
+                                    <tr>
+                                        <th class="py-3 px-5 font-bold">العميل</th>
+                                        <th class="py-3 px-5 font-bold">الأصناف</th>
+                                        <th class="py-3 px-5 font-bold">الإجمالي</th>
+                                        <th class="py-3 px-5 font-bold">الحالة</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="py-3 px-5 font-bold text-slate-800">أحمد محمود</td>
+                                        <td class="py-3 px-5 text-slate-500">2 جامبو، 1 اسبيشيال</td>
+                                        <td class="py-3 px-5 font-black text-brand-primary">450 ج</td>
+                                        <td class="py-3 px-5"><span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">جاري التجهيز</span></td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="py-3 px-5 font-bold text-slate-800">محمد علي</td>
+                                        <td class="py-3 px-5 text-slate-500">5 رويال</td>
+                                        <td class="py-3 px-5 font-black text-brand-primary">800 ج</td>
+                                        <td class="py-3 px-5"><span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">خرج للتوصيل</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-<!-- جزء المخزون الذكي في الـ Dashboard -->
-<div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-    <h3 class="font-black text-brand-navy mb-4"><i class="fa-solid fa-snowflake text-brand-cyanDark mr-2"></i> مراقبة المخزون الفعلي (جامبو)</h3>
-    <div class="flex gap-8">
-        <div>
-            <div class="text-gray-400 text-xs font-bold">المحجوز حالياً</div>
-            <div id="reserved-jumbo" class="text-xl font-black">0</div>
-        </div>
-        <div class="border-r border-gray-100 px-8">
-            <div class="text-gray-400 text-xs font-bold">المتبقي الحقيقي</div>
-            <div id="real-left-jumbo" class="text-xl font-black">0</div>
-        </div>
-    </div>
-</div>
-
-                <!-- شاشة العملاء -->
-                <div id="view-customers" class="crm-view hidden h-full flex items-center justify-center flex-col text-gray-400">
-                    <i class="fa-solid fa-users-gear text-4xl mb-3 text-gray-300"></i>
-                    <p class="font-bold">جاري بناء سجل العملاء الـ VIP...</p>
-                </div>
-                <!-- باقي الشاشات -->
-<div id="view-dashboard" class="crm-view space-y-6">
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div class="text-gray-400 font-bold text-sm mb-1">مبيعات اليوم</div>
-            <div id="stat-today-sales" class="text-2xl font-black text-brand-cyanDark">0 ج</div>
-        </div>
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div class="text-gray-400 font-bold text-sm mb-1">طلبات اليوم</div>
-            <div id="stat-today-orders" class="text-2xl font-black text-brand-navy">0</div>
-        </div>
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div class="text-gray-400 font-bold text-sm mb-1">قيد التجهيز / الشحن</div>
-            <div id="stat-pending-orders" class="text-2xl font-black text-yellow-500">0</div>
-        </div>
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <div class="text-gray-400 font-bold text-sm mb-1">عملاء مفقودين (أكثر من 45 يوم)</div>
-            <div id="stat-lost-customers" class="text-2xl font-black text-red-500">0</div>
-        </div>
-    </div>
-
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 class="font-black text-brand-navy mb-4 text-lg"><i class="fa-solid fa-map-location-dot text-brand-cyanDark mr-2"></i> تحليل مبيعات المناطق (أين يتركز عملاؤك؟)</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <span class="text-sm font-bold text-gray-500 block">ههيا</span>
-                <span id="zone-hehia-sales" class="text-xl font-black text-brand-navy">0 ج</span>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <span class="text-sm font-bold text-gray-500 block">الزقازيق</span>
-                <span id="zone-zagazig-sales" class="text-xl font-black text-brand-navy">0 ج</span>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                <span class="text-sm font-bold text-gray-500 block">أبو كبير / مناطق أخرى</span>
-                <span id="zone-others-sales" class="text-xl font-black text-brand-navy">0 ج</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="view-inventory" class="crm-view hidden space-y-6">
-    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h3 class="text-xl font-black text-brand-navy"><i class="fa-solid fa-snowflake text-brand-cyanDark mr-2"></i> جرد الفريزر المركزي التنبؤي</h3>
-                <p class="text-xs text-gray-400 mt-1">يتم احتساب المتبقي الحقيقي تلقائياً بخصم المحجوز في الطلبات الحية</p>
-            </div>
-            <span class="bg-brand-light text-brand-navy text-xs font-black px-4 py-2 rounded-xl">المتاح الإفتراضي الكلي: 50 طبق لكل صنف</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="border-2 border-gray-100 rounded-2xl p-5 relative overflow-hidden bg-white shadow-sm">
-                <div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-cyanDark"></div>
-                <h4 class="font-black text-lg text-brand-navy mb-4">👑 سمان جامبو</h4>
-                <div class="space-y-3">
-                    <div class="flex justify-between text-sm"><span class="text-gray-400 font-bold">المحجوز (في الطلبات الحية):</span> <span id="inv-reserved-jumbo" class="font-black text-brand-navy">0</span></div>
-                    <div class="flex justify-between items-center pt-2 border-t border-gray-50">
-                        <span class="text-sm font-bold text-gray-500">المتبقي الفعلي الصافي:</span>
-                        <span id="inv-real-jumbo" class="text-2xl font-black text-brand-cyanDark">0</span>
+                    <!-- التنبيهات الذكية -->
+                    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                        <h3 class="font-black text-lg text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-yellow-500"></i> رادار سمان ههيا</h3>
+                        <div class="space-y-4">
+                            <div class="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-3 items-start">
+                                <i class="fa-solid fa-triangle-exclamation text-red-500 mt-1"></i>
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-800">مخزون الجامبو منخفض!</h4>
+                                    <p class="text-xs text-slate-500 mt-0.5">المتبقي 5 أطباق فقط مقابل 12 محجوز.</p>
+                                </div>
+                            </div>
+                            <div class="p-3 bg-green-50 border border-green-100 rounded-xl flex gap-3 items-start">
+                                <i class="fa-regular fa-clock text-green-500 mt-1"></i>
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-800">توقع إعادة طلب</h4>
+                                    <p class="text-xs text-slate-500 mt-0.5">محمود سعيد عادته يطلب كل 15 يوم، الموعد غداً.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="border-2 border-gray-100 rounded-2xl p-5 relative overflow-hidden bg-white shadow-sm">
-                <div class="absolute top-0 right-0 left-0 h-1.5 bg-yellow-500"></div>
-                <h4 class="font-black text-lg text-brand-navy mb-4">✨ سمان اسبيشيال</h4>
-                <div class="space-y-3">
-                    <div class="flex justify-between text-sm"><span class="text-gray-400 font-bold">المحجوز (في الطلبات الحية):</span> <span id="inv-reserved-special" class="font-black text-brand-navy">0</span></div>
-                    <div class="flex justify-between items-center pt-2 border-t border-gray-50">
-                        <span class="text-sm font-bold text-gray-500">المتبقي الفعلي الصافي:</span>
-                        <span id="inv-real-special" class="text-2xl font-black text-yellow-600">0</span>
+            <!-- ===================== 2. العملاء (CRM) ===================== -->
+            <div id="page-customers" class="page-view h-full flex flex-col">
+                <div class="flex justify-between items-center mb-6">
+                    <!-- بحث وفلترة -->
+                    <div class="flex gap-2 w-full max-w-lg">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-search absolute right-3 top-3 text-slate-400"></i>
+                            <input type="text" placeholder="ابحث برقم الهاتف أو الاسم..." class="w-full pl-4 pr-10 py-2 rounded-xl border border-slate-200 focus:border-brand-primary outline-none text-sm font-bold">
+                        </div>
+                        <button class="bg-white border border-slate-200 px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors"><i class="fa-solid fa-filter"></i></button>
+                    </div>
+                    <button class="bg-brand-dark text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-slate-800"><i class="fa-solid fa-user-plus"></i> إضافة عميل</button>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 overflow-hidden flex flex-col">
+                    <div class="overflow-auto hide-scrollbar flex-1">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-50 text-slate-500 sticky top-0 shadow-sm">
+                                <tr>
+                                    <th class="py-4 px-5 font-bold">العميل</th>
+                                    <th class="py-4 px-5 font-bold">التصنيف</th>
+                                    <th class="py-4 px-5 font-bold text-center">الطلبات</th>
+                                    <th class="py-4 px-5 font-bold text-center">إجمالي المشتريات (LTV)</th>
+                                    <th class="py-4 px-5 font-bold">آخر طلب</th>
+                                    <th class="py-4 px-5 font-bold text-center">إجراءات سريعة</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <!-- صف عميل (مثال) -->
+                                <tr class="hover:bg-slate-50 transition-colors group">
+                                    <td class="py-3 px-5">
+                                        <div class="font-black text-slate-800 text-base cursor-pointer hover:text-brand-primary" onclick="openModal('customer-profile-modal')">محمد أحمد جاد</div>
+                                        <div class="text-xs text-slate-500 font-bold" dir="ltr">01012345678</div>
+                                    </td>
+                                    <td class="py-3 px-5">
+                                        <span class="bg-brand-secondary/10 text-brand-secondary border border-brand-secondary/20 px-2 py-1 rounded text-xs font-black">⭐ VIP</span>
+                                    </td>
+                                    <td class="py-3 px-5 text-center font-black text-slate-700">14</td>
+                                    <td class="py-3 px-5 text-center font-black text-brand-primary text-base">3,850 ج</td>
+                                    <td class="py-3 px-5">
+                                        <div class="text-slate-700 font-bold">منذ 3 أيام</div>
+                                        <div class="text-[10px] text-slate-400">15-05-2024</div>
+                                    </td>
+                                    <td class="py-3 px-5">
+                                        <div class="flex items-center justify-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                            <button class="w-8 h-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-600 hover:text-white transition-colors flex items-center justify-center" title="واتساب"><i class="fa-brands fa-whatsapp text-lg"></i></button>
+                                            <button class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors flex items-center justify-center" title="اتصال"><i class="fa-solid fa-phone"></i></button>
+                                            <button onclick="openModal('customer-profile-modal')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-600 hover:text-white transition-colors flex items-center justify-center" title="الملف الكامل"><i class="fa-regular fa-folder-open"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- عميل مفقود -->
+                                <tr class="hover:bg-slate-50 transition-colors group">
+                                    <td class="py-3 px-5">
+                                        <div class="font-black text-slate-800 text-base cursor-pointer hover:text-brand-primary" onclick="openModal('customer-profile-modal')">سيد مصطفى</div>
+                                        <div class="text-xs text-slate-500 font-bold" dir="ltr">01298765432</div>
+                                    </td>
+                                    <td class="py-3 px-5">
+                                        <span class="bg-red-50 text-red-600 border border-red-100 px-2 py-1 rounded text-xs font-black">مفقود</span>
+                                    </td>
+                                    <td class="py-3 px-5 text-center font-black text-slate-700">3</td>
+                                    <td class="py-3 px-5 text-center font-black text-brand-primary text-base">550 ج</td>
+                                    <td class="py-3 px-5">
+                                        <div class="text-red-500 font-bold">منذ 65 يوم</div>
+                                    </td>
+                                    <td class="py-3 px-5">
+                                        <div class="flex items-center justify-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                            <button class="w-8 h-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-600 hover:text-white transition-colors flex items-center justify-center" title="إرسال عرض استرجاع"><i class="fa-brands fa-whatsapp text-lg"></i></button>
+                                            <button class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-phone"></i></button>
+                                            <button onclick="openModal('customer-profile-modal')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-600 hover:text-white transition-colors flex items-center justify-center"><i class="fa-regular fa-folder-open"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <div class="border-2 border-gray-100 rounded-2xl p-5 relative overflow-hidden bg-white shadow-sm">
-                <div class="absolute top-0 right-0 left-0 h-1.5 bg-purple-500"></div>
-                <h4 class="font-black text-lg text-brand-navy mb-4">💎 سمان رويال</h4>
-                <div class="space-y-3">
-                    <div class="flex justify-between text-sm"><span class="text-gray-400 font-bold">المحجوز (في الطلبات الحية):</span> <span id="inv-reserved-royal" class="font-black text-brand-navy">0</span></div>
-                    <div class="flex justify-between items-center pt-2 border-t border-gray-50">
-                        <span class="text-sm font-bold text-gray-500">المتبقي الفعلي الصافي:</span>
-                        <span id="inv-real-royal" class="text-2xl font-black text-purple-600">0</span>
+            <!-- ===================== 3. الطلبات ===================== -->
+            <div id="page-orders" class="page-view h-full">
+                <!-- شريط الحالات (Kanban style headers) -->
+                <div class="flex gap-4 h-full overflow-x-auto hide-scrollbar pb-4">
+                    <!-- عمود: جديد -->
+                    <div class="min-w-[280px] w-1/4 bg-slate-100 rounded-2xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-3 px-2">
+                            <h4 class="font-black text-slate-700">جديد <span class="bg-white text-xs px-2 py-0.5 rounded-full shadow-sm ml-1">2</span></h4>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto hide-scrollbar">
+                            <!-- كارت طلب -->
+                            <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-brand-primary cursor-pointer hover:shadow-md transition-shadow">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h5 class="font-bold text-sm text-slate-800">محمود خالد</h5>
+                                    <span class="text-[10px] text-slate-400">منذ 10 د</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-2">3 جامبو، 1 متميز</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold bg-slate-100 px-2 py-1 rounded">الزقازيق</span>
+                                    <span class="font-black text-brand-primary">620 ج</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- عمود: جاري التجهيز -->
+                    <div class="min-w-[280px] w-1/4 bg-slate-100 rounded-2xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-3 px-2">
+                            <h4 class="font-black text-slate-700">جاري التجهيز <span class="bg-white text-xs px-2 py-0.5 rounded-full shadow-sm ml-1">1</span></h4>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto hide-scrollbar">
+                             <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 border-r-4 border-r-yellow-400 cursor-pointer hover:shadow-md transition-shadow">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h5 class="font-bold text-sm text-slate-800">إبراهيم السيد</h5>
+                                    <span class="text-[10px] text-slate-400">منذ 1 س</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mb-2">2 رويال</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold bg-slate-100 px-2 py-1 rounded">ههيا</span>
+                                    <span class="font-black text-brand-primary">400 ج</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- عمود: خرج للتوصيل -->
+                    <div class="min-w-[280px] w-1/4 bg-slate-100 rounded-2xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-3 px-2">
+                            <h4 class="font-black text-slate-700">خرج للتوصيل <span class="bg-white text-xs px-2 py-0.5 rounded-full shadow-sm ml-1">0</span></h4>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto hide-scrollbar border-2 border-dashed border-slate-200 rounded-xl flex items-center justify-center">
+                            <span class="text-sm font-bold text-slate-400">لا يوجد طلبات</span>
+                        </div>
+                    </div>
+
+                    <!-- عمود: تم التسليم (مكتمل) -->
+                    <div class="min-w-[280px] w-1/4 bg-slate-100 rounded-2xl p-3 flex flex-col">
+                        <div class="flex justify-between items-center mb-3 px-2">
+                            <h4 class="font-black text-slate-700">تم التسليم <span class="bg-white text-xs px-2 py-0.5 rounded-full shadow-sm ml-1">12</span></h4>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto hide-scrollbar">
+                            <!-- كارت مكتمل -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===================== 4. المخزون ===================== -->
+            <div id="page-inventory" class="page-view">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- صنف 1 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-primary"></div>
+                        <h3 class="text-xl font-black text-slate-800 mb-4 flex items-center justify-between">
+                            سمان جامبو
+                            <button class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 hover:bg-slate-200"><i class="fa-solid fa-pen"></i> تعديل</button>
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm font-bold text-slate-600 mb-1">
+                                    <span>إجمالي المتاح بالفريزر</span>
+                                    <span class="text-slate-800">50 طبق</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div class="bg-slate-300 h-2 rounded-full w-full"></div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between text-sm font-bold text-yellow-600 mb-1">
+                                    <span>المحجوز (طلبات قيد التنفيذ)</span>
+                                    <span>- 12 طبق</span>
+                                </div>
+                                <div class="w-full bg-slate-100 rounded-full h-2">
+                                    <div class="bg-yellow-400 h-2 rounded-full" style="width: 24%"></div>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100 flex justify-between items-end">
+                                <span class="text-sm font-black text-slate-500">المتبقي الفعلي للبيع:</span>
+                                <span class="text-3xl font-black text-brand-primary">38 <span class="text-sm">طبق</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- صنف 2 -->
+                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-secondary"></div>
+                        <h3 class="text-xl font-black text-slate-800 mb-4 flex items-center justify-between">
+                            سمان اسبيشيال
+                        </h3>
+                        <div class="space-y-4">
+                            <!-- محتوى مشابه -->
+                            <div class="pt-4 border-t border-slate-100 flex justify-between items-end">
+                                <span class="text-sm font-black text-slate-500">المتبقي الفعلي للبيع:</span>
+                                <span class="text-3xl font-black text-red-500 animate-pulse">4 <span class="text-sm">أطباق</span></span> <!-- تحذير انخفاض -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- صفحات تحت الإنشاء (Placeholder) -->
+            <div id="page-sales" class="page-view flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-solid fa-chart-pie text-6xl mb-4 text-slate-200"></i>
+                <h2 class="text-xl font-black text-slate-600">صفحة المبيعات والرسوم البيانية</h2>
+                <p>سيتم بناء المخططات البيانية (Charts) هنا.</p>
+            </div>
+            
+            <div id="page-followups" class="page-view flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-solid fa-person-walking-arrow-loop-left text-6xl mb-4 text-slate-200"></i>
+                <h2 class="text-xl font-black text-slate-600">مهام المتابعة</h2>
+            </div>
+
+            <div id="page-alerts" class="page-view flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-regular fa-bell text-6xl mb-4 text-slate-200"></i>
+                <h2 class="text-xl font-black text-slate-600">مركز التنبيهات الشامل</h2>
+            </div>
+
+            <div id="page-settings" class="page-view flex flex-col items-center justify-center h-full text-slate-400">
+                <i class="fa-solid fa-gears text-6xl mb-4 text-slate-200"></i>
+                <h2 class="text-xl font-black text-slate-600">إعدادات النظام (الأسعار، المناطق، واتساب)</h2>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 🪟 النوافذ المنبثقة (Modals) -->
+
+    <!-- 1. ملف العميل الشامل (Customer Profile Modal) -->
+    <div id="customer-profile-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            
+            <!-- هيدر الملف -->
+            <div class="bg-slate-50 p-6 border-b border-slate-200 flex justify-between items-start">
+                <div class="flex gap-4 items-center">
+                    <div class="w-16 h-16 rounded-2xl bg-brand-dark text-white flex items-center justify-center text-3xl font-black shadow-md">م</div>
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h2 class="text-2xl font-black text-slate-800">محمد أحمد جاد</h2>
+                            <span class="bg-brand-secondary/10 text-brand-secondary border border-brand-secondary/20 px-2 py-0.5 rounded text-[10px] font-black">⭐ عميل ذهبي (VIP)</span>
+                        </div>
+                        <p class="text-slate-500 font-bold text-sm" dir="ltr"><i class="fa-solid fa-phone text-brand-primary mr-1"></i> 01012345678</p>
+                        <p class="text-slate-500 text-xs mt-1"><i class="fa-solid fa-location-dot text-brand-primary mr-1"></i> الزقازيق، حي القومية، شارع 10</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('customer-profile-modal')" class="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <!-- محتوى الملف -->
+            <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- العمود الأيمن: الإحصائيات والأزرار -->
+                <div class="space-y-6">
+                    <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+                        <div class="mb-4">
+                            <p class="text-xs font-bold text-slate-400">إجمالي المشتريات (LTV)</p>
+                            <p class="text-2xl font-black text-brand-primary">3,850 ج</p>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-xs font-bold text-slate-400">عدد الطلبات</p>
+                            <p class="text-xl font-black text-slate-800">14 طلب</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400">تاريخ أول تعامل</p>
+                            <p class="text-sm font-bold text-slate-800">10 يناير 2024</p>
+                        </div>
+                    </div>
+
+                    <!-- أزرار الإجراءات السريعة (طلبك) -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="bg-green-500 hover:bg-green-600 text-white p-3 rounded-xl font-bold text-sm transition-colors flex flex-col items-center gap-1 shadow-sm"><i class="fa-brands fa-whatsapp text-xl"></i> واتساب</button>
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-xl font-bold text-sm transition-colors flex flex-col items-center gap-1 shadow-sm"><i class="fa-solid fa-phone text-xl"></i> اتصال</button>
+                        <button class="bg-brand-dark hover:bg-slate-800 text-white p-3 rounded-xl font-bold text-sm transition-colors flex flex-col items-center gap-1 shadow-sm col-span-2"><i class="fa-solid fa-cart-plus text-xl"></i> إنشاء طلب جديد للعميل</button>
+                    </div>
+                </div>
+
+                <!-- العمود الأيسر: سجل الطلبات والملاحظات -->
+                <div class="md:col-span-2 space-y-6">
+                    <!-- تبويبات داخلية (اختياري) -->
+                    <div class="border-b border-slate-200 flex gap-6">
+                        <button class="pb-2 border-b-2 border-brand-primary font-black text-brand-primary">سجل الطلبات الكامل</button>
+                        <button class="pb-2 border-b-2 border-transparent font-bold text-slate-400 hover:text-slate-600">الملاحظات وخدمة العملاء</button>
+                    </div>
+
+                    <!-- قائمة الطلبات -->
+                    <div class="space-y-3">
+                        <!-- طلب 1 -->
+                        <div class="border border-slate-100 rounded-xl p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-black text-slate-800">#ORD-1045</span>
+                                    <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">15 مايو 2024</span>
+                                </div>
+                                <p class="text-sm text-slate-500">2 جامبو، 1 اسبيشيال (متبل)</p>
+                            </div>
+                            <div class="text-left">
+                                <p class="font-black text-brand-primary text-lg">450 ج</p>
+                                <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">تم التسليم</span>
+                            </div>
+                        </div>
+                        <!-- طلب 2 -->
+                        <div class="border border-slate-100 rounded-xl p-4 flex justify-between items-center hover:bg-slate-50 transition-colors">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-black text-slate-800">#ORD-0980</span>
+                                    <span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">20 أبريل 2024</span>
+                                </div>
+                                <p class="text-sm text-slate-500">5 رويال</p>
+                            </div>
+                            <div class="text-left">
+                                <p class="font-black text-brand-primary text-lg">800 ج</p>
+                                <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">تم التسليم</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-        </main>
+    <!-- 2. نافذة إضافة طلب جديد -->
+    <!-- (متروكة فارغة هيكلياً لتوضيح الفكرة، يمكن إضافتها لاحقاً بنفس نمط ملف العميل) -->
 
-    </div>
+    <!-- سكربت التحكم في الواجهة (UI Logic) -->
+    <script>
+        // دالة التنقل بين صفحات القائمة الجانبية
+        function switchPage(pageId, linkElement) {
+            // 1. إخفاء كل الصفحات
+            document.querySelectorAll('.page-view').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // 2. إظهار الصفحة المطلوبة
+            document.getElementById('page-' + pageId).classList.add('active');
+            
+            // 3. تحديث تصميم الزر النشط في القائمة الجانبية
+            if(linkElement) {
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active', 'bg-brand-primary', 'text-white');
+                    link.classList.add('text-sm', 'hover:bg-slate-800', 'hover:text-white');
+                });
+                linkElement.classList.add('active', 'bg-brand-primary', 'text-white');
+                linkElement.classList.remove('hover:bg-slate-800');
 
-    <!-- Firebase SDK (Compat version) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    
-    <!-- ملف الجافاسكريبت بتاع الـ CRM -->
-    <script src="js/crm.js"></script>
+                // تحديث عنوان الصفحة في الشريط العلوي
+                const titleText = linkElement.innerText.trim();
+                document.getElementById('page-title').innerText = titleText;
+            }
+        }
+
+        // دوال فتح وإغلاق النوافذ المنبثقة (Modals)
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if(modal) {
+                modal.classList.remove('hidden');
+            } else {
+                alert("سيتم بناء شاشة: " + modalId);
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+    </script>
 </body>
 </html>
+
+```
