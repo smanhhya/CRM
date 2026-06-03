@@ -140,9 +140,95 @@
                     <p class="font-bold">جاري بناء سجل العملاء الـ VIP...</p>
                 </div>
                 <!-- باقي الشاشات -->
-                <div id="view-orders" class="crm-view hidden"></div>
-                <div id="view-inventory" class="crm-view hidden"></div>
+<div id="view-dashboard" class="crm-view space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div class="text-gray-400 font-bold text-sm mb-1">مبيعات اليوم</div>
+            <div id="stat-today-sales" class="text-2xl font-black text-brand-cyanDark">0 ج</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div class="text-gray-400 font-bold text-sm mb-1">طلبات اليوم</div>
+            <div id="stat-today-orders" class="text-2xl font-black text-brand-navy">0</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div class="text-gray-400 font-bold text-sm mb-1">قيد التجهيز / الشحن</div>
+            <div id="stat-pending-orders" class="text-2xl font-black text-yellow-500">0</div>
+        </div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div class="text-gray-400 font-bold text-sm mb-1">عملاء مفقودين (أكثر من 45 يوم)</div>
+            <div id="stat-lost-customers" class="text-2xl font-black text-red-500">0</div>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h3 class="font-black text-brand-navy mb-4 text-lg"><i class="fa-solid fa-map-location-dot text-brand-cyanDark mr-2"></i> تحليل مبيعات المناطق (أين يتركز عملاؤك؟)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <span class="text-sm font-bold text-gray-500 block">ههيا</span>
+                <span id="zone-hehia-sales" class="text-xl font-black text-brand-navy">0 ج</span>
             </div>
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <span class="text-sm font-bold text-gray-500 block">الزقازيق</span>
+                <span id="zone-zagazig-sales" class="text-xl font-black text-brand-navy">0 ج</span>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                <span class="text-sm font-bold text-gray-500 block">أبو كبير / مناطق أخرى</span>
+                <span id="zone-others-sales" class="text-xl font-black text-brand-navy">0 ج</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="view-inventory" class="crm-view hidden space-y-6">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h3 class="text-xl font-black text-brand-navy"><i class="fa-solid fa-snowflake text-brand-cyanDark mr-2"></i> جرد الفريزر المركزي التنبؤي</h3>
+                <p class="text-xs text-gray-400 mt-1">يتم احتساب المتبقي الحقيقي تلقائياً بخصم المحجوز في الطلبات الحية</p>
+            </div>
+            <span class="bg-brand-light text-brand-navy text-xs font-black px-4 py-2 rounded-xl">المتاح الإفتراضي الكلي: 50 طبق لكل صنف</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="border-2 border-gray-100 rounded-2xl p-5 relative overflow-hidden bg-white shadow-sm">
+                <div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-cyanDark"></div>
+                <h4 class="font-black text-lg text-brand-navy mb-4">👑 سمان جامبو</h4>
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm"><span class="text-gray-400 font-bold">المحجوز (في الطلبات الحية):</span> <span id="inv-reserved-jumbo" class="font-black text-brand-navy">0</span></div>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-50">
+                        <span class="text-sm font-bold text-gray-500">المتبقي الفعلي الصافي:</span>
+                        <span id="inv-real-jumbo" class="text-2xl font-black text-brand-cyanDark">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-2 border-gray-100 rounded-2xl p-5 relative overflow-hidden bg-white shadow-sm">
+                <div class="absolute top-0 right-0 left-0 h-1.5 bg-yellow-500"></div>
+                <h4 class="font-black text-lg text-brand-navy mb-4">✨ سمان اسبيشيال</h4>
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm"><span class="text-gray-400 font-bold">المحجوز (في الطلبات الحية):</span> <span id="inv-reserved-special" class="font-black text-brand-navy">0</span></div>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-50">
+                        <span class="text-sm font-bold text-gray-500">المتبقي الفعلي الصافي:</span>
+                        <span id="inv-real-special" class="text-2xl font-black text-yellow-600">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-2 border-gray-100 rounded-2xl p-5 relative overflow-hidden bg-white shadow-sm">
+                <div class="absolute top-0 right-0 left-0 h-1.5 bg-purple-500"></div>
+                <h4 class="font-black text-lg text-brand-navy mb-4">💎 سمان رويال</h4>
+                <div class="space-y-3">
+                    <div class="flex justify-between text-sm"><span class="text-gray-400 font-bold">المحجوز (في الطلبات الحية):</span> <span id="inv-reserved-royal" class="font-black text-brand-navy">0</span></div>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-50">
+                        <span class="text-sm font-bold text-gray-500">المتبقي الفعلي الصافي:</span>
+                        <span id="inv-real-royal" class="text-2xl font-black text-purple-600">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
         </main>
 
     </div>
