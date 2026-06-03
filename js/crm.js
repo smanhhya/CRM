@@ -199,9 +199,193 @@ window.loadCRMData = () => {
         const orderView = document.getElementById('view-orders');
         if(orderView) orderView.innerHTML = html;
     });
+
+    // 👇 السطر اللي بيشغل حسابات الـ Dashboard في نفس اللحظة
+    calculateDashboardStats();
 };
 
-// 8. أداة تأسيس قاعدة بيانات الـ CRM (شغلها مرة واحدة من الـ Console)
+// 8. دالة حسابات لوحة التحكم (الـ Dashboard) وتحليل الإحصائيات الحية
+window.calculateDashboardStats = () => {
+    const now = new Date();
+    const todayStr = now.toLocaleDateString('en-US');
+
+    // أ. حساب إحصائيات الطلبات
+    db.collection('orders').onSnapshot(snapshot => {
+        let todaySales = 0;
+        let todayOrdersCount = 0;
+        let pendingOrdersCount = 0;
+        
+        let reservedJumbo = 0;
+        let reservedSpecial = 0;
+        let reservedRoyal = 0;
+
+        snapshot.forEach(doc => {
+            const order = doc.data();
+            
+            if (order.orderDate === todayStr || (order.createdAt && new Date(order.createdAt.toMillis()).toDateString() === now.toDateString())) {
+                todaySales += Number(order.total) || 0;
+                todayOrdersCount++;
+            }
+
+            if (order.status === 'new' || order.status === 'preparing' || order.status === 'shipping') {
+                pendingOrdersCount++;
+                
+                if (order.items) {
+                    order.items.forEach(item => {
+                        const itemName = item.name.toLowerCase();
+                        if (itemName.includes('جامبو')) reservedJumbo += Number(item.quantity) || 0;
+                        if (itemName.includes('اسبيشيال') || itemName.includes('متميز')) reservedSpecial += Number(item.quantity) || 0;
+                        if (itemName.includes('رويال')) reservedRoyal += Number(item.quantity) || 0;
+                    });
+                }
+            }
+        });
+
+        if(document.getElementById('stat-today-sales')) document.getElementById('stat-today-sales').innerText = todaySales + " ج";
+        if(document.getElementById('stat-today-orders')) document.getElementById('stat-today-orders').innerText = todayOrdersCount;
+        if(document.getElementById('stat-pending-orders')) document.getElementById('stat-pending-orders').innerText = pendingOrdersCount;
+        
+        if(document.getElementById('reserved-jumbo')) document.getElementById('reserved-jumbo').innerText = reservedJumbo;
+        
+        let totalJumboInFreezer = 30; // مثال لسرعة الجرد الفعلي المتاح
+        let realLeftJumbo = totalJumboInFreezer - reservedJumbo;
+        if(document.getElementById('real-left-jumbo')) {
+            document.getElementById('real-left-jumbo').innerText = realLeftJumbo;
+            if(realLeftJumbo <= 8) {
+                document.getElementById('real-left-jumbo').className = "text-xl font-black text-red-600 animate-pulse";
+            } else {
+                document.getElementById('real-left-jumbo').className = "text-xl font-black text-brand-navy";
+            }
+        }
+    });
+
+    // ب. حساب إحصائيات وتصنيفات العملاء مفقود / نشط
+    db.collection('customers').onSnapshot(snapshot => {
+        let totalCustomers = snapshot.size;
+        let lostCustomersCount = 0;
+
+        snapshot.forEach(doc => {
+            const c = doc.data();
+            if (c.tags && c.tags.includes('مفقود')) {
+                lostCustomersCount++;
+            }
+        });
+
+        if(document.getElementById('stat-total-customers')) document.getElementById('stat-total-customers').innerText = totalCustomers;
+        if(document.getElementById('stat-lost-customers')) document.getElementById('stat-lost-customers').innerText = lostCustomersCount;
+    });
+};
+
+// 9. برمجة شاشة ملف العميل الذكي المتكاملة
+window.openCustomerProfile = async (phone) => {
+    console.log("فتح ملف العميل الشامل لـ:", phone);
+    
+    try {
+        const customerDoc = await db.collection('customers').doc(phone).get();
+        if (!customerDoc.exists) {
+            alert("لم يتم العثور على ملف هذا العميل!");
+            return;
+        }
+        const customer = customerDoc.data();
+
+        const ordersSnapshot = await db.collection('orders').where('customerPhone', '==', phone).get();
+        
+        let ordersHtml = '';
+        ordersSnapshot.forEach(oDoc => {
+            const order = oDoc.data();
+            const items = order.items ? order.items.map(i => `${i.quantity} × ${i.name}`).join(' | ') : 'لا يوجد تفاصيل';
+            ordersHtml += `
+                <div class="border-b border-gray-100 py-3 last:border-0">
+                    <div class="flex justify-between text-sm font-bold text-brand-navy">
+                        <span>📅 ${order.orderDate || 'تاريخ غير محدد'}</span>
+                        <span class="text-brand-cyanDark">${order.total || 0} ج</span>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">📦 ${items}</div>
+                    <div class="text-[10px] mt-1"><span class="px-2 py-0.5 rounded bg-gray-100 text-gray-700">${order.status || 'تم التسليم'}</span></div>
+                </div>
+            `;
+        });
+
+        if(ordersSnapshot.empty) ordersHtml = `<p class="text-center text-gray-400 py-4 text-sm">لا توجد طلبات مسجلة في الأرشيف.</p>`;
+
+        let avgOrderValue = customer.ordersCount > 0 ? (customer.totalSpent / customer.ordersCount).toFixed(1) : 0;
+
+        let whatsappMsg = `يا هلا أستاذ ${customer.name}، معاكم سمان ههيا 💎.. حابين نطمن على ذوقك في آخر طلب، ومتاح معانا النهاردة سمان جامبو فريش جاهز فوراً لو تحب تحجز أطباقك؟`;
+        let encodedMsg = encodeURIComponent(whatsappMsg);
+        let waLink = `https://wa.me/${phone.startsWith('0') ? '2' + phone : phone}?text=${encodedMsg}`;
+
+        let modalEl = document.getElementById('customer-modal-container');
+        if (!modalEl) {
+            modalEl = document.createElement('div');
+            modalEl.id = 'customer-modal-container';
+            document.body.appendChild(modalEl);
+        }
+
+        modalEl.innerHTML = `
+        <div id="crm-modal" class="fixed inset-0 bg-brand-navy bg-opacity-60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-200">
+            <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 p-1">
+                
+                <div class="p-6 border-b border-gray-100 flex justify-between items-start bg-brand-light rounded-t-3xl">
+                    <div>
+                        <span class="bg-brand-cyanDark text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-wider">ملف عميل VIP</span>
+                        <h3 class="text-2xl font-black text-brand-navy mt-2">${customer.name}</h3>
+                        <p class="text-sm text-gray-500 mt-1" dir="ltr"><i class="fa-solid fa-phone text-brand-cyanDark"></i> ${customer.phone}</p>
+                        <p class="text-xs text-gray-400 mt-1"><i class="fa-solid fa-location-dot"></i> ${customer.address || customer.zone || 'العنوان غير مسجل'}</p>
+                    </div>
+                    <button onclick="closeCustomerModal()" class="text-gray-400 hover:text-gray-600 bg-white p-2 rounded-full shadow-sm transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-1 bg-gray-50 p-4 rounded-2xl border border-gray-100 flex flex-col gap-3 justify-between">
+                        <div>
+                            <span class="text-xs text-gray-400 font-bold block">إجمالي المشتريات (LTV)</span>
+                            <span class="text-2xl font-black text-brand-cyanDark">${customer.totalSpent || 0} ج</span>
+                        </div>
+                        <div class="border-t border-gray-200 pt-2">
+                            <span class="text-xs text-gray-400 font-bold block">عدد الطلبات</span>
+                            <span class="text-lg font-black text-brand-navy">${customer.ordersCount || 0} أوردر</span>
+                        </div>
+                        <div class="border-t border-gray-200 pt-2">
+                            <span class="text-xs text-gray-400 font-bold block">متوسط الطلب (AOV)</span>
+                            <span class="text-md font-black text-brand-navy">${avgOrderValue} ج</span>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 bg-white border border-gray-100 p-4 rounded-2xl shadow-inner max-h-[220px] overflow-y-auto custom-scrollbar">
+                        <h4 class="font-black text-brand-navy text-sm mb-2 pb-1 border-b border-gray-100"><i class="fa-solid fa-clock-rotate-left text-brand-cyanDark"></i> سجل الطلبات الكامل</h4>
+                        ${ordersHtml}
+                    </div>
+                </div>
+
+                <div class="p-6 bg-gray-50 border-t border-gray-100 rounded-b-3xl flex flex-wrap gap-3 justify-between items-center">
+                    <div class="flex gap-2">
+                        <span class="text-xs font-bold text-gray-500 bg-white border px-3 py-1.5 rounded-xl">⭐ تقييم: ${customer.rating || 1} نجوم</span>
+                        <span class="text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1.5 rounded-xl">حالة النشاط: ${customer.tags ? customer.tags.join(', ') : 'نشط'}</span>
+                    </div>
+                    <a href="${waLink}" target="_blank" class="bg-green-600 text-white font-black px-5 py-2.5 rounded-xl text-sm shadow-md hover:bg-green-700 transition flex items-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-lg"></i> تنشيط العميل عبر واتساب
+                    </a>
+                </div>
+
+            </div>
+        </div>
+        `;
+    } catch (error) {
+        console.error("خطأ أثناء فتح ملف العميل:", error);
+        alert("فشل تحميل بيانات العميل بالكامل.");
+    }
+};
+
+// 10. دالة إغلاق الـ Modal
+window.closeCustomerModal = () => {
+    const modal = document.getElementById('crm-modal');
+    if (modal) {
+        modal.classList.add('opacity-0');
+        setTimeout(() => { modal.remove(); }, 200);
+    }
+};
+
+// 11. أداة تأسيس قاعدة بيانات الـ CRM (شغلها مرة واحدة من الـ Console)
 window.setupCRMDatabase = async () => {
     if(!confirm("هل أنت متأكد من رغبتك في تحديث وبناء هيكل العملاء الشامل؟")) return;
     
@@ -222,7 +406,7 @@ window.setupCRMDatabase = async () => {
                 customersMap[phone] = {
                     name: order.customerName || "غير معروف",
                     phone: phone,
-                    zone: order.zone || "غير محدد",
+                    zone: order.zone || "غير حدد",
                     address: order.customerAddress || "",
                     ordersCount: 0,
                     totalSpent: 0,
@@ -281,6 +465,3 @@ window.setupCRMDatabase = async () => {
         alert("حصل خطأ، راجع الـ Console.");
     }
 };
-
-// وظيفة مؤقتة عشان لو ضغطت على العميل ميعملش خطأ لحد ما نبرمج شاشة البروفايل كاملة
-openCustomerProfile
