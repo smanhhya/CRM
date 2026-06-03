@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سمان ههيا | نظام الإدارة الشامل (CRM)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { navy: '#111827', cyanDark: '#0d9488', light: '#f3f4f6', yellow: '#fbbf24' }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-100 text-brand-navy h-screen overflow-hidden">
+
+    <!-- 🔒 شاشة تسجيل الدخول -->
+    <div id="login-screen" class="absolute inset-0 z-50 bg-brand-navy flex flex-col justify-center items-center px-4 transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center">
+            <div class="w-20 h-20 bg-brand-cyanDark text-white rounded-full flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <h1 class="text-2xl font-black mb-1">سمان ههيا CRM</h1>
+            <p class="text-sm text-gray-500 font-bold mb-6">لوحة الإدارة والتحكم المركزي</p>
+            
+            <div class="space-y-4 text-right">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">البريد الإلكتروني</label>
+                    <input type="email" id="login-email" class="w-full border-2 border-gray-200 rounded-xl p-3 font-bold text-left outline-none focus:border-brand-cyanDark transition-colors" dir="ltr" placeholder="admin@example.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور</label>
+                    <input type="password" id="login-password" class="w-full border-2 border-gray-200 rounded-xl p-3 font-bold text-left outline-none focus:border-brand-cyanDark transition-colors" dir="ltr" placeholder="••••••••">
+                </div>
+                <button id="login-btn" onclick="loginToCRM()" class="w-full bg-brand-navy hover:bg-gray-800 text-white font-black py-3 rounded-xl transition-all shadow-md mt-2 flex justify-center items-center gap-2">
+                    تسجيل الدخول <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+                <div id="login-error" class="hidden bg-red-50 text-red-600 text-xs font-bold p-2 rounded-lg text-center mt-2 border border-red-200"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📊 واجهة النظام (بعد تسجيل الدخول) -->
+    <div id="crm-layout" class="hidden h-full flex flex-col md:flex-row w-full">
+        
+        <!-- القائمة الجانبية (Sidebar) -->
+        <aside class="w-full md:w-64 bg-brand-navy text-white flex flex-col shadow-xl z-20 transition-all duration-300">
+            <div class="p-4 border-b border-gray-800 flex items-center gap-3">
+                <div class="bg-brand-cyanDark p-2 rounded-lg"><i class="fa-solid fa-chart-pie text-xl"></i></div>
+                <div>
+                    <h2 class="font-black text-lg leading-tight">مركز القيادة</h2>
+                    <p class="text-[10px] text-gray-400 font-bold">CRM System v1.0</p>
+                </div>
+            </div>
+            
+            <nav class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1 mt-2">
+                <button onclick="switchTab('dashboard')" id="tab-dashboard" class="w-full text-right px-4 py-3 rounded-xl font-bold text-sm bg-brand-cyanDark text-white transition-colors flex items-center gap-3"><i class="fa-solid fa-house w-5 text-center"></i> الرئيسية (Dashboard)</button>
+                <button onclick="switchTab('customers')" id="tab-customers" class="w-full text-right px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:bg-gray-800 transition-colors flex items-center gap-3"><i class="fa-solid fa-users w-5 text-center"></i> عائلة سمان (العملاء)</button>
+                <button onclick="switchTab('orders')" id="tab-orders" class="w-full text-right px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:bg-gray-800 transition-colors flex items-center gap-3"><i class="fa-solid fa-box-open w-5 text-center"></i> إدارة الطلبات</button>
+                <button onclick="switchTab('inventory')" id="tab-inventory" class="w-full text-right px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:bg-gray-800 transition-colors flex items-center gap-3"><i class="fa-solid fa-snowflake w-5 text-center"></i> جرد الفريزر</button>
+            </nav>
+
+            <div class="p-4 border-t border-gray-800">
+                <button onclick="logoutFromCRM()" class="w-full bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white font-bold py-2 rounded-lg transition-colors text-sm flex justify-center items-center gap-2">
+                    تسجيل الخروج <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- منطقة المحتوى الرئيسية -->
+        <main class="flex-1 flex flex-col h-full bg-gray-50 overflow-hidden relative">
+            <!-- شريط علوي -->
+            <header class="bg-white border-b border-gray-200 p-4 flex justify-between items-center shadow-sm z-10">
+                <h2 id="page-title" class="text-xl font-black text-brand-navy">الرئيسية</h2>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-circle text-[8px] text-green-500 mr-1 animate-pulse"></i> متصل بقاعدة البيانات</span>
+                </div>
+            </header>
+
+            <!-- الشاشات -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 relative">
+                <!-- شاشة الرئيسية -->
+                <div id="view-dashboard" class="crm-view h-full flex items-center justify-center flex-col text-gray-400">
+                    <i class="fa-solid fa-hammer text-4xl mb-3 text-gray-300"></i>
+                    <p class="font-bold">جاري بناء لوحة الإحصائيات (المرحلة القادمة)...</p>
+                </div>
+                <!-- شاشة العملاء -->
+                <div id="view-customers" class="crm-view hidden h-full flex items-center justify-center flex-col text-gray-400">
+                    <i class="fa-solid fa-users-gear text-4xl mb-3 text-gray-300"></i>
+                    <p class="font-bold">جاري بناء سجل العملاء الـ VIP...</p>
+                </div>
+                <!-- باقي الشاشات -->
+                <div id="view-orders" class="crm-view hidden"></div>
+                <div id="view-inventory" class="crm-view hidden"></div>
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Firebase SDK (Compat version) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    
+    <!-- ملف الجافاسكريبت بتاع الـ CRM -->
+    <script src="js/crm.js"></script>
+</body>
+</html>
