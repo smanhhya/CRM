@@ -99,3 +99,86 @@ window.switchTab = (tabName) => {
     };
     document.getElementById('page-title').innerText = titles[tabName] || 'CRM';
 };
+
+// 7. دالة سحب البيانات الحية (الرسيفر اللي بيجيب الداتا من فايربيز)
+window.loadCRMData = () => {
+    
+    // سحب أحدث 50 عميل VIP وعرضهم في جدول نظيف
+    db.collection('customers').orderBy('lastOrder', 'desc').limit(50).onSnapshot(snapshot => {
+        let html = `
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <h3 class="text-xl font-black mb-4 text-brand-navy"><i class="fa-solid fa-users text-brand-cyanDark mr-2"></i> عائلة سمان (عملاء VIP)</h3>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-right">
+                    <thead class="bg-gray-50 text-gray-500 text-sm border-b border-gray-100">
+                        <tr>
+                            <th class="p-4 font-bold">الاسم</th>
+                            <th class="p-4 font-bold">رقم الهاتف</th>
+                            <th class="p-4 font-bold">المنطقة</th>
+                            <th class="p-4 font-bold">تاريخ آخر طلب</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+        
+        if (snapshot.empty) html += `<tr><td colspan="4" class="text-center p-6 text-gray-400">لا يوجد عملاء حتى الآن</td></tr>`;
+        
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const date = data.lastOrder ? data.lastOrder.toDate().toLocaleDateString('ar-EG') : 'غير محدد';
+            html += `
+                <tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                    <td class="p-4 font-black text-brand-navy">${data.name || '---'}</td>
+                    <td class="p-4 text-gray-600" dir="ltr">${data.phone || '---'}</td>
+                    <td class="p-4"><span class="bg-brand-light text-brand-navy px-3 py-1 rounded-lg text-xs font-bold">${data.zone || '---'}</span></td>
+                    <td class="p-4 text-sm text-gray-500">${date}</td>
+                </tr>`;
+        });
+        
+        html += `</tbody></table></div></div>`;
+        document.getElementById('view-customers').innerHTML = html;
+    });
+
+    // سحب أحدث الطلبات الحية وعرضها في كروت أنيقة
+    db.collection('orders').orderBy('createdAt', 'desc').limit(30).onSnapshot(snapshot => {
+        let html = `
+        <div class="mb-4 flex justify-between items-center">
+            <h3 class="text-xl font-black text-brand-navy"><i class="fa-solid fa-box-open text-brand-cyanDark mr-2"></i> الطلبات الحية</h3>
+            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold animate-pulse">تحديث تلقائي شغال</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`;
+        
+        if (snapshot.empty) html += `<div class="col-span-full text-center p-10 text-gray-400 font-bold bg-white rounded-2xl border border-gray-100">لا توجد طلبات مسجلة حتى الآن.</div>`;
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const itemsList = data.items ? data.items.map(i => `<div class="text-sm border-b border-gray-200 pb-1 mb-1 last:border-0 last:mb-0 last:pb-0">▪ ${i.quantity} × ${i.name.replace('طبق ', '').split(' (')[0]}</div>`).join('') : 'بدون تفاصيل';
+            
+            html += `
+            <div class="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                <!-- شريط الحالة الجانبي -->
+                <div class="absolute right-0 top-0 bottom-0 w-1 ${data.status === 'new' ? 'bg-brand-cyanDark' : 'bg-gray-300'}"></div>
+                
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h4 class="font-black text-brand-navy text-lg">${data.customerName}</h4>
+                        <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-location-dot"></i> ${data.zone}</p>
+                    </div>
+                    <span class="bg-brand-light text-brand-navy text-[10px] font-bold px-2 py-1 rounded">${data.orderDate} - ${data.orderTime}</span>
+                </div>
+                
+                <div class="bg-gray-50 p-3 rounded-xl mb-4 min-h-[60px]">
+                    ${itemsList}
+                </div>
+                
+                <div class="flex justify-between items-center pt-3 border-t border-gray-100">
+                    <span class="text-xs text-gray-400 font-bold">الإجمالي:</span>
+                    <span class="font-black text-xl text-brand-cyanDark">${data.total} ج</span>
+                </div>
+            </div>`;
+        });
+        
+        html += `</div>`;
+        document.getElementById('view-orders').innerHTML = html;
+    });
+};
+
