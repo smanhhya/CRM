@@ -3,8 +3,8 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سمان ههيا | الإدارة الذكية</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سمان ههيا | ERP & CRM System</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,7 +13,12 @@
             theme: {
                 extend: {
                     colors: {
-                        brand: { dark: '#0f172a', primary: '#0d9488', secondary: '#f59e0b', light: '#f8fafc' }
+                        brand: {
+                            dark: '#0f172a',    // كحلي ليلي
+                            primary: '#0d9488', // أخضر تيل (مميز)
+                            accent: '#f59e0b',  // ذهبي/برتقالي للتنبيهات
+                            bg: '#f1f5f9'       // رمادي فاتح جداً للخلفية
+                        }
                     },
                     fontFamily: { cairo: ['Cairo', 'sans-serif'] }
                 }
@@ -31,175 +36,320 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; overflow: hidden; }
-        .hide-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .hide-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-        .page-view { display: none; animation: fadeIn 0.3s ease-in-out; }
+        body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; overflow: hidden; }
+        /* سكرول بار احترافي */
+        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+        
+        /* تأثير ظهور الشاشات */
+        .page-view { display: none; animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .page-view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* تعديل القائمة للموبايل */
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        @media (max-width: 768px) {
+            #sidebar { transform: translateX(100%); }
+            #sidebar.open { transform: translateX(0); }
+        }
     </style>
 </head>
-<body class="text-slate-800 flex h-screen relative">
+<body class="text-slate-800 flex h-screen w-full relative selection:bg-brand-primary selection:text-white">
 
-    <!-- 🔒 شاشة تسجيل الدخول -->
-    <div id="login-screen" class="absolute inset-0 bg-brand-dark z-50 flex items-center justify-center transition-opacity duration-500">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
-            <div class="w-16 h-16 bg-brand-primary text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg font-black">س</div>
-            <h1 class="text-2xl font-black mb-1 text-slate-800">سمان ههيا CRM</h1>
-            <p class="text-sm text-slate-500 font-bold mb-6">النظام الإداري الشامل</p>
-            <input type="email" id="login-email" class="w-full border-2 border-slate-200 rounded-xl p-3 mb-3 text-left outline-none focus:border-brand-primary" dir="ltr" placeholder="البريد الإلكتروني">
-            <input type="password" id="login-password" class="w-full border-2 border-slate-200 rounded-xl p-3 mb-4 text-left outline-none focus:border-brand-primary" dir="ltr" placeholder="كلمة المرور">
-            <button onclick="loginApp()" id="login-btn" class="w-full bg-brand-primary hover:bg-teal-700 text-white font-black py-3 rounded-xl transition-all">تسجيل الدخول</button>
-            <p id="login-error" class="hidden text-red-500 text-xs font-bold mt-3"></p>
-        </div>
-    </div>
+    <!-- خلفية ضبابية للموبايل عند فتح القائمة -->
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-20 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
-    <!-- 📱 القائمة الجانبية -->
-    <aside class="w-64 bg-brand-dark text-slate-300 flex flex-col shadow-2xl z-20">
-        <div class="h-16 flex items-center px-6 border-b border-slate-700/50 bg-slate-900/50">
-            <h1 class="text-xl font-black text-white tracking-wide"><i class="fa-solid fa-feather text-brand-primary mr-2"></i> سمان ههيا</h1>
+    <!-- 📱 القائمة الجانبية (Sidebar) -->
+    <aside id="sidebar" class="w-64 bg-brand-dark text-slate-300 flex flex-col shadow-2xl z-30 fixed inset-y-0 right-0 md:relative h-full">
+        <!-- لوجو النظام -->
+        <div class="h-16 flex items-center justify-between px-4 border-b border-slate-700/50 bg-slate-900/50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-brand-primary text-white flex items-center justify-center font-black text-xl shadow-lg">س</div>
+                <h1 class="text-lg font-black text-white tracking-wide">سمان ههيا</h1>
+            </div>
+            <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <nav class="flex-1 overflow-y-auto hide-scrollbar py-4 px-3 space-y-1">
-            <button onclick="switchPage('dashboard', this)" class="nav-link active w-full text-right flex items-center px-3 py-2.5 rounded-xl text-sm font-bold bg-brand-primary text-white transition-all"><i class="fa-solid fa-house w-6 text-center"></i> الرئيسية</button>
-            <div class="pt-4 pb-1 px-3 text-[10px] uppercase font-black text-slate-500 tracking-wider">العمليات</div>
-            <button onclick="switchPage('customers', this)" class="nav-link w-full text-right flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all"><i class="fa-solid fa-users w-6 text-center"></i> سجل العملاء</button>
-            <button onclick="switchPage('orders', this)" class="nav-link w-full text-right flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all"><i class="fa-solid fa-box-open w-6 text-center"></i> الطلبات الحية</button>
-            <button onclick="switchPage('inventory', this)" class="nav-link w-full text-right flex items-center px-3 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white transition-all"><i class="fa-solid fa-snowflake w-6 text-center text-blue-400"></i> جرد الفريزر</button>
+
+        <!-- الروابط -->
+        <nav class="flex-1 overflow-y-auto custom-scroll py-4 px-3 space-y-1">
+            
+            <button onclick="switchTab('dashboard', this)" class="nav-btn active w-full text-right flex items-center px-4 py-3 rounded-xl text-sm font-bold bg-brand-primary text-white shadow-md shadow-brand-primary/20 transition-all"><i class="fa-solid fa-house w-6 text-center"></i> مركز القيادة</button>
+            
+            <div class="pt-5 pb-2 px-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">إدارة المبيعات</div>
+            <button onclick="switchTab('customers', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-users w-6 text-center"></i> قاعدة العملاء (CRM)</button>
+            <button onclick="switchTab('orders', this)" class="nav-link w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-box-open w-6 text-center"></i> إدارة الطلبات</button>
+            
+            <div class="pt-5 pb-2 px-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">التشغيل والإنتاج</div>
+            <button onclick="switchTab('production', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-tractor w-6 text-center text-orange-400"></i> إدارة الدفعات والعلف</button>
+            <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-snowflake w-6 text-center text-blue-400"></i> جرد الفريزر</button>
+
+            <div class="pt-5 pb-2 px-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">التحليلات والتقارير</div>
+            <button onclick="switchTab('finance', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-sack-dollar w-6 text-center text-green-400"></i> الحسابات والأرباح</button>
+            <button onclick="switchTab('reports', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-chart-pie w-6 text-center text-purple-400"></i> التقارير الذكية</button>
+
+            <div class="pt-5 pb-2 px-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">النظام</div>
+            <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-gears w-6 text-center"></i> الإعدادات</button>
         </nav>
-        <div class="p-4 border-t border-slate-700/50">
-            <button onclick="auth.signOut()" class="w-full text-red-400 hover:text-red-300 text-sm font-bold flex items-center justify-center gap-2"><i class="fa-solid fa-power-off"></i> تسجيل الخروج</button>
+
+        <!-- بروفايل الأدمن -->
+        <div class="p-4 border-t border-slate-700/50 bg-slate-900/30">
+            <div class="flex items-center gap-3">
+                <img src="https://ui-avatars.com/api/?name=Admin&background=0d9488&color=fff" class="w-10 h-10 rounded-full border-2 border-slate-600">
+                <div class="flex-1">
+                    <p class="text-sm font-bold text-white">المدير العام</p>
+                    <p class="text-[10px] text-green-400"><i class="fa-solid fa-circle text-[8px] animate-pulse"></i> متصل بالنظام</p>
+                </div>
+            </div>
         </div>
     </aside>
 
-    <!-- 🖥 محتوى النظام -->
-    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-brand-light relative">
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-10">
-            <h2 id="page-title" class="text-xl font-black text-slate-800">الرئيسية</h2>
-            <div class="flex items-center gap-4">
-                <span class="text-xs font-bold bg-green-50 text-green-600 px-3 py-1 rounded-full border border-green-100 flex items-center gap-1"><i class="fa-solid fa-circle text-[8px] animate-pulse"></i> متصل لايف</span>
+    <!-- 🖥 محتوى النظام الرئيسي -->
+    <main class="flex-1 flex flex-col min-w-0 h-full relative">
+        
+        <!-- الشريط العلوي (Header) -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 shadow-sm z-10 shrink-0">
+            <div class="flex items-center gap-3">
+                <!-- زر فتح القائمة للموبايل -->
+                <button onclick="toggleSidebar()" class="md:hidden w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200 transition-colors">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <h2 id="header-title" class="text-lg lg:text-xl font-black text-slate-800">مركز القيادة</h2>
+            </div>
+            
+            <div class="flex items-center gap-2 lg:gap-4">
+                <button class="bg-brand-primary hover:bg-teal-700 text-white px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-bold shadow-md transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> <span class="hidden lg:inline">طلب جديد</span>
+                </button>
+                
+                <div class="w-px h-6 bg-slate-200 mx-1 lg:mx-2"></div>
+                
+                <button class="w-10 h-10 rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100 flex items-center justify-center relative transition-colors">
+                    <i class="fa-regular fa-bell text-lg"></i>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                    <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                </button>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto hide-scrollbar p-6">
-            
-            <!-- 1. الرئيسية -->
-            <div id="page-dashboard" class="page-view active space-y-6">
-                <!-- أرقام الإحصائيات -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-teal-50 text-brand-primary flex items-center justify-center text-xl"><i class="fa-solid fa-wallet"></i></div>
-                        <div><p class="text-xs font-bold text-slate-400">مبيعات اليوم</p><h3 id="dash-sales" class="text-2xl font-black text-slate-800">0 ج</h3></div>
+        <!-- 📂 منطقة الصفحات -->
+        <div class="flex-1 overflow-y-auto custom-scroll p-4 lg:p-6 pb-20">
+
+            <!-- ===================== 1. الرئيسية (Dashboard) ===================== -->
+            <div id="view-dashboard" class="page-view active space-y-6">
+                
+                <!-- كروت الإحصائيات الفائقة (KPIs) -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5">
+                    <!-- المبيعات -->
+                    <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-1.5 h-full bg-green-500"></div>
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-xs font-bold text-slate-400">مبيعات اليوم</p>
+                            <div class="bg-green-50 text-green-600 p-1.5 rounded-lg"><i class="fa-solid fa-wallet"></i></div>
+                        </div>
+                        <h3 class="text-xl lg:text-3xl font-black text-slate-800">1,450 <span class="text-sm font-bold text-slate-400">ج.م</span></h3>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
-                        <div><p class="text-xs font-bold text-slate-400">إجمالي العملاء</p><h3 id="dash-customers" class="text-2xl font-black text-slate-800">0</h3></div>
+
+                    <!-- العملاء -->
+                    <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-1.5 h-full bg-brand-primary"></div>
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-xs font-bold text-slate-400">إجمالي العملاء</p>
+                            <div class="bg-teal-50 text-brand-primary p-1.5 rounded-lg"><i class="fa-solid fa-users"></i></div>
+                        </div>
+                        <h3 class="text-xl lg:text-3xl font-black text-slate-800">480</h3>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center text-xl"><i class="fa-solid fa-box-open"></i></div>
-                        <div><p class="text-xs font-bold text-slate-400">طلبات قيد التجهيز</p><h3 id="dash-pending" class="text-2xl font-black text-slate-800">0</h3></div>
+
+                    <!-- الطلبات الجارية -->
+                    <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-1.5 h-full bg-yellow-400"></div>
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-xs font-bold text-slate-400">قيد التجهيز والتوصيل</p>
+                            <div class="bg-yellow-50 text-yellow-600 p-1.5 rounded-lg"><i class="fa-solid fa-motorcycle"></i></div>
+                        </div>
+                        <h3 class="text-xl lg:text-3xl font-black text-slate-800">12 <span class="text-sm font-bold text-slate-400">طلب</span></h3>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl border border-red-100 shadow-sm flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-xl"><i class="fa-solid fa-user-minus"></i></div>
-                        <div><p class="text-xs font-bold text-slate-400">عملاء مفقودين</p><h3 id="dash-lost" class="text-2xl font-black text-red-600">0</h3></div>
+
+                    <!-- عملاء مفقودين -->
+                    <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-1.5 h-full bg-red-500"></div>
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-xs font-bold text-slate-400">عملاء مفقودين (+30 يوم)</p>
+                            <div class="bg-red-50 text-red-500 p-1.5 rounded-lg"><i class="fa-solid fa-user-clock"></i></div>
+                        </div>
+                        <h3 class="text-xl lg:text-3xl font-black text-red-600">27</h3>
                     </div>
                 </div>
 
-                <!-- التنبيهات الذكية (Phase 3 Prep) -->
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
-                    <h3 class="font-black text-lg text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-yellow-500"></i> رادار التنبيهات الذكية</h3>
-                    <div id="alerts-container" class="space-y-3">
-                        <div class="text-sm text-slate-400 font-bold">جاري تحليل البيانات...</div>
+                <!-- الذكاء الاصطناعي والتنبيهات (الرادار) -->
+                <div class="bg-gradient-to-r from-slate-900 to-brand-dark rounded-2xl p-5 lg:p-6 shadow-lg text-white relative overflow-hidden">
+                    <i class="fa-solid fa-radar absolute -left-10 -bottom-10 text-9xl text-white/5"></i>
+                    <h3 class="font-black text-lg mb-4 flex items-center gap-2"><i class="fa-solid fa-bolt text-yellow-400"></i> رادار سمان ههيا الذكي</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="bg-white/10 backdrop-blur-md border border-white/10 rounded-xl p-4 flex gap-3 items-start">
+                            <i class="fa-solid fa-bullseye text-green-400 mt-1"></i>
+                            <div>
+                                <h4 class="font-bold text-sm">توقع إعادة طلب (Hot Leads)</h4>
+                                <p class="text-xs text-slate-300 mt-1">يوجد 5 عملاء موعد طلبهم المعتاد اليوم وغداً (اضغط لمراسلتهم).</p>
+                            </div>
+                        </div>
+                        <div class="bg-red-500/20 backdrop-blur-md border border-red-500/30 rounded-xl p-4 flex gap-3 items-start">
+                            <i class="fa-solid fa-triangle-exclamation text-red-400 mt-1"></i>
+                            <div>
+                                <h4 class="font-bold text-sm text-red-200">تحذير انخفاض مخزون</h4>
+                                <p class="text-xs text-slate-300 mt-1">الجامبو متبقي 8 أطباق فقط والمحجوز 14، لن يكفي لطلبات اليوم.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
             </div>
 
-            <!-- 2. سجل العملاء -->
-            <div id="page-customers" class="page-view h-full flex flex-col">
-                <div class="flex justify-between items-center mb-6">
-                    <!-- ميزة البحث الذكي المباشر -->
-                    <div class="relative w-full max-w-md">
-                        <i class="fa-solid fa-search absolute right-3 top-3.5 text-slate-400"></i>
-                        <input type="text" id="search-customer" onkeyup="filterCustomers()" placeholder="بحث سريع بالاسم أو الهاتف..." class="w-full pl-4 pr-10 py-3 rounded-xl border border-slate-200 focus:border-brand-primary outline-none text-sm font-bold shadow-sm">
+            <!-- ===================== 2. العملاء (CRM) ===================== -->
+            <div id="view-customers" class="page-view h-full flex flex-col">
+                <div class="flex flex-col lg:flex-row justify-between gap-4 mb-6">
+                    <!-- محرك البحث الذكي -->
+                    <div class="relative w-full lg:w-96">
+                        <i class="fa-solid fa-magnifying-glass absolute right-4 top-3.5 text-slate-400"></i>
+                        <input type="text" placeholder="ابحث برقم الهاتف، الاسم، أو المنطقة..." class="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-200 focus:border-brand-primary outline-none text-sm font-bold shadow-sm transition-all bg-white">
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="bg-white border border-slate-200 text-slate-600 px-4 py-3 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50 flex items-center gap-2"><i class="fa-solid fa-filter"></i> فلترة</button>
+                        <button class="bg-brand-dark text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> إضافة عميل</button>
                     </div>
                 </div>
-                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm flex-1 overflow-hidden flex flex-col">
-                    <div class="overflow-auto hide-scrollbar flex-1">
-                        <table class="w-full text-right text-sm">
-                            <thead class="bg-slate-50 text-slate-500 sticky top-0 shadow-sm z-10">
+
+                <!-- جدول العملاء الاحترافي -->
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
+                    <div class="overflow-x-auto custom-scroll flex-1">
+                        <table class="w-full text-right text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-500 sticky top-0 z-10 border-b border-slate-200">
                                 <tr>
-                                    <th class="py-4 px-5 font-bold">العميل</th>
-                                    <th class="py-4 px-5 font-bold text-center">الطلبات</th>
-                                    <th class="py-4 px-5 font-bold text-center">إجمالي (LTV)</th>
-                                    <th class="py-4 px-5 font-bold">التصنيف</th>
-                                    <th class="py-4 px-5 font-bold text-center">ملف العميل</th>
+                                    <th class="py-4 px-6 font-bold">العميل (الاسم والرقم)</th>
+                                    <th class="py-4 px-6 font-bold text-center">المستوى</th>
+                                    <th class="py-4 px-6 font-bold text-center">الطلبات</th>
+                                    <th class="py-4 px-6 font-bold text-center">الإجمالي (LTV)</th>
+                                    <th class="py-4 px-6 font-bold">آخر طلب</th>
+                                    <th class="py-4 px-6 font-bold text-center">إجراءات</th>
                                 </tr>
                             </thead>
-                            <tbody id="customers-table-body" class="divide-y divide-slate-100">
-                                <!-- سيتم الملء تلقائياً من الجافاسكريبت -->
-                                <tr><td colspan="5" class="text-center p-10 text-slate-400">جاري سحب بيانات العملاء...</td></tr>
+                            <tbody class="divide-y divide-slate-100">
+                                <!-- داتا تجريبية لشكل الـ UI -->
+                                <tr class="hover:bg-slate-50 transition-colors group">
+                                    <td class="py-3 px-6">
+                                        <div class="font-black text-slate-800 text-base">محمد أحمد محمود</div>
+                                        <div class="text-xs text-slate-500 font-bold" dir="ltr">01012345678</div>
+                                    </td>
+                                    <td class="py-3 px-6 text-center">
+                                        <span class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-3 py-1 rounded-full text-xs font-black shadow-sm">⭐ VIP ذهبي</span>
+                                    </td>
+                                    <td class="py-3 px-6 text-center font-black text-slate-700">18</td>
+                                    <td class="py-3 px-6 text-center font-black text-brand-primary text-base">4,200 ج</td>
+                                    <td class="py-3 px-6">
+                                        <div class="text-slate-800 font-bold">منذ 12 يوم</div>
+                                    </td>
+                                    <td class="py-3 px-6 text-center">
+                                        <div class="flex items-center justify-center gap-2">
+                                            <button class="w-8 h-8 rounded-lg bg-green-50 text-green-600 hover:bg-green-500 hover:text-white transition-colors flex justify-center items-center"><i class="fa-brands fa-whatsapp text-lg"></i></button>
+                                            <button class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white transition-colors flex justify-center items-center"><i class="fa-solid fa-address-card"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- 3. الطلبات (مبسطة مؤقتاً لحين بناء شاشة الإضافة) -->
-            <div id="page-orders" class="page-view text-center pt-20">
-                <i class="fa-solid fa-boxes-stacked text-6xl text-slate-200 mb-4"></i>
-                <h3 class="text-xl font-black text-slate-600">شاشة إدارة الطلبات الحية</h3>
-                <p class="text-slate-400">سيتم إضافة نظام الكروت (Kanban) وإضافة طلب جديد هنا.</p>
-            </div>
-
-            <!-- 4. جرد الفريزر -->
-            <div id="page-inventory" class="page-view">
-                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-primary"></div>
-                        <h3 class="text-xl font-black text-slate-800 mb-4">سمان جامبو</h3>
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-2">
-                            <span class="text-sm font-bold text-slate-500">المحجوز (في الطلبات):</span>
-                            <span id="inv-jumbo-res" class="font-black text-slate-800">0</span>
+            <!-- ===================== 3. إدارة الدفعات والعلف (ميزة جديدة للإنتاج) ===================== -->
+            <div id="view-production" class="page-view space-y-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-xl font-black text-slate-800 mb-4"><i class="fa-solid fa-tractor text-orange-500 mr-2"></i> إدارة دورة الإنتاج (الدفعة الحالية)</h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                            <p class="text-xs font-bold text-slate-500 mb-1">العدد الإجمالي المستلم</p>
+                            <h4 class="text-2xl font-black text-slate-800">5,000 <span class="text-sm font-bold text-slate-400">طائر</span></h4>
                         </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-black text-brand-primary">المتبقي الفعلي للبيع:</span>
-                            <span id="inv-jumbo-left" class="text-3xl font-black text-brand-primary">--</span>
+                        <div class="bg-red-50 rounded-xl p-4 border border-red-100">
+                            <p class="text-xs font-bold text-red-500 mb-1">النافق (Mortality Rate)</p>
+                            <h4 class="text-2xl font-black text-red-600">120 <span class="text-sm font-bold text-red-400">(2.4%)</span></h4>
+                        </div>
+                        <div class="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                            <p class="text-xs font-bold text-orange-600 mb-1">استهلاك العلف</p>
+                            <h4 class="text-2xl font-black text-orange-700">15 <span class="text-sm font-bold text-orange-500">شيكارة</span></h4>
                         </div>
                     </div>
+                    <button class="bg-brand-dark text-white px-5 py-2.5 rounded-xl font-bold text-sm w-full lg:w-auto"><i class="fa-solid fa-plus mr-2"></i> تسجيل نافق أو استهلاك علف يومي</button>
                 </div>
+            </div>
+
+            <!-- شاشات قيد البناء (Placeholder) -->
+            <div id="view-orders" class="page-view text-center pt-20 text-slate-400">
+                <i class="fa-solid fa-map-location-dot text-6xl mb-4 text-slate-200"></i>
+                <h3 class="text-2xl font-black text-slate-600">شاشة تتبع الطلبات (Kanban)</h3>
+                <p class="font-bold mt-2">سيتم وضع كروت الحالات (جديد - تجهيز - توصيل) هنا.</p>
+            </div>
+            <div id="view-inventory" class="page-view text-center pt-20 text-slate-400">
+                <i class="fa-solid fa-snowflake text-6xl mb-4 text-blue-100"></i>
+                <h3 class="text-2xl font-black text-slate-600">جرد الفريزر</h3>
+            </div>
+            <div id="view-finance" class="page-view text-center pt-20 text-slate-400">
+                <i class="fa-solid fa-coins text-6xl mb-4 text-green-100"></i>
+                <h3 class="text-2xl font-black text-slate-600">الأرباح والمصروفات (الصافي)</h3>
             </div>
 
         </div>
     </main>
 
-    <!-- 🪟 نافذة ملف العميل -->
-    <div id="customer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden">
-            <div class="bg-slate-50 p-6 border-b border-slate-200 flex justify-between items-start">
-                <div>
-                    <h2 id="modal-name" class="text-2xl font-black text-slate-800 mb-1">...</h2>
-                    <p id="modal-phone" class="text-slate-500 font-bold text-sm" dir="ltr">...</p>
-                </div>
-                <button onclick="document.getElementById('customer-modal').classList.add('hidden')" class="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-6">
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                        <p class="text-xs font-bold text-slate-400">إجمالي المشتريات</p>
-                        <p id="modal-ltv" class="text-xl font-black text-brand-primary">0 ج</p>
-                    </div>
-                    <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                        <p class="text-xs font-bold text-slate-400">عدد الطلبات</p>
-                        <p id="modal-orders" class="text-xl font-black text-slate-800">0</p>
-                    </div>
-                </div>
-                <a id="modal-whatsapp" href="#" target="_blank" class="w-full bg-green-500 hover:bg-green-600 text-white p-3 rounded-xl font-bold transition-colors flex justify-center items-center gap-2"><i class="fa-brands fa-whatsapp text-xl"></i> إرسال رسالة واتساب للعميل</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- ⚙️ JavaScript & Firebase Logic -->
+    <!-- ⚙️ JavaScript UI Controller -->
     <script>
-        // 1. الإعدادات
+        // 1. التحكم في القائمة الجانبية (للموبايل)
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            if(sidebar.classList.contains('open')) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.add('opacity-100'), 10);
+            } else {
+                overlay.classList.remove('opacity-100');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        // 2. نظام التنقل بين الشاشات السريع (SPA)
+        function switchTab(tabId, btnElement) {
+            // إخفاء كل الشاشات
+            document.querySelectorAll('.page-view').forEach(view => {
+                view.classList.remove('active');
+            });
+            
+            // إظهار الشاشة المطلوبة
+            const activeView = document.getElementById('view-' + tabId);
+            if(activeView) activeView.classList.add('active');
+
+            // تلوين الزر في القائمة
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = "nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all";
+            });
+            
+            btnElement.className = "nav-btn active w-full text-right flex items-center px-4 py-3 rounded-xl text-sm font-bold bg-brand-primary text-white shadow-md shadow-brand-primary/20 transition-all";
+
+            // تغيير عنوان الهيدر
+            document.getElementById('header-title').innerText = btnElement.innerText;
+
+            // قفل القائمة لو فاتحين من الموبايل
+            if(window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        }
+
+        /* ========================================================================
+        🔥 إعدادات الـ Firebase (نفس كودك بالظبط عشان منبوظش القاعدة اللي بنيتها)
+        ========================================================================
+        سيتم تفعيل أكواد السحب الحية (Fetch) بعد مراجعتك واعتمادك للتصميم الجديد!
+        */
         const firebaseConfig = { 
             apiKey: "AIzaSyD7ZJP8n8fhMewPfEsTBANn0h9To_q15BY", 
             authDomain: "sman-ca8f8.firebaseapp.com", 
@@ -208,146 +358,9 @@
             messagingSenderId: "538778803310", 
             appId: "1:538778803310:web:5eeff42bae534375a21a7f" 
         };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        // if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        // const db = firebase.firestore();
 
-        // 2. التحقق من الدخول
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('login-screen').style.opacity = '0';
-                setTimeout(() => document.getElementById('login-screen').classList.add('hidden'), 500);
-                startCRM(); // تشغيل المحرك
-            } else {
-                document.getElementById('login-screen').classList.remove('hidden');
-                setTimeout(() => document.getElementById('login-screen').style.opacity = '1', 10);
-            }
-        });
-
-        function loginApp() {
-            const e = document.getElementById('login-email').value, p = document.getElementById('login-password').value;
-            auth.signInWithEmailAndPassword(e, p).catch(err => document.getElementById('login-error').innerText = "بيانات الدخول خاطئة!");
-        }
-
-        // 3. التنقل بين الصفحات
-        function switchPage(pageId, btn) {
-            document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + pageId).classList.add('active');
-            
-            document.querySelectorAll('.nav-link').forEach(l => {
-                l.classList.remove('bg-brand-primary', 'text-white');
-                l.classList.add('text-slate-300');
-            });
-            btn.classList.add('bg-brand-primary', 'text-white');
-            btn.classList.remove('text-slate-300');
-            document.getElementById('page-title').innerText = btn.innerText.trim();
-        }
-
-        // 4. المحرك المركزي لسحب البيانات (Unified Controller)
-        function startCRM() {
-            const nowStr = new Date().toLocaleDateString('en-US');
-
-            // أ. سحب الطلبات وتحليل اللوحة
-            db.collection('orders').onSnapshot(snap => {
-                let todaySales = 0, pending = 0, resJumbo = 0;
-                
-                snap.forEach(doc => {
-                    const o = doc.data();
-                    if (o.orderDate === nowStr || (o.createdAt && new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') === nowStr)) {
-                        todaySales += Number(o.total) || 0;
-                    }
-                    if (['new', 'preparing'].includes(o.status)) {
-                        pending++;
-                        if(o.items) o.items.forEach(i => { if(i.name && i.name.includes('جامبو')) resJumbo += Number(i.quantity); });
-                    }
-                });
-
-                document.getElementById('dash-sales').innerText = todaySales + " ج";
-                document.getElementById('dash-pending').innerText = pending;
-                
-                // تحديث جرد الفريزر
-                document.getElementById('inv-jumbo-res').innerText = resJumbo;
-                let leftJumbo = 50 - resJumbo; // افتراض المخزون الكلي 50
-                let leftEl = document.getElementById('inv-jumbo-left');
-                leftEl.innerText = leftJumbo;
-                leftEl.className = leftJumbo < 10 ? "text-3xl font-black text-red-600 animate-pulse" : "text-3xl font-black text-brand-primary";
-
-                // تحديث التنبيهات
-                updateAlerts(leftJumbo);
-            });
-
-            // ب. سحب العملاء (جدول + إحصائيات)
-            db.collection('customers').orderBy('lastOrderDate', 'desc').onSnapshot(snap => {
-                document.getElementById('dash-customers').innerText = snap.size;
-                let lostCount = 0;
-                let tbody = '';
-                
-                snap.forEach(doc => {
-                    const c = doc.data();
-                    let tags = c.tags || [];
-                    if(tags.includes('مفقود')) lostCount++;
-
-                    let tagHtml = tags.map(t => {
-                        let cls = t==='VIP'?'bg-yellow-100 text-yellow-700':(t==='مفقود'?'bg-red-100 text-red-700':'bg-blue-100 text-blue-700');
-                        return `<span class="${cls} px-2 py-0.5 rounded text-[10px] font-black mr-1">${t}</span>`;
-                    }).join('');
-
-                    // خزن الداتا في Data Attributes عشان البحث والفتح السريع
-                    tbody += `
-                    <tr class="hover:bg-slate-50 border-b border-slate-50 transition-colors customer-row" data-name="${c.name}" data-phone="${c.phone}">
-                        <td class="py-3 px-5"><div class="font-black text-slate-800">${c.name}</div><div class="text-xs text-slate-500" dir="ltr">${c.phone}</div></td>
-                        <td class="py-3 px-5 text-center font-black">${c.ordersCount || 0}</td>
-                        <td class="py-3 px-5 text-center font-black text-brand-primary">${c.totalSpent || 0} ج</td>
-                        <td class="py-3 px-5">${tagHtml}</td>
-                        <td class="py-3 px-5 text-center">
-                            <button onclick="openCustomer('${c.name}', '${c.phone}', ${c.totalSpent}, ${c.ordersCount})" class="text-brand-primary hover:bg-teal-50 p-2 rounded-lg"><i class="fa-solid fa-folder-open"></i></button>
-                        </td>
-                    </tr>`;
-                });
-                
-                document.getElementById('dash-lost').innerText = lostCount;
-                document.getElementById('customers-table-body').innerHTML = tbody;
-            });
-        }
-
-        // 5. ميزة البحث الذكي المباشر (Smart Search)
-        function filterCustomers() {
-            let input = document.getElementById('search-customer').value.toLowerCase();
-            let rows = document.querySelectorAll('.customer-row');
-            rows.forEach(row => {
-                let name = row.getAttribute('data-name').toLowerCase();
-                let phone = row.getAttribute('data-phone');
-                if(name.includes(input) || phone.includes(input)) {
-                    row.style.display = "";
-                } else {
-                    row.style.display = "none";
-                }
-            });
-        }
-
-        // 6. فتح ملف العميل والتواصل
-        window.openCustomer = (name, phone, spent, orders) => {
-            document.getElementById('modal-name').innerText = name;
-            document.getElementById('modal-phone').innerText = phone;
-            document.getElementById('modal-ltv').innerText = spent + " ج";
-            document.getElementById('modal-orders').innerText = orders;
-            
-            let msg = encodeURIComponent(`يا هلا أستاذ ${name}، معاكم سمان ههيا.. حابين نطمن على ذوقك في آخر طلب؟`);
-            document.getElementById('modal-whatsapp').href = `https://wa.me/${phone.startsWith('0')?'2'+phone:phone}?text=${msg}`;
-            
-            document.getElementById('customer-modal').classList.remove('hidden');
-        };
-
-        // 7. نظام التنبيهات الذكية
-        function updateAlerts(jumboStock) {
-            let alertsHtml = '';
-            if (jumboStock < 10) {
-                alertsHtml += `<div class="p-3 bg-red-50 border border-red-100 rounded-xl flex gap-3 items-start"><i class="fa-solid fa-triangle-exclamation text-red-500 mt-1"></i><div><h4 class="text-sm font-bold text-slate-800">مخزون الجامبو بخطر!</h4><p class="text-xs text-slate-500">المتبقي ${jumboStock} أطباق فقط.</p></div></div>`;
-            } else {
-                alertsHtml = `<p class="text-sm text-green-600 font-bold"><i class="fa-solid fa-check-circle"></i> جميع العمليات مستقرة حالياً.</p>`;
-            }
-            document.getElementById('alerts-container').innerHTML = alertsHtml;
-        }
     </script>
 </body>
 </html>
