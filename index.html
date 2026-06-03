@@ -95,10 +95,45 @@
             <!-- الشاشات -->
             <div class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 relative">
                 <!-- شاشة الرئيسية -->
-                <div id="view-dashboard" class="crm-view h-full flex items-center justify-center flex-col text-gray-400">
-                    <i class="fa-solid fa-hammer text-4xl mb-3 text-gray-300"></i>
-                    <p class="font-bold">جاري بناء لوحة الإحصائيات (المرحلة القادمة)...</p>
-                </div>
+<!-- استبدل اللي جوه view-dashboard بده -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- كارت مبيعات اليوم -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="text-gray-400 font-bold text-sm mb-1">مبيعات اليوم</div>
+        <div id="stat-today-sales" class="text-2xl font-black text-brand-cyanDark">0 ج</div>
+    </div>
+    <!-- كارت طلبات اليوم -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="text-gray-400 font-bold text-sm mb-1">طلبات اليوم</div>
+        <div id="stat-today-orders" class="text-2xl font-black text-brand-navy">0</div>
+    </div>
+    <!-- كارت الطلبات المعلقة -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="text-gray-400 font-bold text-sm mb-1">قيد التجهيز</div>
+        <div id="stat-pending-orders" class="text-2xl font-black text-yellow-500">0</div>
+    </div>
+    <!-- كارت العملاء المفقودين -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="text-gray-400 font-bold text-sm mb-1">عملاء مفقودين</div>
+        <div id="stat-lost-customers" class="text-2xl font-black text-red-500">0</div>
+    </div>
+</div>
+
+<!-- جزء المخزون الذكي في الـ Dashboard -->
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <h3 class="font-black text-brand-navy mb-4"><i class="fa-solid fa-snowflake text-brand-cyanDark mr-2"></i> مراقبة المخزون الفعلي (جامبو)</h3>
+    <div class="flex gap-8">
+        <div>
+            <div class="text-gray-400 text-xs font-bold">المحجوز حالياً</div>
+            <div id="reserved-jumbo" class="text-xl font-black">0</div>
+        </div>
+        <div class="border-r border-gray-100 px-8">
+            <div class="text-gray-400 text-xs font-bold">المتبقي الحقيقي</div>
+            <div id="real-left-jumbo" class="text-xl font-black">0</div>
+        </div>
+    </div>
+</div>
+
                 <!-- شاشة العملاء -->
                 <div id="view-customers" class="crm-view hidden h-full flex items-center justify-center flex-col text-gray-400">
                     <i class="fa-solid fa-users-gear text-4xl mb-3 text-gray-300"></i>
