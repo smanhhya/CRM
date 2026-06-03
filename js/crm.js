@@ -283,7 +283,4 @@ window.setupCRMDatabase = async () => {
 };
 
 // وظيفة مؤقتة عشان لو ضغطت على العميل ميعملش خطأ لحد ما نبرمج شاشة البروفايل كاملة
-window.openCustomerProfile = (phone) => {
-    console.log("سيتم فتح ملف العميل رقم:", phone);
-    // هنبني دي في الخطوة الجاية
-};
+openCustomerProfile
