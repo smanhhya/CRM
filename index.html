@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سمان ههيا | التحكم المركزي (ERP)</title>
+    <title>سمان ههيا | الخزنة والإدارة (CRM)</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -31,12 +31,12 @@
         body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; overflow: hidden; }
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-        .page-view { display: none; animation: fadeIn 0.3s ease; }
+        .page-view { display: none; animation: fadeIn 0.4s ease; }
         .page-view.active { display: flex; flex-direction: column; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (max-width: 768px) { #sidebar { transform: translateX(100%); } #sidebar.open { transform: translateX(0); } }
-        .kanban-card { transition: all 0.2s; border-right-width: 4px; }
+        .kanban-card { transition: all 0.2s; border-right-width: 4px; cursor: pointer; }
         .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
@@ -50,7 +50,7 @@
                 <i class="fa-solid fa-feather text-4xl text-brand-primary"></i>
             </div>
             <h1 class="text-2xl font-black mb-1 text-slate-800">سمان ههيا</h1>
-            <p class="text-sm text-slate-500 font-bold mb-6">النظام الإداري المتكامل (ERP)</p>
+            <p class="text-sm text-slate-500 font-bold mb-6">الخزنة والإدارة المركزية (CRM)</p>
             <input type="email" id="login-email" class="w-full border-2 border-slate-200 rounded-xl p-3 mb-3 text-left outline-none focus:border-brand-primary font-bold" dir="ltr" placeholder="admin@example.com">
             <input type="password" id="login-password" class="w-full border-2 border-slate-200 rounded-xl p-3 mb-4 text-left outline-none focus:border-brand-primary font-bold" dir="ltr" placeholder="••••••••">
             <button onclick="loginApp()" id="login-btn" class="w-full bg-brand-primary hover:bg-teal-700 text-white font-black py-3 rounded-xl transition-all shadow-md flex justify-center items-center gap-2">تسجيل الدخول</button>
@@ -58,8 +58,10 @@
         </div>
     </div>
 
-    <!-- 📱 القائمة الجانبية -->
+    <!-- Mobile Overlay -->
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-30 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <!-- 📱 القائمة الجانبية -->
     <aside id="sidebar" class="w-64 bg-brand-dark text-slate-300 flex flex-col shadow-2xl z-40 fixed inset-y-0 right-0 md:relative h-full border-l border-slate-800">
         <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800 bg-slate-900">
             <div class="flex items-center gap-3"><div class="w-8 h-8 rounded bg-brand-primary text-white flex items-center justify-center font-black text-xl">س</div><h1 class="text-lg font-black text-white">سمان ههيا</h1></div>
@@ -67,12 +69,12 @@
         </div>
         <nav class="flex-1 overflow-y-auto custom-scroll py-4 px-3 space-y-0.5">
             <button onclick="switchTab('dashboard', this)" class="nav-btn active w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold bg-brand-primary text-white shadow-md mb-2"><i class="fa-solid fa-house w-6 text-center"></i> الرئيسية</button>
-            <div class="pt-3 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">التشغيل والمبيعات</div>
+            <div class="pt-3 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">المبيعات والسجلات</div>
             <button onclick="switchTab('orders', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-box-open w-6 text-center"></i> الطلبات الحية</button>
-            <button onclick="switchTab('customers', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-users w-6 text-center"></i> سجل العملاء (CRM)</button>
-            <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-snowflake w-6 text-center text-blue-400"></i> إدارة المنتجات والمخزون</button>
-            <div class="pt-4 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">إدارة النظام والموقع</div>
-            <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gears w-6 text-center text-orange-400"></i> إعدادات المتجر</button>
+            <button onclick="switchTab('customers', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-users w-6 text-center"></i> أرشيف العملاء (CRM)</button>
+            <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-snowflake w-6 text-center text-blue-400"></i> المخزون والمنتجات</button>
+            <div class="pt-4 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">التحكم في المتجر</div>
+            <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gears w-6 text-center text-orange-400"></i> إعدادات التوصيل والمناديب</button>
         </nav>
         <div class="p-4 border-t border-slate-800 bg-slate-900">
             <button onclick="auth.signOut()" class="text-red-400 hover:text-red-300 transition-colors flex items-center gap-2 text-sm font-bold w-full justify-center py-2"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</button>
@@ -87,7 +89,7 @@
                 <h2 id="header-title" class="text-xl font-black text-slate-800">الرئيسية</h2>
             </div>
             <div class="flex items-center gap-3">
-                <span class="hidden lg:flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-wifi text-[10px]"></i> متصل لايف بالمتجر</span>
+                <span class="hidden md:flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-cloud text-[10px]"></i> متصل بقاعدة البيانات</span>
                 <button onclick="saveStoreData()" id="global-save-btn" class="bg-brand-dark hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 border border-slate-700 hidden"><i class="fa-solid fa-cloud-arrow-up text-brand-primary"></i> حفظ التعديلات</button>
                 <button onclick="openModal('add-order-modal')" class="bg-brand-primary hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> <span class="hidden md:inline">إنشاء طلب</span></button>
             </div>
@@ -105,7 +107,7 @@
                 </div>
             </div>
 
-            <!-- ======================= 2. إدارة الطلبات (Kanban) الصورة الحية ======================= -->
+            <!-- ======================= 2. إدارة الطلبات (Kanban) ======================= -->
             <div id="view-orders" class="page-view h-full flex flex-col">
                 <div class="flex justify-between items-center mb-4">
                     <input type="text" id="search-order" onkeyup="filterOrders()" placeholder="بحث برقم أو اسم العميل..." class="w-full md:w-64 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:border-brand-primary shadow-sm">
@@ -122,12 +124,12 @@
                 </div>
             </div>
 
-            <!-- ======================= 3. العملاء (CRM) ======================= -->
+            <!-- ======================= 3. العملاء (CRM & تيك تيك أرشيف) ======================= -->
             <div id="view-customers" class="page-view h-full flex flex-col">
                 <div class="flex flex-col md:flex-row justify-between gap-3 mb-4">
                     <div class="relative w-full md:w-96">
-                        <i class="fa-solid fa-search absolute right-4 top-3 text-slate-400"></i>
-                        <input type="text" id="search-customer" onkeyup="filterCustomers()" placeholder="بحث بالاسم أو الهاتف (بحث ذكي في كل العملاء)..." class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm font-bold bg-white shadow-sm focus:border-brand-primary">
+                        <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
+                        <input type="text" id="search-customer" onkeyup="filterCustomers()" placeholder="بحث بالاسم أو الهاتف (بحث في الأرشيف)..." class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm font-bold bg-white shadow-sm focus:border-brand-primary">
                     </div>
                 </div>
                 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
@@ -138,7 +140,7 @@
                                     <th class="py-3 px-5 font-bold">العميل</th>
                                     <th class="py-3 px-5 font-bold text-center">عدد الطلبات</th>
                                     <th class="py-3 px-5 font-bold text-center">إجمالي الإنفاق</th>
-                                    <th class="py-3 px-5 font-bold text-center">إجراءات سريعة</th>
+                                    <th class="py-3 px-5 font-bold text-center">سجل وتاريخ العميل</th>
                                 </tr>
                             </thead>
                             <tbody id="customers-tbody" class="divide-y divide-slate-100"></tbody>
@@ -152,7 +154,7 @@
                 <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-boxes-packing text-blue-500 mr-2"></i> إدارة منتجات المتجر</h3>
-                        <p class="text-xs text-slate-500 mt-1">أي تعديل هنا سيتم تطبيقه على تطبيق العملاء مباشرة بعد الضغط على "حفظ التعديلات".</p>
+                        <p class="text-xs text-slate-500 mt-1">أي تعديل هنا يتم حفظه في الذاكرة، ويطبق على الموقع عند الضغط على "حفظ التعديلات".</p>
                     </div>
                     <button onclick="addNewProductUI()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> منتج جديد</button>
                 </div>
@@ -200,7 +202,7 @@
 
     <!-- ======================= Modals (النوافذ المنبثقة) ======================= -->
 
-    <!-- نافذة الإرسال للمناديب (Dispatch) -->
+    <!-- نافذة الإرسال للمناديب -->
     <div id="dispatch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
@@ -220,44 +222,6 @@
             </div>
             <div class="p-4 border-t border-slate-200 bg-white shrink-0">
                 <button onclick="sendOrdersToDriver()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"><i class="fa-brands fa-whatsapp text-xl"></i> إرسال عبر واتساب</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- نافذة إضافة / تعديل طلب -->
-    <div id="edit-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out] flex flex-col max-h-[95vh]">
-            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
-                <h3 id="eo-modal-title" class="text-lg font-black text-slate-800"><i class="fa-solid fa-pen-to-square text-brand-primary mr-2"></i> تعديل الطلب</h3>
-                <button onclick="closeModal('edit-order-modal')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <div class="p-5 overflow-y-auto custom-scroll space-y-4 flex-1">
-                <input type="hidden" id="eo-id">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="text-xs font-bold text-slate-500 block mb-1">رقم هاتف العميل</label><input type="tel" id="eo-phone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none font-bold bg-slate-50 text-slate-500" dir="ltr" disabled></div>
-                    <div><label class="text-xs font-bold text-slate-500 block mb-1">اسم العميل</label><input type="text" id="eo-name" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
-                </div>
-                <div><label class="text-xs font-bold text-slate-500 block mb-1">المنطقة</label><input type="text" id="eo-zone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
-                
-                <div class="border-t border-slate-100 pt-3">
-                    <label class="text-xs font-black text-slate-800 block mb-2">الأصناف (الكمية)</label>
-                    <div class="grid grid-cols-3 gap-2">
-                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">جامبو</span><input type="number" id="eo-q-jumbo" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
-                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">اسبيشيال</span><input type="number" id="eo-q-special" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
-                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">رويال</span><input type="number" id="eo-q-royal" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 border-t border-slate-100 pt-3">
-                    <div><label class="text-xs font-bold text-slate-500 block mb-1">ملاحظات للمندوب أو للإدارة</label><textarea id="eo-notes" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary text-sm font-bold text-blue-700 bg-blue-50" rows="2" placeholder="تعديل في الأوردر..."></textarea></div>
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 block mb-1">الإجمالي النهائي المطلوب</label>
-                        <input type="number" id="eo-total" class="w-full border-2 border-brand-primary bg-teal-50 rounded-xl p-3 outline-none font-black text-brand-primary text-2xl text-center" placeholder="0">
-                    </div>
-                </div>
-            </div>
-            <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0 flex gap-3">
-                <button onclick="saveEditedOrder()" id="btn-save-edit" class="flex-1 bg-brand-primary hover:bg-teal-700 text-white font-black py-3 rounded-xl transition-all shadow-md">حفظ التعديلات</button>
             </div>
         </div>
     </div>
@@ -325,7 +289,7 @@
 
                 <!-- ملاحظات العميل الدائمة (مكان داتا تيك تيك القديمة) -->
                 <div class="mb-5 bg-yellow-50 border border-yellow-200 rounded-xl p-4 shadow-sm relative">
-                    <h4 class="text-xs font-black text-yellow-800 mb-2 flex items-center gap-1"><i class="fa-solid fa-thumbtack text-yellow-600"></i> ملاحظات العميل الدائمة (أرشيف تيك تيك)</h4>
+                    <h4 class="text-xs font-black text-yellow-800 mb-2 flex items-center gap-1"><i class="fa-solid fa-thumbtack text-yellow-600"></i> ملاحظات العميل الدائمة (أرشيف تيك تيك وأي داتا سابقة)</h4>
                     <textarea id="cm-permanent-notes" class="w-full bg-white border border-yellow-300 rounded-lg p-3 text-xs font-bold outline-none h-24 focus:border-yellow-500 text-slate-700 leading-relaxed" placeholder="أضف هنا أي معلومات، تفضيلات، شكاوى سابقة، أو تفاصيل من الأرشيف القديم..."></textarea>
                     <button onclick="savePermanentNotes()" class="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-colors">حفظ الملاحظات الدائمة</button>
                 </div>
@@ -432,7 +396,7 @@
                         let itemsStr = o.items ? o.items.map(i => `${i.quantity}x ${i.name}`).join('، ') : 'بدون تفاصيل';
                         let borderColor = stat==='new'?'border-slate-400':(stat==='preparing'?'border-yellow-400':(stat==='ready'?'border-orange-400':(stat==='shipping'?'border-blue-400':(stat==='delivered'?'border-green-500':'border-red-500'))));
                         
-                        // إضافة أزرار التحكم (تعديل - إلغاء) داخل الكارت
+                        // كارت الكانبان مع الأزرار
                         cols[stat] += `
                         <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 border-r-4 ${borderColor} kanban-card relative order-card" data-search="${o.customerName} ${o.customerPhone}">
                             <div class="flex justify-between"><h5 class="font-bold text-sm text-slate-800 truncate">${o.customerName || 'بدون اسم'}</h5><span class="text-[10px] text-slate-400">${orderDateObj.toLocaleDateString()}</span></div>
@@ -440,8 +404,7 @@
                             ${o.notes || o.adminNote ? `<div class="text-[10px] font-bold text-blue-700 bg-blue-50 p-1.5 rounded mb-2 border border-blue-100 shadow-sm"><i class="fa-solid fa-pen-to-square"></i> ${o.adminNote || o.notes}</div>` : ''}
                             
                             <div class="flex justify-between items-center mt-2 border-t border-slate-100 pt-2 gap-2">
-                                <!-- أزرار التحكم الجديدة -->
-                                <button onclick="openEditOrder('${id}')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1.5 rounded font-bold transition-colors shadow-sm" title="تعديل الطلب"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="addOrderNote('${id}')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1.5 rounded font-bold transition-colors shadow-sm" title="ملاحظة"><i class="fa-solid fa-pen"></i></button>
                                 
                                 <span class="font-black text-brand-primary text-sm flex-1 text-center">${o.total || 0} ج</span>
                                 
@@ -469,12 +432,12 @@
                 });
             });
 
-            // 3. سحب العملاء (بترتيب مرن لضمان جلب كل البيانات المرفوعة)
+            // 3. سحب العملاء (بترتيب مرن لضمان جلب كل البيانات المرفوعة من تيك تيك)
             db.collection('customers').onSnapshot(snap => {
                 document.getElementById('dash-customers').innerText = snap.size;
                 customersData = [];
                 snap.forEach(doc => { customersData.push(doc.data()); });
-                customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0)); // ترتيب محلي بالذاكرة
+                customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0)); // ترتيب محلي
                 
                 let tbody = '';
                 customersData.forEach(c => {
@@ -499,67 +462,22 @@
             document.querySelectorAll('.customer-row').forEach(row => { row.style.display = row.getAttribute('data-search').toLowerCase().includes(filter) ? '' : 'none'; });
         }
 
-        // --- تعديل حالة الطلب السريعة من القائمة ---
+        // --- تعديل حالة الطلب السريعة أو إضافة ملاحظة ---
         window.updateOrderStatus = async (id, s) => { 
             if(s === 'canceled' && !confirm('تأكيد: هل أنت متأكد من إلغاء هذا الطلب؟')) return;
             try { await db.collection('orders').doc(id).update({ status: s }); } catch(e) { alert("حدث خطأ أثناء التحديث"); }
         };
 
-        // --- فتح شاشة التعديل للطلب الحي ---
-        window.openEditOrder = (id) => {
+        window.addOrderNote = async (id) => {
             let o = allOrdersRaw.find(x => x.id === id); if(!o) return;
-            
-            document.getElementById('eo-id').value = id;
-            document.getElementById('eo-phone').value = o.customerPhone;
-            document.getElementById('eo-name').value = o.customerName;
-            document.getElementById('eo-zone').value = o.zone;
-            
-            let qJ = 0, qS = 0, qR = 0;
-            if(o.items) {
-                o.items.forEach(i => {
-                    if(i.name.includes('جامبو')) qJ = i.quantity;
-                    if(i.name.includes('اسبيشيال') || i.name.includes('متميز')) qS = i.quantity;
-                    if(i.name.includes('رويال')) qR = i.quantity;
-                });
-            }
-            
-            document.getElementById('eo-q-jumbo').value = qJ;
-            document.getElementById('eo-q-special').value = qS;
-            document.getElementById('eo-q-royal').value = qR;
-            document.getElementById('eo-notes').value = o.adminNote || o.notes || '';
-            document.getElementById('eo-total').value = o.total;
-
-            openModal('edit-order-modal');
-        };
-
-        // --- حفظ تعديلات الطلب ---
-        window.saveEditedOrder = async () => {
-            let id = document.getElementById('eo-id').value;
-            let name = document.getElementById('eo-name').value.trim();
-            let zone = document.getElementById('eo-zone').value.trim();
-            let total = Number(document.getElementById('eo-total').value) || 0;
-            let notes = document.getElementById('eo-notes').value.trim();
-            let qJ = Number(document.getElementById('eo-q-jumbo').value)||0, qS = Number(document.getElementById('eo-q-special').value)||0, qR = Number(document.getElementById('eo-q-royal').value)||0;
-
-            if(!id) return;
-            let items = [];
-            if(qJ > 0) items.push({name: 'سمان جامبو', quantity: qJ}); if(qS > 0) items.push({name: 'سمان اسبيشيال', quantity: qS}); if(qR > 0) items.push({name: 'سمان رويال', quantity: qR});
-            
-            let btn = document.getElementById('btn-save-edit'); btn.innerText = "جاري الحفظ..."; btn.disabled = true;
-
-            try {
-                await db.collection('orders').doc(id).update({
-                    customerName: name, zone: zone, total: total, items: items, adminNote: notes
-                });
-                closeModal('edit-order-modal');
-                btn.innerText = "حفظ التعديلات"; btn.disabled = false;
-            } catch (error) {
-                alert("حدث خطأ أثناء تعديل الطلب.");
-                btn.innerText = "حفظ التعديلات"; btn.disabled = false;
+            let note = prompt("اكتب ملاحظتك للطلب (مثل: تأجيل لغداً، تعديل الصنف، شكوى..):", o.adminNote || "");
+            if (note !== null) {
+                try { await db.collection('orders').doc(id).update({ adminNote: note.trim() }); } 
+                catch(e) { alert("حدث خطأ أثناء الحفظ!"); }
             }
         };
 
-        // --- سجل العميل (الملاحظات والبيانات القديمة) ---
+        // --- سجل العميل (الملاحظات الدائمة والبيانات القديمة) ---
         window.openCustomerCard = async (phone) => {
             let c = customersData.find(x => x.phone === phone); if(!c) return;
             document.getElementById('cm-name').innerText = c.name || 'غير مسجل'; document.getElementById('cm-phone').innerText = c.phone || '';
@@ -567,7 +485,7 @@
             document.getElementById('cm-btn-wa').href = `https://wa.me/${(c.phone||'').startsWith('0')?'2'+c.phone:c.phone}`;
             document.getElementById('cm-btn-call').href = `tel:${c.phone}`;
 
-            // الملاحظات الدائمة (ميزة الأرشيف)
+            // الملاحظات الدائمة (ميزة الأرشيف وتيك تيك)
             document.getElementById('cm-permanent-notes').value = c.adminNotes || '';
 
             let hDiv = document.getElementById('cm-history-list');
@@ -578,7 +496,7 @@
                 if(snap.empty) { hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 border-2 border-dashed rounded-xl">لا يوجد سجل طلبات مسجل لهذا العميل.</p>'; }
                 else {
                     let orders = []; snap.forEach(d => orders.push(d.data()));
-                    // ترتيب محلي
+                    // ترتيب محلي عشان الأوردرات تظهر مظبوطة
                     orders.sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
                     
                     let h = '';
@@ -606,7 +524,7 @@
             openModal('customer-modal');
         };
 
-        // --- حفظ الملاحظات الدائمة للعميل ---
+        // --- حفظ الملاحظات الدائمة للعميل (أرشيف تيك تيك) ---
         window.savePermanentNotes = async () => {
             let phone = document.getElementById('cm-phone').innerText;
             let notes = document.getElementById('cm-permanent-notes').value.trim();
@@ -628,9 +546,9 @@
                 <div class="bg-white p-4 rounded-xl border border-slate-200 flex gap-4 items-center">
                     <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div><label class="text-[10px] font-bold text-slate-500 block mb-1">معرف (ID)</label><input type="text" value="${id}" disabled class="w-full bg-slate-50 border rounded p-2 text-xs font-bold text-slate-400"></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">اسم المنتج</label><input type="text" id="p-name-${id}" value="${p.name}" class="w-full border rounded p-2 text-xs font-bold text-slate-800 outline-none focus:border-brand-primary"></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">السعر (ج)</label><input type="number" id="p-price-${id}" value="${price}" class="w-full border rounded p-2 text-xs font-bold text-brand-primary outline-none"></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">المخزون المتاح</label><input type="number" id="p-stock-${id}" value="${stock}" class="w-full border rounded p-2 text-xs font-bold text-slate-800 outline-none"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">اسم المنتج</label><input type="text" value="${p.name}" onchange="storeProducts['${id}'].name = this.value" class="w-full border rounded p-2 text-xs font-bold text-slate-800 outline-none focus:border-brand-primary"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">السعر (ج)</label><input type="number" value="${price}" onchange="storePrices['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-2 text-xs font-bold text-brand-primary outline-none"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">المخزون المتاح</label><input type="number" value="${stock}" onchange="storeStock['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-2 text-xs font-bold text-slate-800 outline-none"></div>
                     </div>
                     <button onclick="deleteProductUI('${id}')" class="w-10 h-10 bg-red-50 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-colors"><i class="fa-solid fa-trash"></i></button>
                 </div>`;
@@ -642,82 +560,52 @@
         // --- 5. الإعدادات ---
         function renderSettingsUI() {
             document.getElementById('st-name').value = storeSettings.storeName || ''; document.getElementById('st-phone').value = storeSettings.storePhone || ''; document.getElementById('st-min-order').value = storeSettings.minOrder || 0; document.getElementById('st-is-open').checked = storeSettings.storeOpen !== false;
+            
             const zCont = document.getElementById('zones-list-container');
-            if(zCont) { zCont.innerHTML = ''; (storeSettings.deliveryZones || []).forEach((z, i) => { zCont.innerHTML += `<div class="flex gap-2"><input type="text" id="z-name-${i}" value="${z.name}" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800"><input type="number" id="z-price-${i}" value="${z.price}" class="w-20 border rounded p-2 text-xs font-bold text-brand-primary"><button onclick="deleteZoneUI(${i})" class="w-8 bg-red-50 text-red-500 rounded hover:bg-red-500 hover:text-white"><i class="fa-solid fa-trash"></i></button></div>`; }); }
+            if(zCont) { zCont.innerHTML = ''; (storeSettings.deliveryZones || []).forEach((z, i) => { zCont.innerHTML += `<div class="flex gap-2"><input type="text" value="${z.name}" onchange="updateZoneField(${i}, 'name', this.value)" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800"><input type="number" value="${z.price}" onchange="updateZoneField(${i}, 'price', parseInt(this.value)||0)" class="w-20 border rounded p-2 text-xs font-bold text-brand-primary"><button onclick="deleteZoneUI(${i})" class="w-8 bg-red-50 text-red-500 rounded hover:bg-red-500 hover:text-white"><i class="fa-solid fa-trash"></i></button></div>`; }); }
+            
             const dCont = document.getElementById('drivers-list-container');
-            if(dCont) { dCont.innerHTML = ''; (storeSettings.drivers || []).forEach((d, i) => { dCont.innerHTML += `<div class="flex gap-2"><input type="text" id="d-name-${i}" value="${d.name}" placeholder="اسم المندوب" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800"><input type="text" id="d-phone-${i}" value="${d.phone}" placeholder="رقم الواتساب" class="w-32 border rounded p-2 text-xs font-bold text-slate-800" dir="ltr"><button onclick="deleteDriverUI(${i})" class="w-8 bg-red-50 text-red-500 rounded hover:bg-red-500 hover:text-white"><i class="fa-solid fa-trash"></i></button></div>`; }); }
+            if(dCont) { dCont.innerHTML = ''; (storeSettings.drivers || []).forEach((d, i) => { dCont.innerHTML += `<div class="flex gap-2"><input type="text" value="${d.name}" onchange="updateDriverField(${i}, 'name', this.value)" placeholder="اسم المندوب" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800"><input type="text" value="${d.phone}" onchange="updateDriverField(${i}, 'phone', this.value)" placeholder="رقم الواتساب" class="w-32 border rounded p-2 text-xs font-bold text-slate-800" dir="ltr"><button onclick="deleteDriverUI(${i})" class="w-8 bg-red-50 text-red-500 rounded hover:bg-red-500 hover:text-white"><i class="fa-solid fa-trash"></i></button></div>`; }); }
         }
+
+        window.updateZoneField = (idx, field, val) => { storeSettings.deliveryZones[idx][field] = val; };
+        window.updateDriverField = (idx, field, val) => { storeSettings.drivers[idx][field] = val; };
+        
         window.addNewZoneUI = () => { if(!storeSettings.deliveryZones) storeSettings.deliveryZones = []; storeSettings.deliveryZones.push({name:'', price:0}); renderSettingsUI(); }; window.deleteZoneUI = (idx) => { storeSettings.deliveryZones.splice(idx, 1); renderSettingsUI(); };
         window.addNewDriverUI = () => { if(!storeSettings.drivers) storeSettings.drivers = []; storeSettings.drivers.push({name:'', phone:''}); renderSettingsUI(); }; window.deleteDriverUI = (idx) => { storeSettings.drivers.splice(idx, 1); renderSettingsUI(); };
 
+        // --- دالة الحفظ الآمنة ---
         window.saveStoreData = async () => {
-    const btn = document.getElementById('global-save-btn');
-    const origHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; 
-    btn.disabled = true;
+            const btn = document.getElementById('global-save-btn'); const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; btn.disabled = true;
 
-    try {
-        // تحديث المنتجات فقط في الذاكرة من الشاشة المفتوحة
-        Object.keys(storeProducts).forEach(id => {
-            const nameEl = document.getElementById(`p-name-${id}`);
-            if(nameEl) {
-                storeProducts[id].name = nameEl.value;
-                storePrices[id] = parseInt(document.getElementById(`p-price-${id}`).value) || 0;
-                storeStock[id] = parseInt(document.getElementById(`p-stock-${id}`).value) || 0;
-            }
-        });
+            try {
+                // الفلترة السريعة لحذف الخانات الفاضية قبل الرفع
+                if(storeSettings.deliveryZones) storeSettings.deliveryZones = storeSettings.deliveryZones.filter(z => z.name.trim() !== '');
+                if(storeSettings.drivers) storeSettings.drivers = storeSettings.drivers.filter(d => d.name.trim() !== '' || d.phone.trim() !== '');
+                
+                if(document.getElementById('st-name')) {
+                    storeSettings.storeName = document.getElementById('st-name').value;
+                    storeSettings.storePhone = document.getElementById('st-phone').value;
+                    storeSettings.minOrder = parseInt(document.getElementById('st-min-order').value) || 0;
+                    storeSettings.storeOpen = document.getElementById('st-is-open').checked;
+                }
 
-        // تحديث إعدادات المتجر فقط لو الشاشة بتاعتها مفتوحة
-        if (document.getElementById('st-name')) {
-            storeSettings.storeName = document.getElementById('st-name').value;
-            storeSettings.storePhone = document.getElementById('st-phone').value;
-            storeSettings.minOrder = parseInt(document.getElementById('st-min-order').value) || 0;
-            storeSettings.storeOpen = document.getElementById('st-is-open').checked;
+                storeSettings.productsData = storeProducts;
+
+                // إرسال لـ Firebase باستخدام merge لمنع المسح
+                await Promise.all([
+                    db.collection("inventory").doc("settings").set(storeSettings, {merge: true}),
+                    db.collection("inventory").doc("stock").set(storeStock, {merge: true}),
+                    db.collection("inventory").doc("prices").set(storePrices, {merge: true})
+                ]);
+
+                alert('تم الحفظ بأمان تام وتحديث المتجر الخاص بالعملاء!');
+                renderSettingsUI();
+            } catch(e) { console.error(e); alert('حدث خطأ أثناء الحفظ!'); }
             
-            // قراءة المناطق والمناديب وتحديثهم في الذاكرة (لو الشاشة مفتوحة فقط)
-            let newZones = []; let newDrivers = [];
-            let zoneInputsExist = document.getElementById('z-name-0');
-            if (zoneInputsExist || storeSettings.deliveryZones.length === 0) {
-                (storeSettings.deliveryZones || []).forEach((_, i) => { 
-                    let n = document.getElementById(`z-name-${i}`); let p = document.getElementById(`z-price-${i}`); 
-                    if(n && n.value.trim() !== '') newZones.push({name: n.value.trim(), price: parseInt(p.value)||0}); 
-                });
-                storeSettings.deliveryZones = newZones;
-            }
-            
-            let driverInputsExist = document.getElementById('d-name-0');
-            if (driverInputsExist || storeSettings.drivers.length === 0) {
-                (storeSettings.drivers || []).forEach((_, i) => { 
-                    let n = document.getElementById(`d-name-${i}`); let p = document.getElementById(`d-phone-${i}`); 
-                    if(n && n.value.trim() !== '') newDrivers.push({name: n.value.trim(), phone: p.value.trim()}); 
-                });
-                storeSettings.drivers = newDrivers;
-            }
-        }
-        
-        storeSettings.productsData = storeProducts;
-
-        // رفع البيانات بشكل آمن باستخدام merge عشان ميمسحش داتا قديمة
-        await Promise.all([
-            db.collection("inventory").doc("settings").set(storeSettings, {merge: true}),
-            db.collection("inventory").doc("stock").set(storeStock, {merge: true}),
-            db.collection("inventory").doc("prices").set(storePrices, {merge: true})
-        ]);
-
-        alert('تم الحفظ بأمان!');
-    } catch(e) { 
-        console.error(e); 
-        alert('حدث خطأ أثناء الحفظ!'); 
-    }
-    
-    btn.innerHTML = origHtml; 
-    btn.disabled = false;
-};
-
-// ضيف الدوال دي عشان تحديث البيانات يحصل في نفس اللحظة اللي بتكتب فيها (عشان ميضيعش)
-window.updateZoneField = (idx, field, val) => { storeSettings.deliveryZones[idx][field] = val; };
-window.updateDriverField = (idx, field, val) => { storeSettings.drivers[idx][field] = val; };
-
+            btn.innerHTML = origHtml; btn.disabled = false;
+        };
 
         // --- إضافة طلب يدوي ---
         window.calcTotal = () => { document.getElementById('no-total').value = (Number(document.getElementById('no-price').value) || 0) + (Number(document.getElementById('no-delivery').value) || 0) - (Number(document.getElementById('no-discount').value) || 0); }
