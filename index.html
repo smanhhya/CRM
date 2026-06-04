@@ -45,7 +45,25 @@
     <div id="loading-screen" class="absolute inset-0 bg-brand-dark z-[100] flex flex-col items-center justify-center transition-opacity duration-500">
         <div class="loader mb-4"></div>
         <h1 class="text-2xl font-black text-white mb-1">سمان ههيا</h1>
-        <p class="text-sm text-slate-400 font-bold" id="loading-text">جاري الاتصال بقاعدة البيانات...</p>
+        <p class="text-sm text-slate-400 font-bold" id="loading-text">جاري التحقق من الهوية...</p>
+    </div>
+
+    <div id="login-screen" class="absolute inset-0 bg-slate-900 z-[90] flex flex-col items-center justify-center hidden backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-[90%] max-w-md text-center animate-[fadeIn_0.3s_ease-out]">
+            <div class="w-16 h-16 bg-brand-primary text-white rounded-2xl flex items-center justify-center text-3xl font-black mx-auto mb-4 shadow-lg"><i class="fa-solid fa-user-shield"></i></div>
+            <h2 class="text-2xl font-black text-slate-800 mb-2">تسجيل الدخول للإدارة</h2>
+            <p class="text-sm text-slate-500 font-bold mb-6">يرجى إدخال بياناتك للوصول إلى النظام</p>
+            
+            <div class="text-left mb-4">
+                <input type="email" id="login-email" placeholder="البريد الإلكتروني" class="w-full border-2 border-slate-200 rounded-xl p-3 font-bold outline-none focus:border-brand-primary transition-colors" dir="ltr">
+            </div>
+            <div class="text-left mb-6">
+                <input type="password" id="login-password" placeholder="كلمة المرور" class="w-full border-2 border-slate-200 rounded-xl p-3 font-bold outline-none focus:border-brand-primary transition-colors" dir="ltr">
+            </div>
+            
+            <button onclick="window.loginToERP()" id="btn-login" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md text-lg">دخول للوحة التحكم</button>
+            <p id="login-error" class="text-red-500 text-sm font-bold mt-4 hidden bg-red-50 p-2 rounded-lg border border-red-100"></p>
+        </div>
     </div>
 
     <div id="mobile-overlay" onclick="window.toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-30 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
@@ -367,10 +385,10 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        // التعديل هنا: استيراد دالة تسجيل الدخول بالإيميل والباسورد
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // تم إضافة بياناتك الحقيقية هنا بنجاح
         const firebaseConfig = {
             apiKey: "AIzaSyD7ZJP8n8fhMewPfEsTBANn0h9To_q15BY",
             authDomain: "sman-ca8f8.firebaseapp.com",
@@ -381,7 +399,7 @@
             measurementId: "G-S6GETQ0K81"
         };
         
-        const appId = 'sman-erp'; // معرف النظام للتخزين الداخلي
+        const appId = 'sman-erp';
         let app, auth, db, currentUser;
 
         if(firebaseConfig.apiKey && firebaseConfig.apiKey !== "") {
@@ -389,34 +407,37 @@
             auth = getAuth(app);
             db = getFirestore(app);
             
-            const initAuth = async () => {
-                try {
-                    await signInAnonymously(auth);
-                } catch(e) { console.error("Auth Error", e); }
-            };
-            initAuth();
-            
+            // التعديل هنا: مراقبة حالة تسجيل الدخول للتحكم في عرض الشاشات
             onAuthStateChanged(auth, (user) => {
+                document.getElementById('loading-screen').classList.add('hidden');
                 if(user) {
                     currentUser = user;
-                    document.getElementById('loading-screen').style.opacity = '0';
-                    setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
+                    document.getElementById('login-screen').classList.add('hidden');
                     startERP();
+                } else {
+                    document.getElementById('login-screen').classList.remove('hidden');
                 }
             });
-        } else {
-            // كود إضافي لإخفاء شاشة التحميل في حالة عدم وجود إعدادات (للتجربة وفتح الواجهة فقط)
-            document.getElementById('loading-text').innerText = "تنبيه: يعمل بدون قاعدة بيانات...";
-            setTimeout(() => {
-                document.getElementById('loading-screen').style.opacity = '0';
-                setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
-                alert("واجهة النظام تعمل الآن للتجربة ومعاينة التصميم. لتفعيل حفظ البيانات واسترجاعها، يرجى إضافة مفاتيح مشروع Firebase الخاص بك في الكود.");
-                
-                // ملء بعض البيانات الوهمية لتجنب الأخطاء في وضع التجربة
-                document.getElementById('dash-batches-list').innerHTML = '<p class="text-xs text-slate-400 text-center font-bold">لا توجد دفعات (وضع التجربة)</p>';
-                document.getElementById('dash-recent-orders').innerHTML = '<p class="text-xs text-slate-400 text-center font-bold">لا يوجد طلبات (وضع التجربة)</p>';
-            }, 1500);
         }
+
+        // دالة تسجيل الدخول الخاصة بالزرار
+        window.loginToERP = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-password').value;
+            const btn = document.getElementById('btn-login');
+            const err = document.getElementById('login-error');
+
+            if(!email || !pass) { err.innerText = "يرجى إدخال البريد الإلكتروني وكلمة المرور"; err.classList.remove('hidden'); return; }
+
+            btn.innerText = "جاري الدخول..."; btn.disabled = true; err.classList.add('hidden');
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+            } catch(e) {
+                err.innerText = "بيانات الدخول غير صحيحة، تأكد من الإيميل والباسورد!";
+                err.classList.remove('hidden');
+                btn.innerText = "دخول للوحة التحكم"; btn.disabled = false;
+            }
+        };
 
         const getColPath = (col) => `artifacts/${appId}/users/${currentUser.uid}/${col}`;
         const getDocPath = (col, dId) => `artifacts/${appId}/users/${currentUser.uid}/${col}/${dId}`;
