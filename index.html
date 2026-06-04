@@ -370,25 +370,28 @@
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const fbConfigStr = typeof __firebase_config !== 'undefined' ? __firebase_config : "{}";
-        let firebaseConfig;
-        try { firebaseConfig = JSON.parse(fbConfigStr); } catch(e) { firebaseConfig = {}; }
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'sman-erp';
+        // --- تم التعديل هنا لحل مشكلة شاشة التحميل ---
+        // ضع إعدادات مشروعك من فايربيز هنا ليعمل النظام بشكل كامل (احصل عليها من Firebase Console)
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
         
+        const appId = 'sman-erp';
         let app, auth, db, currentUser;
 
-        if(Object.keys(firebaseConfig).length > 0) {
+        if(firebaseConfig.apiKey && firebaseConfig.apiKey !== "") {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
             db = getFirestore(app);
             
             const initAuth = async () => {
                 try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
+                    await signInAnonymously(auth);
                 } catch(e) { console.error("Auth Error", e); }
             };
             initAuth();
@@ -401,7 +404,20 @@
                     startERP();
                 }
             });
+        } else {
+            // كود إضافي لإخفاء شاشة التحميل في حالة عدم وجود إعدادات (للتجربة وفتح الواجهة فقط)
+            document.getElementById('loading-text').innerText = "تنبيه: يعمل بدون قاعدة بيانات...";
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 500);
+                alert("واجهة النظام تعمل الآن للتجربة ومعاينة التصميم. لتفعيل حفظ البيانات واسترجاعها، يرجى إضافة مفاتيح مشروع Firebase الخاص بك في الكود.");
+                
+                // ملء بعض البيانات الوهمية لتجنب الأخطاء في وضع التجربة
+                document.getElementById('dash-batches-list').innerHTML = '<p class="text-xs text-slate-400 text-center font-bold">لا توجد دفعات (وضع التجربة)</p>';
+                document.getElementById('dash-recent-orders').innerHTML = '<p class="text-xs text-slate-400 text-center font-bold">لا يوجد طلبات (وضع التجربة)</p>';
+            }, 1500);
         }
+        // ---------------------------------------------
 
         const getColPath = (col) => `artifacts/${appId}/users/${currentUser.uid}/${col}`;
         const getDocPath = (col, dId) => `artifacts/${appId}/users/${currentUser.uid}/${col}/${dId}`;
@@ -482,20 +498,17 @@
                     if(cols[stat] !== undefined) {
                         counts[stat]++;
                         
-                        // NEW UI: Generate Product Tags (Pills)
                         let itemsHtml = o.items && o.items.length > 0 
                             ? o.items.map(i => `<span class="inline-block bg-teal-50 text-teal-700 text-[10px] px-1.5 py-0.5 rounded font-bold mr-1 mb-1 border border-teal-100">${i.quantity}x ${i.name}</span>`).join('')
                             : '<span class="text-[10px] text-slate-400">بدون تفاصيل</span>';
                             
                         let borderColor = stat==='new'?'border-slate-400':(stat==='preparing'?'border-yellow-400':(stat==='ready'?'border-orange-400':(stat==='shipping'?'border-blue-400':(stat==='delivered'?'border-green-500':'border-red-500'))));
                         
-                        // Dynamic Select Background Color based on status
                         let selectBg = stat==='new'?'bg-slate-100 text-slate-700':(stat==='preparing'?'bg-yellow-50 text-yellow-700':(stat==='ready'?'bg-orange-50 text-orange-700':(stat==='shipping'?'bg-blue-50 text-blue-700':(stat==='delivered'?'bg-green-50 text-green-700':'bg-red-50 text-red-700'))));
 
                         let lastNoteText = '';
                         if(o.notes && o.notes.length > 0) lastNoteText = o.notes[o.notes.length-1].text;
                         
-                        // NEW UI: Order Kanban Card
                         cols[stat] += `
                         <div onclick="window.openOrderModal('${o.id}')" class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 border-r-4 ${borderColor} kanban-card relative order-card mb-3 transition-all hover:shadow-md group" data-search="${o.customerName} ${o.customerPhone} ${o.zone || ''}">
                             
