@@ -399,6 +399,12 @@
             }
         };
 
+        // Global State
+        let storeSettings = { deliveryZones: [], drivers: [], storeName: '', storePhone: '' };
+        let storeProducts = {}; let storePrices = {}; 
+        let customersData = []; let allOrdersRaw = []; let dispatchOrdersRaw = []; let activeBatches = [];
+        let totalRevenueCalculated = 0;
+
         // التحقق من وجود مفاتيح فايربيز الحقيقية
         if(firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
             app = initializeApp(firebaseConfig);
@@ -425,25 +431,157 @@
                 }
             });
         } else {
-            // التخطي التلقائي لشاشة التحميل في حال لم تضع مفاتيح Firebase بعد (للتجربة والمعاينة فقط)
-            console.warn("تنبيه: لم يتم وضع بيانات Firebase. واجهة النظام ستعمل للمعاينة ولكن لن يتم حفظ البيانات.");
+            // ==========================================
+            // وضع حقن البيانات الوهمية (Mock Data Mode)
+            // ==========================================
+            console.warn("تنبيه: تعمل الواجهة الآن ببيانات وهمية متكاملة لـ 'سمان ههيا' لتجربة النظام وتقييمه بدقة.");
             hideLoadingScreen();
             
-            // حقن بيانات وهمية بسيطة للمعاينة حتى لا يظهر النظام فارغاً
-            document.getElementById('dash-customers').innerText = "0";
-            document.getElementById('dash-pending').innerText = "0";
-            document.getElementById('batches-list-container').innerHTML = '<p class="text-xs text-slate-400 font-bold p-4">قم بربط Firebase لتبدأ في إضافة الدفعات.</p>';
+            const now = Date.now();
+
+            // 1. الإعدادات والمنتجات
+            storeSettings = {
+                storeName: 'سمان ههيا',
+                storePhone: '01000000000',
+                deliveryZones: [{name: 'ههيا', price: 10}, {name: 'الزقازيق', price: 20}, {name: 'أبو كبير', price: 15}],
+                drivers: [{name: 'أخي (مسئول التوزيع)', phone: '01012345678'}, {name: 'أحمد المندوب', phone: '01123456789'}]
+            };
+            storeProducts = {
+                'p1': {name: 'سمان سوبر (جوز)'},
+                'p2': {name: 'سمان جامبو (جوز)'},
+                'p3': {name: 'سمان مخصوص (جوز)'},
+                'p4': {name: 'سمان سوبر مخصوص (جوز)'},
+                'p5': {name: 'طبق بيض سمان (12 بيضة)'}
+            };
+            storePrices = { 'p1': 70, 'p2': 85, 'p3': 100, 'p4': 120, 'p5': 25 };
+
+            renderInventoryUI();
+            renderSettingsUI();
+            window.updateOrderModalZones();
+
+            // 2. العملاء
+            customersData = [
+                { id: 'c1', name: 'د. محمود سعيد', phone: '01098765432', zone: 'الزقازيق', ordersCount: 5, totalSpent: 750, notes: [{text: 'عميل دائم يفضل السمان الجامبو والتسليم مساءً', date: now - 86400000}] },
+                { id: 'c2', name: 'أ. مصطفى كمال', phone: '01198765432', zone: 'ههيا', ordersCount: 2, totalSpent: 260, notes: [] },
+                { id: 'c3', name: 'م. خالد عبد الرحمن', phone: '01298765432', zone: 'أبو كبير', ordersCount: 1, totalSpent: 130, notes: [] }
+            ];
+            document.getElementById('dash-customers').innerText = customersData.length;
+            let cTbody = '';
+            customersData.forEach(c => {
+                cTbody += `
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone}">
+                    <td class="py-3 px-5"><div class="font-black text-slate-800 cursor-pointer hover:text-brand-primary" onclick="window.openCustomerCard('${c.phone}')">${c.name}</div><div class="text-[10px] text-slate-500 font-bold" dir="ltr">${c.phone}</div></td>
+                    <td class="py-3 px-5 text-center font-bold text-slate-600">${c.zone}</td>
+                    <td class="py-3 px-5 text-center font-black text-slate-700">${c.ordersCount}</td>
+                    <td class="py-3 px-5 text-center font-black text-brand-primary">${c.totalSpent.toLocaleString()} ج</td>
+                    <td class="py-3 px-5 text-center"><button onclick="window.openCustomerCard('${c.phone}')" class="bg-teal-50 text-teal-600 border border-teal-100 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-teal-600 hover:text-white transition-colors">السجل</button></td>
+                </tr>`;
+            });
+            document.getElementById('customers-tbody').innerHTML = cTbody;
+
+            // 3. دفعات المزرعة
+            activeBatches = [
+                { id: 'b1', name: 'دفعة 15 مايو (العنبر الأول)', startCount: 350, mortality: 12, sold: 150, date: '2026-05-15', createdAt: now - 864000000 },
+                { id: 'b2', name: 'دفعة 1 يونيو', startCount: 500, mortality: 5, sold: 0, date: '2026-06-01', createdAt: now - 100000 }
+            ];
+            let bHtml = ''; let bDashHtml = '';
+            activeBatches.forEach(b => {
+                let remaining = b.startCount - b.mortality - b.sold;
+                bDashHtml += `<div class="flex justify-between items-center p-2 border border-slate-100 rounded-lg bg-slate-50"><span class="text-sm font-bold text-slate-700">${b.name}</span><span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-black">${remaining} طائر</span></div>`;
+                bHtml += `
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative">
+                    <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-2"><h4 class="font-black text-slate-800 text-lg">${b.name}</h4><span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-1 rounded">${b.date}</span></div>
+                    <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                        <div class="bg-slate-50 p-2 rounded text-center"><span class="block text-[10px] text-slate-400 font-bold">العدد الأصلي</span><span class="font-black">${b.startCount}</span></div>
+                        <div class="bg-slate-50 p-2 rounded text-center"><span class="block text-[10px] text-slate-400 font-bold">المتبقي</span><span class="font-black text-orange-600">${remaining}</span></div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="alert('النظام في وضع المعاينة فقط بدون قاعدة بيانات حقيقية.')" class="flex-1 text-[10px] bg-red-50 text-red-600 font-bold py-2 rounded-lg border border-red-100">تسجيل نفوق (${b.mortality})</button>
+                        <button onclick="alert('النظام في وضع المعاينة فقط بدون قاعدة بيانات حقيقية.')" class="flex-1 text-[10px] bg-green-50 text-green-600 font-bold py-2 rounded-lg border border-green-100">مبيعات خارجية (${b.sold})</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('batches-list-container').innerHTML = bHtml;
+            document.getElementById('dash-batches-list').innerHTML = bDashHtml;
+
+            // 4. الطلبات والكانبان
+            allOrdersRaw = [
+                { id: 'o1', customerName: 'د. محمود سعيد', customerPhone: '01098765432', zone: 'الزقازيق', total: 165, status: 'new', createdAt: now - 3600000, items: [{name: 'سمان سوبر مخصوص (جوز)', quantity: 1}, {name: 'طبق بيض سمان (12 بيضة)', quantity: 1}], notes: [{text: 'العميل أكد على جودة التغليف', date: now - 3500000}] },
+                { id: 'o2', customerName: 'أ. مصطفى كمال', customerPhone: '01198765432', zone: 'ههيا', total: 210, status: 'preparing', createdAt: now - 7200000, items: [{name: 'سمان مخصوص (جوز)', quantity: 2}], notes: [] },
+                { id: 'o3', customerName: 'م. خالد عبد الرحمن', customerPhone: '01298765432', zone: 'أبو كبير', total: 355, status: 'ready', createdAt: now - 86400000, items: [{name: 'سمان جامبو (جوز)', quantity: 4}], notes: [] },
+                { id: 'o4', customerName: 'الحاج سيد', customerPhone: '01011122233', zone: 'الزقازيق', total: 620, status: 'shipping', createdAt: now - 90000000, items: [{name: 'سمان سوبر مخصوص (جوز)', quantity: 5}], notes: [] },
+                { id: 'o5', customerName: 'أستاذ وليد', customerPhone: '01555555555', zone: 'ههيا', total: 220, status: 'delivered', createdAt: now - 172800000, items: [{name: 'سمان سوبر (جوز)', quantity: 3}], notes: [] }
+            ];
+            dispatchOrdersRaw = allOrdersRaw.filter(o => ['new', 'preparing', 'ready', 'shipping'].includes(o.status));
+            
+            let dSales = 0, pending = 0, completedRevenue = 0;
+            let cols = { new: '', preparing: '', ready: '', shipping: '', delivered: '', canceled: '' };
+            let counts = { new: 0, preparing: 0, ready: 0, shipping: 0, delivered: 0, canceled: 0 };
+            let recentOrdersHTML = ''; let counter = 0;
+
+            allOrdersRaw.forEach(o => {
+                const stat = o.status;
+                let dateStr = formatShortDate(o.createdAt);
+                
+                if (stat !== 'canceled') dSales += o.total; 
+                if (['new', 'preparing', 'ready', 'shipping'].includes(stat)) pending++;
+                if (stat === 'delivered') completedRevenue += o.total;
+
+                counts[stat]++;
+                let itemsStr = o.items.map(i => `${i.quantity}x ${i.name}`).join('، ');
+                let borderColor = stat==='new'?'border-slate-400':(stat==='preparing'?'border-yellow-400':(stat==='ready'?'border-orange-400':(stat==='shipping'?'border-blue-400':(stat==='delivered'?'border-green-500':'border-red-500'))));
+                let lastNoteText = (o.notes && o.notes.length > 0) ? o.notes[o.notes.length-1].text : '';
+                
+                cols[stat] += `
+                <div onclick="window.openOrderModal('${o.id}')" class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 border-r-4 ${borderColor} kanban-card relative order-card mb-3" data-search="${o.customerName} ${o.customerPhone}">
+                    <div class="flex justify-between items-start mb-1">
+                        <h5 onclick="event.stopPropagation(); window.openCustomerCard('${o.customerPhone}')" class="font-bold text-sm text-slate-800 truncate hover:text-brand-primary" title="${o.customerName}">${o.customerName}</h5>
+                        <span class="text-[9px] text-slate-400 bg-slate-100 px-1 rounded whitespace-nowrap">${dateStr}</span>
+                    </div>
+                    <div class="text-[10px] text-slate-500 mb-2 truncate" dir="ltr">${o.customerPhone}</div>
+                    <p class="text-xs text-brand-primary font-bold mb-2 leading-tight">${itemsStr}</p>
+                    ${lastNoteText ? `<div class="text-[10px] font-bold text-orange-700 bg-orange-50 p-1.5 rounded mb-2 border border-orange-100 leading-tight truncate"><i class="fa-regular fa-comment-dots"></i> ${lastNoteText}</div>` : ''}
+                    <div class="flex justify-between items-center mt-2 border-t border-slate-100 pt-2 gap-2">
+                        <span class="font-black text-slate-800 text-sm flex-1">${o.total} ج</span>
+                        <span class="text-[9px] font-bold bg-slate-100 rounded px-2 py-1 text-slate-700 border border-slate-200">وضع المعاينة</span>
+                    </div>
+                </div>`;
+
+                if(stat === 'delivered' && counter < 5) {
+                    recentOrdersHTML += `<div class="flex justify-between items-center p-2 hover:bg-slate-50 rounded-lg border-b border-slate-50"><div class="flex flex-col"><span class="text-sm font-bold text-slate-800 cursor-pointer hover:text-brand-primary" onclick="window.openCustomerCard('${o.customerPhone}')">${o.customerName}</span><span class="text-[10px] text-slate-400">${dateStr}</span></div><span class="font-black text-brand-primary">${o.total} ج</span></div>`;
+                    counter++;
+                }
+            });
+
+            document.getElementById('dash-pending').innerText = pending;
+            document.getElementById('dash-sales-day').innerHTML = `${dSales.toLocaleString()} <span class="text-sm">ج</span>`;
+            document.getElementById('dash-recent-orders').innerHTML = recentOrdersHTML;
+            totalRevenueCalculated = completedRevenue;
+            document.getElementById('fin-revenue').innerText = `${completedRevenue.toLocaleString()} ج`;
+
+            ['new', 'preparing', 'ready', 'shipping', 'delivered', 'canceled'].forEach(s => {
+                document.getElementById(`k-col-${s}`).innerHTML = cols[s] || `<div class="text-center text-[10px] text-slate-400 py-4 font-bold border-2 border-dashed border-slate-200 rounded-xl mt-2">القائمة فارغة</div>`;
+                document.getElementById(`k-count-${s}`).innerText = counts[s];
+            });
+
+            // 5. المصروفات والمالية
+            let exps = [
+                { type: 'علف', amount: 1200, notes: 'علف بادي نامي 23%', createdAt: now - 200000000 },
+                { type: 'أدوية', amount: 350, notes: 'فيتامينات ومضاد حيوي تنفسي', createdAt: now - 150000000 }
+            ];
+            let expHtml = ''; let totalExp = 0;
+            exps.forEach(e => {
+                totalExp += e.amount;
+                expHtml += `<tr class="hover:bg-slate-50 border-b border-slate-50"><td class="py-3 px-2 text-[10px] text-slate-500 font-bold">${formatShortDate(e.createdAt)}</td><td class="py-3 px-2 font-bold text-slate-700">${e.type}</td><td class="py-3 px-2 font-black text-red-500">${e.amount} ج</td><td class="py-3 px-2 text-[10px] font-bold text-slate-500 max-w-[150px] truncate">${e.notes}</td></tr>`;
+            });
+            document.getElementById('expenses-tbody').innerHTML = expHtml;
+            document.getElementById('fin-expenses').innerText = `${totalExp.toLocaleString()} ج`;
+            updateNetProfit(totalExp);
         }
 
         // Helpers for Canvas isolation
         const getColPath = (col) => `artifacts/${appId}/users/${currentUser?.uid || 'demo'}/${col}`;
         const getDocPath = (col, dId) => `artifacts/${appId}/users/${currentUser?.uid || 'demo'}/${col}/${dId}`;
-
-        // Global State
-        let storeSettings = { deliveryZones: [], drivers: [], storeName: '', storePhone: '' };
-        let storeProducts = {}; let storePrices = {}; 
-        let customersData = []; let allOrdersRaw = []; let dispatchOrdersRaw = []; let activeBatches = [];
-        let totalRevenueCalculated = 0;
 
         // Date formatter
         const formatDate = (ts) => {
@@ -696,7 +834,7 @@
                     nHtml += `<div class="bg-white p-2 rounded border border-slate-100 shadow-sm"><p class="text-[10px] text-slate-400 mb-1"><i class="fa-regular fa-clock"></i> ${formatDate(n.date)}</p><p class="text-xs font-bold text-slate-700">${n.text}</p></div>`;
                 });
                 document.getElementById('om-notes-timeline').innerHTML = nHtml;
-            } catch(e) { alert("حدث خطأ"); }
+            } catch(e) { alert("النظام يعمل حالياً بوضع المعاينة الوهمية ولا يتصل بقاعدة البيانات الحقيقية لتحديث الملاحظات."); }
         };
 
         window.updateOrderModalZones = () => {
@@ -707,7 +845,7 @@
 
         window.autoSetDeliveryPrice = () => {
             const zSelect = document.getElementById('om-zone');
-            const price = zSelect.options[zSelect.selectedIndex].getAttribute('data-price') || 0;
+            const price = zSelect.options[zSelect.selectedIndex]?.getAttribute('data-price') || 0;
             document.getElementById('om-delivery').value = price;
             window.calculateFinalTotal();
         };
@@ -764,6 +902,8 @@
 
             let btn = document.getElementById('btn-save-order'); btn.innerText = "جاري الحفظ..."; btn.disabled = true;
             try {
+                if(!db) throw new Error("Mock Mode"); // Force jump to catch if in mock mode
+                
                 if(id) {
                     let updatePayload = { customerName: name, customerPhone: phone, zone: zone, total: total, items: items };
                     if(firstNoteText) {
@@ -782,13 +922,18 @@
                 if(!custDoc.exists()) await setDoc(doc(db, getDocPath('customers', phone)), { name: name, phone: phone, zone: zone, ordersCount: 0, totalSpent: 0, notes: [] });
                 
                 window.closeModal('order-modal');
-            } catch(e) { alert('خطأ أثناء الحفظ'); }
+            } catch(e) { 
+                alert('النظام يعمل بوضع المعاينة الوهمية ولا يتصل بقاعدة البيانات. قم بربطه بـ Firebase لتمكين الحفظ.');
+                window.closeModal('order-modal');
+            }
             btn.innerText = "حفظ الطلب"; btn.disabled = false;
         };
 
         window.updateOrderStatus = async (id, s, phone, total) => {
             if(s === 'canceled' && !confirm('تأكيد إلغاء الطلب؟')) return;
             try { 
+                if(!db) throw new Error("Mock Mode");
+                
                 let orderRef = doc(db, getDocPath('orders', id));
                 let docSnap = await getDoc(orderRef);
                 let oldStatus = docSnap.data().status;
@@ -822,7 +967,7 @@
                         await updateDoc(doc(db, getDocPath('batches', activeB.id)), { sold: Math.max(0, (activeB.sold||0) - totalBirds) });
                     }
                 }
-            } catch(e) { alert("حدث خطأ أثناء التحديث"); }
+            } catch(e) { alert("في وضع المعاينة لا يمكن حفظ حالة الطلب بشكل دائم."); }
         };
 
         // Customer Interactions
@@ -877,6 +1022,7 @@
             let cData = customersData.find(x => x.phone === phone);
             let notes = cData.notes || []; notes.push({text: noteTxt, date: Date.now()});
             try {
+                if(!db) throw new Error("Mock Mode");
                 await updateDoc(doc(db, getDocPath('customers', phone)), { notes: notes });
                 document.getElementById('cm-new-note').value = '';
                 // The DB listener updates customersData, but let's visually update the modal immediately
@@ -886,7 +1032,7 @@
                     nHtml += `<div class="border-b border-slate-100 pb-2 mb-2"><p class="text-[9px] text-slate-400 mb-0.5"><i class="fa-regular fa-clock"></i> ${formatDate(n.date)}</p><p class="text-[11px] font-bold text-slate-800">${n.text}</p></div>`;
                 });
                 document.getElementById('cm-notes-timeline').innerHTML = nHtml;
-            } catch(e) { alert("حدث خطأ"); }
+            } catch(e) { alert("وضع المعاينة لا يحفظ البيانات نهائياً."); }
         };
 
         window.startOrderForCustomerFromProfile = () => {
@@ -929,6 +1075,7 @@
             const btn = document.getElementById('global-save-btn'); const origHtml = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> حفظ...'; btn.disabled = true;
             try {
+                if(!db) throw new Error("Mock Mode");
                 if(storeSettings.deliveryZones) storeSettings.deliveryZones = storeSettings.deliveryZones.filter(z => z.name.trim() !== '');
                 if(storeSettings.drivers) storeSettings.drivers = storeSettings.drivers.filter(d => d.name.trim() !== '' || d.phone.trim() !== '');
                 storeSettings.storeName = document.getElementById('st-name').value; storeSettings.storePhone = document.getElementById('st-phone').value;
@@ -940,7 +1087,7 @@
                 ]);
                 alert('تم حفظ إعدادات النظام وتحديث الأسعار بنجاح.');
                 renderSettingsUI(); window.updateOrderModalZones();
-            } catch(e) { alert('حدث خطأ أثناء الحفظ!'); console.error(e); }
+            } catch(e) { alert('أنت في وضع المعاينة فقط ولن يتم حفظ الإعدادات!'); }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
 
@@ -948,23 +1095,30 @@
         window.saveBatch = async () => {
             let n = document.getElementById('b-name').value, c = document.getElementById('b-count').value, d = document.getElementById('b-date').value;
             if(!n || !c) return alert("الاسم والعدد مطلوبان");
-            try { await addDoc(collection(db, getColPath('batches')), { name: n, startCount: Number(c), date: d, mortality: 0, sold: 0, createdAt: Date.now() }); window.closeModal('add-batch-modal'); document.getElementById('b-name').value=''; document.getElementById('b-count').value=''; } catch(e) { alert("خطأ في الحفظ"); }
+            try { 
+                if(!db) throw new Error("Mock Mode");
+                await addDoc(collection(db, getColPath('batches')), { name: n, startCount: Number(c), date: d, mortality: 0, sold: 0, createdAt: Date.now() }); window.closeModal('add-batch-modal'); document.getElementById('b-name').value=''; document.getElementById('b-count').value=''; 
+            } catch(e) { alert("لا يمكن إضافة الدفعة، النظام في وضع المعاينة."); window.closeModal('add-batch-modal'); }
         };
         window.updateBatchStat = async (id, field, currentVal) => {
             let add = prompt(`أدخل العدد المراد إضافته لـ ${field === 'mortality' ? 'النفوق' : 'المبيعات الخارجية'} (العدد الحالي: ${currentVal}):`, "0");
             if(add && !isNaN(add) && Number(add) > 0) {
                 try { 
+                    if(!db) throw new Error("Mock Mode");
                     let bRef = doc(db, getDocPath('batches', id));
                     let snap = await getDoc(bRef);
                     await updateDoc(bRef, { [field]: (snap.data()[field]||0) + Number(add) }); 
-                } catch(e) { alert("خطأ في التحديث"); }
+                } catch(e) { alert("التحديث غير متاح في وضع المعاينة."); }
             }
         };
 
         window.saveExpense = async () => {
             let t = document.getElementById('exp-type').value, a = document.getElementById('exp-amount').value, n = document.getElementById('exp-notes').value;
             if(!a) return alert("المبلغ مطلوب");
-            try { await addDoc(collection(db, getColPath('expenses')), { type: t, amount: Number(a), notes: n, createdAt: Date.now() }); window.closeModal('add-expense-modal'); document.getElementById('exp-amount').value=''; document.getElementById('exp-notes').value=''; } catch(e) { alert("خطأ في التسجيل"); }
+            try { 
+                if(!db) throw new Error("Mock Mode");
+                await addDoc(collection(db, getColPath('expenses')), { type: t, amount: Number(a), notes: n, createdAt: Date.now() }); window.closeModal('add-expense-modal'); document.getElementById('exp-amount').value=''; document.getElementById('exp-notes').value=''; 
+            } catch(e) { alert("لا يمكن حفظ المصروف في وضع المعاينة."); window.closeModal('add-expense-modal'); }
         };
 
         // --- Dispatch Logic ---
