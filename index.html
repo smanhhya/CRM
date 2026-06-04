@@ -202,7 +202,7 @@
 
     <!-- ======================= Modals (النوافذ المنبثقة) ======================= -->
 
-    <!-- نافذة الإرسال للمناديب -->
+    <!-- 🚚 نافذة الإرسال للمناديب -->
     <div id="dispatch-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
@@ -226,7 +226,7 @@
         </div>
     </div>
 
-    <!-- نافذة إضافة طلب جديد -->
+    <!-- 📝 نافذة إضافة طلب جديد -->
     <div id="add-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out] flex flex-col max-h-[95vh]">
             <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
@@ -250,7 +250,7 @@
                 </div>
 
                 <div class="grid grid-cols-3 gap-4 border-t border-slate-100 pt-3">
-                    <div><label class="text-xs font-bold text-slate-500 block mb-1">سعر الأصناف</label><input type="number" id="no-price" class="w-full border border-slate-200 rounded-lg p-2 font-bold" placeholder="0"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">سعر الأصناف (يُحسب آلياً)</label><input type="number" id="no-price" class="w-full border border-slate-200 rounded-lg p-2 font-bold" placeholder="0"></div>
                     <div><label class="text-xs font-bold text-slate-500 block mb-1">تكلفة التوصيل</label><input type="number" id="no-delivery" class="w-full border border-slate-200 rounded-lg p-2 font-bold" placeholder="0"></div>
                     <div><label class="text-xs font-bold text-slate-500 block mb-1">خصم</label><input type="number" id="no-discount" class="w-full border border-slate-200 rounded-lg p-2 font-bold text-red-500" placeholder="0"></div>
                 </div>
@@ -258,7 +258,7 @@
                 <div>
                     <label class="text-xs font-bold text-slate-500 block mb-1">الإجمالي النهائي</label>
                     <div class="flex gap-2">
-                        <button onclick="calcTotal()" class="bg-slate-200 px-3 rounded-xl text-xs font-bold hover:bg-slate-300">احسب</button>
+                        <button onclick="calcTotal('no')" class="bg-slate-200 px-3 rounded-xl text-xs font-bold hover:bg-slate-300 transition-colors shadow-sm"><i class="fa-solid fa-calculator text-brand-primary mr-1"></i> احسب</button>
                         <input type="number" id="no-total" class="flex-1 border-2 border-brand-primary bg-teal-50 rounded-xl p-2 outline-none font-black text-brand-primary text-lg" placeholder="0">
                     </div>
                 </div>
@@ -269,7 +269,51 @@
         </div>
     </div>
 
-    <!-- نافذة ملف العميل (التاريخ والملاحظات الدائمة - بيانات تيك تيك) -->
+    <!-- ✏️ نافذة تعديل طلب موجود (Edit Order) -->
+    <div id="edit-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out] flex flex-col max-h-[95vh]">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-pen-to-square text-brand-accent mr-2"></i> تعديل الطلب</h3>
+                <button onclick="closeModal('edit-order-modal')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scroll space-y-4">
+                <input type="hidden" id="eo-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">رقم هاتف العميل (للقراءة فقط)</label><input type="tel" id="eo-phone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none font-bold bg-slate-100 text-slate-500 cursor-not-allowed" dir="ltr" disabled></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">اسم العميل</label><input type="text" id="eo-name" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-accent font-bold"></div>
+                </div>
+                <div><label class="text-xs font-bold text-slate-500 block mb-1">المنطقة</label><input type="text" id="eo-zone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-accent font-bold"></div>
+                
+                <div class="border-t border-slate-100 pt-3">
+                    <label class="text-xs font-black text-slate-800 block mb-2">الأصناف (الكمية)</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">جامبو</span><input type="number" id="eo-q-jumbo" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
+                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">اسبيشيال</span><input type="number" id="eo-q-special" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
+                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">رويال</span><input type="number" id="eo-q-royal" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 border-t border-slate-100 pt-3">
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">سعر الأصناف</label><input type="number" id="eo-price" class="w-full border border-slate-200 rounded-lg p-2 font-bold" placeholder="0"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">تكلفة التوصيل</label><input type="number" id="eo-delivery" class="w-full border border-slate-200 rounded-lg p-2 font-bold" placeholder="0"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">خصم</label><input type="number" id="eo-discount" class="w-full border border-slate-200 rounded-lg p-2 font-bold text-red-500" placeholder="0"></div>
+                </div>
+                <div><label class="text-xs font-bold text-slate-500 block mb-1">ملاحظات للمندوب</label><textarea id="eo-notes" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-accent text-sm font-bold text-blue-700 bg-blue-50" rows="2" placeholder="أي ملاحظة..."></textarea></div>
+                <div>
+                    <label class="text-xs font-bold text-slate-500 block mb-1">الإجمالي النهائي</label>
+                    <div class="flex gap-2">
+                        <button onclick="calcTotal('eo')" class="bg-slate-200 px-3 rounded-xl text-xs font-bold hover:bg-slate-300 transition-colors shadow-sm"><i class="fa-solid fa-calculator text-brand-accent mr-1"></i> احسب</button>
+                        <input type="number" id="eo-total" class="flex-1 border-2 border-brand-accent bg-orange-50 rounded-xl p-2 outline-none font-black text-brand-accent text-lg" placeholder="0">
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0">
+                <button onclick="saveEditedOrder()" id="btn-save-edit" class="w-full bg-brand-accent hover:bg-orange-600 text-white font-black py-3 rounded-xl transition-all shadow-md">حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 👤 نافذة ملف العميل (التاريخ والملاحظات الدائمة - بيانات تيك تيك) -->
     <div id="customer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 lg:p-0 transition-opacity">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="bg-slate-50 p-5 border-b border-slate-200 flex justify-between items-start shrink-0">
@@ -281,6 +325,10 @@
             </div>
             <div class="p-5 flex-1 overflow-y-auto custom-scroll">
                 
+                <button onclick="startOrderForCustomer()" class="w-full bg-brand-primary hover:bg-teal-700 text-white py-3 rounded-xl font-black mb-5 shadow-sm transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cart-plus text-lg"></i> إنشاء طلب جديد لهذا العميل
+                </button>
+
                 <!-- إحصائيات سريعة -->
                 <div class="grid grid-cols-2 gap-3 mb-5">
                     <div class="bg-brand-bg rounded-xl p-3 border border-slate-100 text-center"><p class="text-[10px] font-bold text-slate-400 mb-1">إجمالي المشتريات (LTV)</p><p id="cm-ltv" class="text-lg font-black text-brand-primary">0 ج</p></div>
@@ -404,7 +452,8 @@
                             ${o.notes || o.adminNote ? `<div class="text-[10px] font-bold text-blue-700 bg-blue-50 p-1.5 rounded mb-2 border border-blue-100 shadow-sm"><i class="fa-solid fa-pen-to-square"></i> ${o.adminNote || o.notes}</div>` : ''}
                             
                             <div class="flex justify-between items-center mt-2 border-t border-slate-100 pt-2 gap-2">
-                                <button onclick="addOrderNote('${id}')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1.5 rounded font-bold transition-colors shadow-sm" title="ملاحظة"><i class="fa-solid fa-pen"></i></button>
+                                <!-- زرار التعديل الجديد -->
+                                <button onclick="openEditOrder('${id}')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-brand-accent px-2 py-1.5 rounded font-bold transition-colors shadow-sm" title="تعديل الطلب"><i class="fa-solid fa-pen"></i> تعديل</button>
                                 
                                 <span class="font-black text-brand-primary text-sm flex-1 text-center">${o.total || 0} ج</span>
                                 
@@ -462,19 +511,10 @@
             document.querySelectorAll('.customer-row').forEach(row => { row.style.display = row.getAttribute('data-search').toLowerCase().includes(filter) ? '' : 'none'; });
         }
 
-        // --- تعديل حالة الطلب السريعة أو إضافة ملاحظة ---
+        // --- تعديل حالة الطلب السريعة ---
         window.updateOrderStatus = async (id, s) => { 
-            if(s === 'canceled' && !confirm('تأكيد: هل أنت متأكد من إلغاء هذا الطلب؟')) return;
+            if(s === 'canceled' && !confirm('تأكيد: هل أنت متأكد من إلغاء هذا الطلب؟ (لن يمسح من أرشيف العميل)')) return;
             try { await db.collection('orders').doc(id).update({ status: s }); } catch(e) { alert("حدث خطأ أثناء التحديث"); }
-        };
-
-        window.addOrderNote = async (id) => {
-            let o = allOrdersRaw.find(x => x.id === id); if(!o) return;
-            let note = prompt("اكتب ملاحظتك للطلب (مثل: تأجيل لغداً، تعديل الصنف، شكوى..):", o.adminNote || "");
-            if (note !== null) {
-                try { await db.collection('orders').doc(id).update({ adminNote: note.trim() }); } 
-                catch(e) { alert("حدث خطأ أثناء الحفظ!"); }
-            }
         };
 
         // --- سجل العميل (الملاحظات الدائمة والبيانات القديمة) ---
@@ -496,7 +536,6 @@
                 if(snap.empty) { hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 border-2 border-dashed rounded-xl">لا يوجد سجل طلبات مسجل لهذا العميل.</p>'; }
                 else {
                     let orders = []; snap.forEach(d => orders.push(d.data()));
-                    // ترتيب محلي عشان الأوردرات تظهر مظبوطة
                     orders.sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
                     
                     let h = '';
@@ -522,6 +561,17 @@
             } catch(e) { hDiv.innerHTML = '<p class="text-xs text-red-500 font-bold text-center">حدث خطأ أثناء جلب الأرشيف.</p>'; }
 
             openModal('customer-modal');
+        };
+
+        // --- إنشاء طلب من بروفايل العميل ---
+        window.startOrderForCustomer = () => {
+            const phone = document.getElementById('cm-phone').innerText.replace(/\D/g, '');
+            const name = document.getElementById('cm-name').innerText;
+            closeModal('customer-modal');
+            openModal('add-order-modal');
+            document.getElementById('no-phone').value = phone;
+            document.getElementById('no-name').value = name;
+            checkCustomerExists(); // لجلب عنوانه لو موجود
         };
 
         // --- حفظ الملاحظات الدائمة للعميل (أرشيف تيك تيك) ---
@@ -580,7 +630,6 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; btn.disabled = true;
 
             try {
-                // الفلترة السريعة لحذف الخانات الفاضية قبل الرفع
                 if(storeSettings.deliveryZones) storeSettings.deliveryZones = storeSettings.deliveryZones.filter(z => z.name.trim() !== '');
                 if(storeSettings.drivers) storeSettings.drivers = storeSettings.drivers.filter(d => d.name.trim() !== '' || d.phone.trim() !== '');
                 
@@ -593,7 +642,6 @@
 
                 storeSettings.productsData = storeProducts;
 
-                // إرسال لـ Firebase باستخدام merge لمنع المسح
                 await Promise.all([
                     db.collection("inventory").doc("settings").set(storeSettings, {merge: true}),
                     db.collection("inventory").doc("stock").set(storeStock, {merge: true}),
@@ -607,9 +655,39 @@
             btn.innerHTML = origHtml; btn.disabled = false;
         };
 
-        // --- إضافة طلب يدوي ---
-        window.calcTotal = () => { document.getElementById('no-total').value = (Number(document.getElementById('no-price').value) || 0) + (Number(document.getElementById('no-delivery').value) || 0) - (Number(document.getElementById('no-discount').value) || 0); }
-        window.checkCustomerExists = () => { let phone = document.getElementById('no-phone').value.trim(); if(!phone) return; let c = customersData.find(x => x.phone === phone); if(c) { document.getElementById('no-name').value = c.name; document.getElementById('no-zone').value = c.zone || ''; } };
+        // --- إضافة وتعديل الطلبات (الحاسبة الذكية) ---
+        window.calcTotal = (prefix) => { // prefix = 'no' or 'eo'
+            let qJ = Number(document.getElementById(prefix+'-q-jumbo').value)||0;
+            let qS = Number(document.getElementById(prefix+'-q-special').value)||0;
+            let qR = Number(document.getElementById(prefix+'-q-royal').value)||0;
+
+            // استخراج الأسعار الحالية من الذاكرة لعمل الحساب الذكي
+            let pJ = 0, pS = 0, pR = 0;
+            Object.keys(storeProducts).forEach(k => {
+                let n = storeProducts[k].name.toLowerCase();
+                if(n.includes('جامبو')) pJ = storePrices[k] || 0;
+                if(n.includes('اسبيشيال') || n.includes('متميز')) pS = storePrices[k] || 0;
+                if(n.includes('رويال')) pR = storePrices[k] || 0;
+            });
+
+            let itemsTotal = (qJ * pJ) + (qS * pS) + (qR * pR);
+            let manualPrice = Number(document.getElementById(prefix+'-price').value);
+            
+            // لو انت مش حاطط سعر يدوي، هيستخدم السعر اللي حاسبه من قاعدة البيانات
+            let finalItemsPrice = manualPrice > 0 ? manualPrice : itemsTotal;
+            if(manualPrice === 0 && itemsTotal > 0) document.getElementById(prefix+'-price').value = itemsTotal;
+
+            let d = Number(document.getElementById(prefix+'-delivery').value) || 0;
+            let disc = Number(document.getElementById(prefix+'-discount').value) || 0;
+            
+            document.getElementById(prefix+'-total').value = finalItemsPrice + d - disc;
+        }
+
+        window.checkCustomerExists = () => { 
+            let phone = document.getElementById('no-phone').value.trim(); if(!phone) return; 
+            let c = customersData.find(x => x.phone === phone); 
+            if(c) { document.getElementById('no-name').value = c.name; document.getElementById('no-zone').value = c.zone || ''; } 
+        };
         
         window.submitNewOrder = async () => {
             let phone = document.getElementById('no-phone').value.trim(), name = document.getElementById('no-name').value.trim(), zone = document.getElementById('no-zone').value.trim();
@@ -628,6 +706,57 @@
                 closeModal('add-order-modal'); document.querySelectorAll('#add-order-modal input, #add-order-modal textarea').forEach(i => i.value = '');
             } catch(e) { alert('خطأ في الحفظ'); }
             btn.innerText = "تأكيد وحفظ الطلب"; btn.disabled = false;
+        };
+
+        // --- تعديل الأوردر ---
+        window.openEditOrder = (id) => {
+            let o = allOrdersRaw.find(x => x.id === id); if(!o) return;
+            document.getElementById('eo-id').value = id;
+            document.getElementById('eo-phone').value = o.customerPhone;
+            document.getElementById('eo-name').value = o.customerName;
+            document.getElementById('eo-zone').value = o.zone || '';
+            document.getElementById('eo-notes').value = o.adminNote || o.notes || '';
+            
+            let qJ = 0, qS = 0, qR = 0;
+            if(o.items) o.items.forEach(i => {
+                if(i.name.includes('جامبو')) qJ = i.quantity;
+                if(i.name.includes('اسبيشيال') || i.name.includes('متميز')) qS = i.quantity;
+                if(i.name.includes('رويال')) qR = i.quantity;
+            });
+            document.getElementById('eo-q-jumbo').value = qJ || '';
+            document.getElementById('eo-q-special').value = qS || '';
+            document.getElementById('eo-q-royal').value = qR || '';
+            document.getElementById('eo-price').value = ''; // سيبها فاضية عشان الدالة تحسبها
+            document.getElementById('eo-total').value = o.total;
+
+            openModal('edit-order-modal');
+        };
+
+        window.saveEditedOrder = async () => {
+            let id = document.getElementById('eo-id').value;
+            let name = document.getElementById('eo-name').value.trim(), zone = document.getElementById('eo-zone').value.trim();
+            let total = Number(document.getElementById('eo-total').value) || 0, notes = document.getElementById('eo-notes').value.trim();
+            let qJ = Number(document.getElementById('eo-q-jumbo').value)||0, qS = Number(document.getElementById('eo-q-special').value)||0, qR = Number(document.getElementById('eo-q-royal').value)||0;
+
+            let items = [];
+            if(qJ > 0) items.push({name: 'سمان جامبو', quantity: qJ}); if(qS > 0) items.push({name: 'سمان اسبيشيال', quantity: qS}); if(qR > 0) items.push({name: 'سمان رويال', quantity: qR});
+
+            let btn = document.getElementById('btn-save-edit'); btn.innerText = "جاري الحفظ..."; btn.disabled = true;
+
+            try {
+                let oldOrder = allOrdersRaw.find(x => x.id === id);
+                let diff = total - (Number(oldOrder.total) || 0);
+
+                await db.collection('orders').doc(id).update({ customerName: name, zone: zone, total: total, items: items, adminNote: notes });
+
+                // تعديل إنفاق العميل لو السعر اتغير
+                if(diff !== 0 && oldOrder.customerPhone) {
+                    await db.collection('customers').doc(oldOrder.customerPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(diff) }).catch(e=>{});
+                }
+
+                closeModal('edit-order-modal'); alert("تم تعديل الطلب بنجاح!");
+            } catch (error) { alert("حدث خطأ أثناء التعديل."); }
+            btn.innerText = "حفظ التعديلات"; btn.disabled = false;
         };
 
         // --- الديسباتش (إرسال للمناديب) ---
