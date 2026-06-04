@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -36,8 +35,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (max-width: 768px) { #sidebar { transform: translateX(100%); } #sidebar.open { transform: translateX(0); } }
-        .kanban-card { transition: all 0.2s; border-right-width: 4px; cursor: pointer; }
-        .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
 <body class="text-slate-800 flex h-screen w-full relative selection:bg-brand-primary selection:text-white">
@@ -89,7 +86,7 @@
                 <h2 id="header-title" class="text-xl font-black text-slate-800">الرئيسية</h2>
             </div>
             <div class="flex items-center gap-3">
-                <span class="hidden md:flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-cloud text-[10px]"></i> متصل بقاعدة البيانات</span>
+                <span class="hidden md:flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-cloud text-[10px]"></i> متصل لايف بالمتجر</span>
                 <button onclick="saveStoreData()" id="global-save-btn" class="bg-brand-dark hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2 border border-slate-700 hidden"><i class="fa-solid fa-cloud-arrow-up text-brand-primary"></i> حفظ التعديلات</button>
                 <button onclick="openModal('add-order-modal')" class="bg-brand-primary hover:bg-teal-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> <span class="hidden md:inline">إنشاء طلب</span></button>
             </div>
@@ -107,20 +104,30 @@
                 </div>
             </div>
 
-            <!-- ======================= 2. إدارة الطلبات (Kanban) ======================= -->
+            <!-- ======================= 2. إدارة الطلبات (الجديدة المبسطة) ======================= -->
             <div id="view-orders" class="page-view h-full flex flex-col">
-                <div class="flex justify-between items-center mb-4">
-                    <input type="text" id="search-order" onkeyup="filterOrders()" placeholder="بحث برقم أو اسم العميل..." class="w-full md:w-64 border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:border-brand-primary shadow-sm">
-                    <button onclick="openDispatchModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 flex items-center gap-2"><i class="fa-solid fa-truck-fast"></i> إرسال للمناديب</button>
+                <div class="flex justify-between items-center mb-4 gap-3">
+                    <div class="relative flex-1 md:max-w-md">
+                        <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
+                        <input type="text" id="search-order" onkeyup="renderOrdersList()" placeholder="بحث برقم الطلب أو اسم العميل..." class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm font-bold bg-white shadow-sm focus:border-brand-primary">
+                    </div>
+                    <button onclick="openDispatchModal()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 flex items-center gap-2 shrink-0"><i class="fa-solid fa-truck-fast"></i> إرسال للمناديب</button>
                 </div>
                 
-                <div class="flex gap-4 overflow-x-auto custom-scroll flex-1 pb-4">
-                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-slate-300 pb-2 flex justify-between">جديد 🟢 <span id="k-count-new" class="bg-white text-xs px-2 rounded-full font-bold">0</span></h4><div id="k-col-new" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
-                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-yellow-400 pb-2 flex justify-between">تجهيز 🟡 <span id="k-count-preparing" class="bg-white text-xs px-2 rounded-full font-bold">0</span></h4><div id="k-col-preparing" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
-                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-orange-400 pb-2 flex justify-between">جاهز 🟠 <span id="k-count-ready" class="bg-white text-xs px-2 rounded-full font-bold">0</span></h4><div id="k-col-ready" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
-                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-blue-400 pb-2 flex justify-between">توصيل 🚚 <span id="k-count-shipping" class="bg-white text-xs px-2 rounded-full font-bold">0</span></h4><div id="k-col-shipping" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
-                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-green-500 pb-2 flex justify-between">تم التسليم ✅ <span id="k-count-delivered" class="bg-white text-xs px-2 rounded-full font-bold">0</span></h4><div id="k-col-delivered" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
-                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-red-500 pb-2 flex justify-between">ملغي ❌ <span id="k-count-canceled" class="bg-white text-xs px-2 rounded-full font-bold">0</span></h4><div id="k-col-canceled" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
+                <!-- تبويبات الحالات -->
+                <div class="flex gap-2 overflow-x-auto custom-scroll pb-2 mb-2 shrink-0">
+                    <button onclick="setOrderTab('all')" id="tab-all" class="order-tab active whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-slate-800 text-white transition-colors">الكل</button>
+                    <button onclick="setOrderTab('new')" id="tab-new" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">جديد <span id="badge-new" class="ml-1 bg-red-500 text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('preparing')" id="tab-preparing" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">تجهيز <span id="badge-preparing" class="ml-1 bg-yellow-500 text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('ready')" id="tab-ready" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">جاهز <span id="badge-ready" class="ml-1 bg-orange-500 text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('shipping')" id="tab-shipping" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">توصيل <span id="badge-shipping" class="ml-1 bg-blue-500 text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('delivered')" id="tab-delivered" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">تم التسليم <span id="badge-delivered" class="ml-1 bg-green-500 text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('canceled')" id="tab-canceled" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">ملغي <span id="badge-canceled" class="ml-1 bg-gray-500 text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                </div>
+
+                <!-- قائمة الطلبات (شكل جديد احترافي) -->
+                <div id="orders-list-vertical" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1 pb-4">
+                    <!-- سيتم حقن الكروت هنا -->
                 </div>
             </div>
 
@@ -335,7 +342,7 @@
                     <div class="bg-brand-bg rounded-xl p-3 border border-slate-100 text-center"><p class="text-[10px] font-bold text-slate-400 mb-1">عدد الطلبات</p><p id="cm-orders" class="text-lg font-black text-slate-800">0</p></div>
                 </div>
 
-                <!-- ملاحظات العميل الدائمة (مكان داتا تيك تيك القديمة) -->
+                <!-- ملاحظات العميل الدائمة -->
                 <div class="mb-5 bg-yellow-50 border border-yellow-200 rounded-xl p-4 shadow-sm relative">
                     <h4 class="text-xs font-black text-yellow-800 mb-2 flex items-center gap-1"><i class="fa-solid fa-thumbtack text-yellow-600"></i> ملاحظات العميل الدائمة (أرشيف تيك تيك وأي داتا سابقة)</h4>
                     <textarea id="cm-permanent-notes" class="w-full bg-white border border-yellow-300 rounded-lg p-3 text-xs font-bold outline-none h-24 focus:border-yellow-500 text-slate-700 leading-relaxed" placeholder="أضف هنا أي معلومات، تفضيلات، شكاوى سابقة، أو تفاصيل من الأرشيف القديم..."></textarea>
@@ -361,8 +368,9 @@
         let storeSettings = { deliveryZones: [], drivers: [], storeName: '', storePhone: '', minOrder: 0, storeOpen: true };
         let storeProducts = {}; let storePrices = {}; let storeStock = {};
         let customersData = []; 
-        let allOrdersRaw = []; // كل الأوردرات للتحكم السريع
+        let allOrdersRaw = []; 
         let dispatchOrdersRaw = [];
+        let currentOrderTab = 'all'; // التبويب الحالي للطلبات
 
         // --- 1. UI Logic ---
         function toggleSidebar() {
@@ -417,10 +425,9 @@
                 renderInventoryUI(); renderSettingsUI();
             });
 
-            // 2. الطلبات (صورة حية مع إمكانية التعديل والإلغاء)
+            // 2. الطلبات (صورة حية مع إعادة هيكلة القائمة)
             db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
                 let dSales = 0, mSales = 0, pending = 0, completed = 0;
-                let cols = { new: '', preparing: '', ready: '', shipping: '', delivered: '', canceled: '' };
                 let counts = { new: 0, preparing: 0, ready: 0, shipping: 0, delivered: 0, canceled: 0 };
                 allOrdersRaw = []; dispatchOrdersRaw = [];
 
@@ -438,36 +445,7 @@
                         pending++; dispatchOrdersRaw.push({id, ...o}); 
                     }
                     if(stat === 'delivered') completed++;
-
-                    if(cols[stat] !== undefined) {
-                        counts[stat]++;
-                        let itemsStr = o.items ? o.items.map(i => `${i.quantity}x ${i.name}`).join('، ') : 'بدون تفاصيل';
-                        let borderColor = stat==='new'?'border-slate-400':(stat==='preparing'?'border-yellow-400':(stat==='ready'?'border-orange-400':(stat==='shipping'?'border-blue-400':(stat==='delivered'?'border-green-500':'border-red-500'))));
-                        
-                        // كارت الكانبان مع الأزرار
-                        cols[stat] += `
-                        <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 border-r-4 ${borderColor} kanban-card relative order-card" data-search="${o.customerName} ${o.customerPhone}">
-                            <div class="flex justify-between"><h5 class="font-bold text-sm text-slate-800 truncate">${o.customerName || 'بدون اسم'}</h5><span class="text-[10px] text-slate-400">${orderDateObj.toLocaleDateString()}</span></div>
-                            <p class="text-xs text-slate-500 mb-1 mt-1 truncate">${itemsStr}</p>
-                            ${o.notes || o.adminNote ? `<div class="text-[10px] font-bold text-blue-700 bg-blue-50 p-1.5 rounded mb-2 border border-blue-100 shadow-sm"><i class="fa-solid fa-pen-to-square"></i> ${o.adminNote || o.notes}</div>` : ''}
-                            
-                            <div class="flex justify-between items-center mt-2 border-t border-slate-100 pt-2 gap-2">
-                                <!-- زرار التعديل الجديد -->
-                                <button onclick="openEditOrder('${id}')" class="text-[10px] bg-slate-100 hover:bg-slate-200 text-brand-accent px-2 py-1.5 rounded font-bold transition-colors shadow-sm" title="تعديل الطلب"><i class="fa-solid fa-pen"></i> تعديل</button>
-                                
-                                <span class="font-black text-brand-primary text-sm flex-1 text-center">${o.total || 0} ج</span>
-                                
-                                <select onchange="updateOrderStatus('${id}', this.value)" class="text-[10px] font-bold bg-slate-100 rounded px-1 py-1 outline-none text-slate-700 cursor-pointer">
-                                    <option value="new" ${stat==='new'?'selected':''}>جديد</option>
-                                    <option value="preparing" ${stat==='preparing'?'selected':''}>تجهيز</option>
-                                    <option value="ready" ${stat==='ready'?'selected':''}>جاهز</option>
-                                    <option value="shipping" ${stat==='shipping'?'selected':''}>توصيل</option>
-                                    <option value="delivered" ${stat==='delivered'?'selected':''}>تسليم</option>
-                                    <option value="canceled" ${stat==='canceled'?'selected':''}>إلغاء ❌</option>
-                                </select>
-                            </div>
-                        </div>`;
-                    }
+                    if(counts[stat] !== undefined) counts[stat]++;
                 });
 
                 document.getElementById('dash-orders-total').innerText = snap.size;
@@ -476,12 +454,14 @@
                 document.getElementById('dash-pending').innerText = pending; document.getElementById('dash-completed').innerText = completed;
                 
                 ['new', 'preparing', 'ready', 'shipping', 'delivered', 'canceled'].forEach(s => {
-                    document.getElementById(`k-col-${s}`).innerHTML = cols[s] || `<div class="text-center text-xs text-slate-400 py-4">فارغ</div>`;
-                    document.getElementById(`k-count-${s}`).innerText = counts[s];
+                    let badge = document.getElementById(`badge-${s}`);
+                    if(badge) badge.innerText = counts[s];
                 });
+
+                renderOrdersList(); // استدعاء دالة رسم القائمة الطولية الجديدة
             });
 
-            // 3. سحب العملاء (بترتيب مرن لضمان جلب كل البيانات المرفوعة من تيك تيك)
+            // 3. سحب العملاء
             db.collection('customers').onSnapshot(snap => {
                 document.getElementById('dash-customers').innerText = snap.size;
                 customersData = [];
@@ -502,22 +482,104 @@
             });
         }
 
-        function filterOrders() {
-            let filter = document.getElementById('search-order').value.toLowerCase();
-            document.querySelectorAll('.order-card').forEach(row => { row.style.display = row.getAttribute('data-search').toLowerCase().includes(filter) ? '' : 'none'; });
-        }
+        // --- نظام الطلبات الجديد المبسط (List View) ---
+        window.setOrderTab = (tab) => {
+            currentOrderTab = tab;
+            document.querySelectorAll('.order-tab').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-white', 'border-slate-800');
+                btn.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
+            });
+            let activeBtn = document.getElementById('tab-' + tab);
+            if(activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
+                activeBtn.classList.add('bg-slate-800', 'text-white', 'border-slate-800');
+            }
+            renderOrdersList();
+        };
+
+        window.renderOrdersList = () => {
+            const container = document.getElementById('orders-list-vertical');
+            if(!container) return;
+            const filterText = (document.getElementById('search-order').value || '').toLowerCase();
+            
+            let filtered = allOrdersRaw.filter(o => {
+                let matchTab = (currentOrderTab === 'all') || (o.status === currentOrderTab);
+                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''}`.toLowerCase();
+                let matchSearch = searchStr.includes(filterText);
+                return matchTab && matchSearch;
+            });
+
+            if(filtered.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-400 py-10 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد طلبات تطابق بحثك.</div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(o => {
+                let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
+                let itemsStr = o.items ? o.items.map(i => `${i.quantity}x ${i.name}`).join('، ') : 'لا يوجد تفاصيل';
+                
+                let sColor = o.status==='new'?'bg-red-500':(o.status==='preparing'?'bg-yellow-400':(o.status==='ready'?'bg-orange-400':(o.status==='shipping'?'bg-blue-400':(o.status==='delivered'?'bg-green-500':'bg-gray-500'))));
+                
+                return `
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 border-r-4 hover:shadow-md transition-shadow relative overflow-hidden" style="border-right-color: transparent;">
+                    <div class="absolute top-0 right-0 w-1.5 h-full ${sColor}"></div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h5 class="font-black text-slate-800 text-base cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${o.customerPhone}')">${o.customerName || 'بدون اسم'} <span class="text-xs text-slate-400 font-bold ml-2" dir="ltr">${o.customerPhone}</span></h5>
+                            <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot text-brand-primary mr-1"></i> ${o.zone || 'غير مسجل'}</p>
+                        </div>
+                        <span class="text-[10px] text-slate-500 font-bold bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">${d}</span>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-2">
+                        <p class="text-sm font-bold text-slate-700">${itemsStr}</p>
+                    </div>
+                    ${(o.adminNote || o.notes) ? `<div class="text-[11px] font-bold text-blue-700 bg-blue-50 p-2 rounded-lg mb-2 border border-blue-100 shadow-sm"><i class="fa-solid fa-pen-to-square mr-1"></i> ${o.adminNote || o.notes}</div>` : ''}
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100 gap-3">
+                        <div class="flex gap-2 w-full sm:w-auto">
+                            <button onclick="openEditOrder('${o.id}')" class="flex-1 sm:flex-none text-xs bg-slate-100 hover:bg-slate-200 text-brand-accent px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-pen mr-1"></i> تعديل</button>
+                            <button onclick="addOrderNote('${o.id}')" class="flex-1 sm:flex-none text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-comment-dots mr-1"></i> ملاحظة</button>
+                        </div>
+                        <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+                            <span class="font-black text-brand-primary text-xl">${o.total || 0} ج</span>
+                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-lg px-2 py-2 outline-none text-slate-700 cursor-pointer shadow-sm focus:border-brand-primary">
+                                <option value="new" ${o.status==='new'?'selected':''}>جديد</option>
+                                <option value="preparing" ${o.status==='preparing'?'selected':''}>تجهيز</option>
+                                <option value="ready" ${o.status==='ready'?'selected':''}>جاهز</option>
+                                <option value="shipping" ${o.status==='shipping'?'selected':''}>توصيل</option>
+                                <option value="delivered" ${o.status==='delivered'?'selected':''}>تسليم</option>
+                                <option value="canceled" ${o.status==='canceled'?'selected':''}>إلغاء ❌</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+        
+        // اربط دالة البحث بدالة التحديث الجديدة
+        window.filterOrders = renderOrdersList;
+
         function filterCustomers() {
             let filter = document.getElementById('search-customer').value.toLowerCase();
             document.querySelectorAll('.customer-row').forEach(row => { row.style.display = row.getAttribute('data-search').toLowerCase().includes(filter) ? '' : 'none'; });
         }
 
-        // --- تعديل حالة الطلب السريعة ---
+        // --- تعديل حالة الطلب السريعة أو إضافة ملاحظة ---
         window.updateOrderStatus = async (id, s) => { 
-            if(s === 'canceled' && !confirm('تأكيد: هل أنت متأكد من إلغاء هذا الطلب؟ (لن يمسح من أرشيف العميل)')) return;
+            if(s === 'canceled' && !confirm('تأكيد: هل أنت متأكد من إلغاء هذا الطلب؟')) return;
             try { await db.collection('orders').doc(id).update({ status: s }); } catch(e) { alert("حدث خطأ أثناء التحديث"); }
         };
 
-        // --- سجل العميل (الملاحظات الدائمة والبيانات القديمة) ---
+        window.addOrderNote = async (id) => {
+            let o = allOrdersRaw.find(x => x.id === id); if(!o) return;
+            let note = prompt("اكتب ملاحظتك للطلب (مثل: تأجيل لغداً، تعديل الصنف، شكوى..):", o.adminNote || "");
+            if (note !== null) {
+                try { await db.collection('orders').doc(id).update({ adminNote: note.trim() }); } 
+                catch(e) { alert("حدث خطأ أثناء الحفظ!"); }
+            }
+        };
+
+        // --- سجل العميل ---
         window.openCustomerCard = async (phone) => {
             let c = customersData.find(x => x.phone === phone); if(!c) return;
             document.getElementById('cm-name').innerText = c.name || 'غير مسجل'; document.getElementById('cm-phone').innerText = c.phone || '';
@@ -525,13 +587,11 @@
             document.getElementById('cm-btn-wa').href = `https://wa.me/${(c.phone||'').startsWith('0')?'2'+c.phone:c.phone}`;
             document.getElementById('cm-btn-call').href = `tel:${c.phone}`;
 
-            // الملاحظات الدائمة (ميزة الأرشيف وتيك تيك)
             document.getElementById('cm-permanent-notes').value = c.adminNotes || '';
 
             let hDiv = document.getElementById('cm-history-list');
             hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> جاري جلب الأرشيف...</p>';
             try {
-                // جلب الطلبات بدون OrderBy عشان لو في داتا تيكتيك قديمة معندهاش تاريخ تظهر برضه
                 const snap = await db.collection('orders').where('customerPhone', '==', phone).get();
                 if(snap.empty) { hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 border-2 border-dashed rounded-xl">لا يوجد سجل طلبات مسجل لهذا العميل.</p>'; }
                 else {
@@ -563,7 +623,6 @@
             openModal('customer-modal');
         };
 
-        // --- إنشاء طلب من بروفايل العميل ---
         window.startOrderForCustomer = () => {
             const phone = document.getElementById('cm-phone').innerText.replace(/\D/g, '');
             const name = document.getElementById('cm-name').innerText;
@@ -571,10 +630,9 @@
             openModal('add-order-modal');
             document.getElementById('no-phone').value = phone;
             document.getElementById('no-name').value = name;
-            checkCustomerExists(); // لجلب عنوانه لو موجود
+            checkCustomerExists(); 
         };
 
-        // --- حفظ الملاحظات الدائمة للعميل (أرشيف تيك تيك) ---
         window.savePermanentNotes = async () => {
             let phone = document.getElementById('cm-phone').innerText;
             let notes = document.getElementById('cm-permanent-notes').value.trim();
@@ -607,7 +665,7 @@
         window.addNewProductUI = () => { const newId = 'p_' + Date.now(); storeProducts[newId] = { name: "صنف جديد", basePrice: 0, images: [""] }; storePrices[newId] = 0; storeStock[newId] = 0; renderInventoryUI(); };
         window.deleteProductUI = (id) => { if(confirm("حذف المنتج؟")) { delete storeProducts[id]; delete storePrices[id]; delete storeStock[id]; renderInventoryUI(); } };
 
-        // --- 5. الإعدادات ---
+        // --- 5. الإعدادات والمناديب ---
         function renderSettingsUI() {
             document.getElementById('st-name').value = storeSettings.storeName || ''; document.getElementById('st-phone').value = storeSettings.storePhone || ''; document.getElementById('st-min-order').value = storeSettings.minOrder || 0; document.getElementById('st-is-open').checked = storeSettings.storeOpen !== false;
             
@@ -656,12 +714,11 @@
         };
 
         // --- إضافة وتعديل الطلبات (الحاسبة الذكية) ---
-        window.calcTotal = (prefix) => { // prefix = 'no' or 'eo'
+        window.calcTotal = (prefix) => { 
             let qJ = Number(document.getElementById(prefix+'-q-jumbo').value)||0;
             let qS = Number(document.getElementById(prefix+'-q-special').value)||0;
             let qR = Number(document.getElementById(prefix+'-q-royal').value)||0;
 
-            // استخراج الأسعار الحالية من الذاكرة لعمل الحساب الذكي
             let pJ = 0, pS = 0, pR = 0;
             Object.keys(storeProducts).forEach(k => {
                 let n = storeProducts[k].name.toLowerCase();
@@ -673,7 +730,6 @@
             let itemsTotal = (qJ * pJ) + (qS * pS) + (qR * pR);
             let manualPrice = Number(document.getElementById(prefix+'-price').value);
             
-            // لو انت مش حاطط سعر يدوي، هيستخدم السعر اللي حاسبه من قاعدة البيانات
             let finalItemsPrice = manualPrice > 0 ? manualPrice : itemsTotal;
             if(manualPrice === 0 && itemsTotal > 0) document.getElementById(prefix+'-price').value = itemsTotal;
 
@@ -708,7 +764,6 @@
             btn.innerText = "تأكيد وحفظ الطلب"; btn.disabled = false;
         };
 
-        // --- تعديل الأوردر ---
         window.openEditOrder = (id) => {
             let o = allOrdersRaw.find(x => x.id === id); if(!o) return;
             document.getElementById('eo-id').value = id;
@@ -726,7 +781,7 @@
             document.getElementById('eo-q-jumbo').value = qJ || '';
             document.getElementById('eo-q-special').value = qS || '';
             document.getElementById('eo-q-royal').value = qR || '';
-            document.getElementById('eo-price').value = ''; // سيبها فاضية عشان الدالة تحسبها
+            document.getElementById('eo-price').value = ''; 
             document.getElementById('eo-total').value = o.total;
 
             openModal('edit-order-modal');
@@ -749,7 +804,6 @@
 
                 await db.collection('orders').doc(id).update({ customerName: name, zone: zone, total: total, items: items, adminNote: notes });
 
-                // تعديل إنفاق العميل لو السعر اتغير
                 if(diff !== 0 && oldOrder.customerPhone) {
                     await db.collection('customers').doc(oldOrder.customerPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(diff) }).catch(e=>{});
                 }
@@ -783,6 +837,3 @@
     </script>
 </body>
 </html>
-
-
-```
