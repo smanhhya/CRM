@@ -370,18 +370,18 @@
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- تم التعديل هنا لحل مشكلة شاشة التحميل ---
-        // ضع إعدادات مشروعك من فايربيز هنا ليعمل النظام بشكل كامل (احصل عليها من Firebase Console)
+        // تم إضافة بياناتك الحقيقية هنا بنجاح
         const firebaseConfig = {
-            apiKey: "",
-            authDomain: "",
-            projectId: "",
-            storageBucket: "",
-            messagingSenderId: "",
-            appId: ""
+            apiKey: "AIzaSyD7ZJP8n8fhMewPfEsTBANn0h9To_q15BY",
+            authDomain: "sman-ca8f8.firebaseapp.com",
+            projectId: "sman-ca8f8",
+            storageBucket: "sman-ca8f8.firebasestorage.app",
+            messagingSenderId: "538778803310",
+            appId: "1:538778803310:web:5eeff42bae534375a21a7f",
+            measurementId: "G-S6GETQ0K81"
         };
         
-        const appId = 'sman-erp';
+        const appId = 'sman-erp'; // معرف النظام للتخزين الداخلي
         let app, auth, db, currentUser;
 
         if(firebaseConfig.apiKey && firebaseConfig.apiKey !== "") {
@@ -417,7 +417,6 @@
                 document.getElementById('dash-recent-orders').innerHTML = '<p class="text-xs text-slate-400 text-center font-bold">لا يوجد طلبات (وضع التجربة)</p>';
             }, 1500);
         }
-        // ---------------------------------------------
 
         const getColPath = (col) => `artifacts/${appId}/users/${currentUser.uid}/${col}`;
         const getDocPath = (col, dId) => `artifacts/${appId}/users/${currentUser.uid}/${col}/${dId}`;
