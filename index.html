@@ -651,19 +651,73 @@
         window.addNewDriverUI = () => { if(!storeSettings.drivers) storeSettings.drivers = []; storeSettings.drivers.push({name:'', phone:''}); renderSettingsUI(); }; window.deleteDriverUI = (idx) => { storeSettings.drivers.splice(idx, 1); renderSettingsUI(); };
 
         window.saveStoreData = async () => {
-            const btn = document.getElementById('global-save-btn'); const origHtml = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; btn.disabled = true;
-            try {
-                Object.keys(storeProducts).forEach(id => { const nameEl = document.getElementById(`p-name-${id}`); if(nameEl) { storeProducts[id].name = nameEl.value; storePrices[id] = parseInt(document.getElementById(`p-price-${id}`).value) || 0; storeStock[id] = parseInt(document.getElementById(`p-stock-${id}`).value) || 0; } });
-                storeSettings.storeName = document.getElementById('st-name').value; storeSettings.storePhone = document.getElementById('st-phone').value; storeSettings.minOrder = parseInt(document.getElementById('st-min-order').value) || 0; storeSettings.storeOpen = document.getElementById('st-is-open').checked;
-                let newZones = []; let newDrivers = [];
-                (storeSettings.deliveryZones || []).forEach((_, i) => { let n = document.getElementById(`z-name-${i}`); let p = document.getElementById(`z-price-${i}`); if(n && n.value.trim() !== '') newZones.push({name: n.value.trim(), price: parseInt(p.value)||0}); });
-                (storeSettings.drivers || []).forEach((_, i) => { let n = document.getElementById(`d-name-${i}`); let p = document.getElementById(`d-phone-${i}`); if(n && n.value.trim() !== '') newDrivers.push({name: n.value.trim(), phone: p.value.trim()}); });
-                storeSettings.deliveryZones = newZones; storeSettings.drivers = newDrivers; storeSettings.productsData = storeProducts;
-                await Promise.all([ db.collection("inventory").doc("settings").set(storeSettings, {merge: true}), db.collection("inventory").doc("stock").set(storeStock), db.collection("inventory").doc("prices").set(storePrices) ]);
-                alert('تم الحفظ والمزامنة مع المتجر بنجاح!');
-            } catch(e) { alert('حدث خطأ أثناء الحفظ!'); }
-            btn.innerHTML = origHtml; btn.disabled = false;
-        };
+    const btn = document.getElementById('global-save-btn');
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; 
+    btn.disabled = true;
+
+    try {
+        // تحديث المنتجات فقط في الذاكرة من الشاشة المفتوحة
+        Object.keys(storeProducts).forEach(id => {
+            const nameEl = document.getElementById(`p-name-${id}`);
+            if(nameEl) {
+                storeProducts[id].name = nameEl.value;
+                storePrices[id] = parseInt(document.getElementById(`p-price-${id}`).value) || 0;
+                storeStock[id] = parseInt(document.getElementById(`p-stock-${id}`).value) || 0;
+            }
+        });
+
+        // تحديث إعدادات المتجر فقط لو الشاشة بتاعتها مفتوحة
+        if (document.getElementById('st-name')) {
+            storeSettings.storeName = document.getElementById('st-name').value;
+            storeSettings.storePhone = document.getElementById('st-phone').value;
+            storeSettings.minOrder = parseInt(document.getElementById('st-min-order').value) || 0;
+            storeSettings.storeOpen = document.getElementById('st-is-open').checked;
+            
+            // قراءة المناطق والمناديب وتحديثهم في الذاكرة (لو الشاشة مفتوحة فقط)
+            let newZones = []; let newDrivers = [];
+            let zoneInputsExist = document.getElementById('z-name-0');
+            if (zoneInputsExist || storeSettings.deliveryZones.length === 0) {
+                (storeSettings.deliveryZones || []).forEach((_, i) => { 
+                    let n = document.getElementById(`z-name-${i}`); let p = document.getElementById(`z-price-${i}`); 
+                    if(n && n.value.trim() !== '') newZones.push({name: n.value.trim(), price: parseInt(p.value)||0}); 
+                });
+                storeSettings.deliveryZones = newZones;
+            }
+            
+            let driverInputsExist = document.getElementById('d-name-0');
+            if (driverInputsExist || storeSettings.drivers.length === 0) {
+                (storeSettings.drivers || []).forEach((_, i) => { 
+                    let n = document.getElementById(`d-name-${i}`); let p = document.getElementById(`d-phone-${i}`); 
+                    if(n && n.value.trim() !== '') newDrivers.push({name: n.value.trim(), phone: p.value.trim()}); 
+                });
+                storeSettings.drivers = newDrivers;
+            }
+        }
+        
+        storeSettings.productsData = storeProducts;
+
+        // رفع البيانات بشكل آمن باستخدام merge عشان ميمسحش داتا قديمة
+        await Promise.all([
+            db.collection("inventory").doc("settings").set(storeSettings, {merge: true}),
+            db.collection("inventory").doc("stock").set(storeStock, {merge: true}),
+            db.collection("inventory").doc("prices").set(storePrices, {merge: true})
+        ]);
+
+        alert('تم الحفظ بأمان!');
+    } catch(e) { 
+        console.error(e); 
+        alert('حدث خطأ أثناء الحفظ!'); 
+    }
+    
+    btn.innerHTML = origHtml; 
+    btn.disabled = false;
+};
+
+// ضيف الدوال دي عشان تحديث البيانات يحصل في نفس اللحظة اللي بتكتب فيها (عشان ميضيعش)
+window.updateZoneField = (idx, field, val) => { storeSettings.deliveryZones[idx][field] = val; };
+window.updateDriverField = (idx, field, val) => { storeSettings.drivers[idx][field] = val; };
+
 
         // --- إضافة طلب يدوي ---
         window.calcTotal = () => { document.getElementById('no-total').value = (Number(document.getElementById('no-price').value) || 0) + (Number(document.getElementById('no-delivery').value) || 0) - (Number(document.getElementById('no-discount').value) || 0); }
