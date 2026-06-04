@@ -19,8 +19,12 @@
         }
     </script>
     
+    <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
@@ -29,138 +33,176 @@
 
     <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; overflow: hidden; }
-        .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-        .page-view { display: none; animation: fadeIn 0.4s ease; }
+        .page-view { display: none; animation: fadeIn 0.3s ease; }
         .page-view.active { display: flex; flex-direction: column; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        #sidebar { transition: transform 0.3s ease-in-out; }
+        
+        /* Mobile Sidebar */
+        #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (max-width: 768px) { #sidebar { transform: translateX(100%); } #sidebar.open { transform: translateX(0); } }
         
-        /* تأثير كروت الكانبان */
-        .kanban-card { transition: all 0.2s; border-right-width: 4px; }
-        .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        /* Kanban Cards */
+        .kanban-card { transition: all 0.2s; border-right-width: 4px; cursor: pointer; }
+        .kanban-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+
+        /* Tabs */
+        .tab-btn.active { border-bottom: 2px solid #0d9488; color: #0d9488; font-weight: 900; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
     </style>
 </head>
 <body class="text-slate-800 flex h-screen w-full relative selection:bg-brand-primary selection:text-white">
 
     <!-- 🔒 شاشة الدخول -->
-    <div id="login-screen" class="absolute inset-0 bg-brand-dark z-[60] flex items-center justify-center transition-opacity duration-500">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center mx-4">
-            <div class="w-16 h-16 bg-gradient-to-br from-teal-400 to-brand-primary text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg font-black">س</div>
-            <h1 class="text-2xl font-black mb-1 text-slate-800">سمان ههيا CRM</h1>
-            <p class="text-sm text-slate-500 font-bold mb-6">تسجيل الدخول للنظام</p>
+    <div id="login-screen" class="absolute inset-0 bg-brand-dark z-[80] flex items-center justify-center transition-opacity duration-500">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center mx-4 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-full h-2 bg-gradient-to-r from-teal-400 to-brand-primary"></div>
+            <div class="w-20 h-20 bg-brand-bg rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <i class="fa-solid fa-feather text-4xl text-brand-primary"></i>
+            </div>
+            <h1 class="text-2xl font-black mb-1 text-slate-800">سمان ههيا</h1>
+            <p class="text-sm text-slate-500 font-bold mb-6">النظام الإداري المتكامل (ERP)</p>
             <input type="email" id="login-email" class="w-full border-2 border-slate-200 rounded-xl p-3 mb-3 text-left outline-none focus:border-brand-primary font-bold" dir="ltr" placeholder="admin@example.com">
             <input type="password" id="login-password" class="w-full border-2 border-slate-200 rounded-xl p-3 mb-4 text-left outline-none focus:border-brand-primary font-bold" dir="ltr" placeholder="••••••••">
-            <button onclick="loginApp()" id="login-btn" class="w-full bg-brand-primary hover:bg-teal-700 text-white font-black py-3 rounded-xl transition-all shadow-md">دخول آمن</button>
+            <button onclick="loginApp()" id="login-btn" class="w-full bg-brand-primary hover:bg-teal-700 text-white font-black py-3 rounded-xl transition-all shadow-md flex justify-center items-center gap-2">تسجيل الدخول <i class="fa-solid fa-arrow-right-to-bracket"></i></button>
             <p id="login-error" class="hidden text-red-500 text-xs font-bold mt-3"></p>
         </div>
     </div>
 
     <!-- Mobile Overlay -->
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-20 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-30 hidden md:hidden backdrop-blur-sm transition-opacity"></div>
 
-    <!-- 📱 القائمة الجانبية -->
-    <aside id="sidebar" class="w-64 bg-brand-dark text-slate-300 flex flex-col shadow-2xl z-30 fixed inset-y-0 right-0 md:relative h-full">
-        <div class="h-16 flex items-center justify-between px-4 border-b border-slate-700/50 bg-slate-900/50">
+    <!-- 📱 القائمة الجانبية (Sidebar) -->
+    <aside id="sidebar" class="w-64 bg-brand-dark text-slate-300 flex flex-col shadow-2xl z-40 fixed inset-y-0 right-0 md:relative h-full border-l border-slate-800">
+        <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800 bg-slate-900">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-brand-primary text-white flex items-center justify-center font-black text-xl shadow-lg">س</div>
-                <h1 class="text-lg font-black text-white tracking-wide">سمان ههيا</h1>
+                <div class="w-8 h-8 rounded bg-brand-primary text-white flex items-center justify-center font-black text-xl shadow-lg shadow-brand-primary/20">س</div>
+                <h1 class="text-lg font-black text-white">سمان ههيا</h1>
             </div>
-            <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
 
-        <nav class="flex-1 overflow-y-auto custom-scroll py-4 px-3 space-y-1">
-            <button onclick="switchTab('dashboard', this)" class="nav-btn active w-full text-right flex items-center px-4 py-3 rounded-xl text-sm font-bold bg-brand-primary text-white shadow-md transition-all"><i class="fa-solid fa-house w-6 text-center"></i> مركز القيادة</button>
+        <nav class="flex-1 overflow-y-auto custom-scroll py-4 px-3 space-y-0.5">
+            <button onclick="switchTab('dashboard', this)" class="nav-btn active w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold bg-brand-primary text-white shadow-md mb-2"><i class="fa-solid fa-house w-6 text-center"></i> الرئيسية</button>
             
-            <div class="pt-5 pb-2 px-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">المبيعات والعملاء</div>
-            <button onclick="switchTab('orders', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-box-open w-6 text-center"></i> إدارة الطلبات</button>
-            <button onclick="switchTab('customers', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-users w-6 text-center"></i> سجل العملاء (CRM)</button>
-            
-            <div class="pt-5 pb-2 px-4 text-[10px] uppercase font-black text-slate-500 tracking-widest">التشغيل</div>
-            <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all"><i class="fa-solid fa-snowflake w-6 text-center text-blue-400"></i> الفريزر والمخزون</button>
+            <div class="pt-3 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">التشغيل والمبيعات</div>
+            <button onclick="switchTab('orders', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"><i class="fa-solid fa-box-open w-6 text-center"></i> الطلبات</button>
+            <button onclick="switchTab('customers', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"><i class="fa-solid fa-users w-6 text-center"></i> العملاء</button>
+            <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"><i class="fa-solid fa-snowflake w-6 text-center text-blue-400"></i> المخزون</button>
+
+            <div class="pt-4 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">التحليلات والمتابعة</div>
+            <button onclick="switchTab('sales', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"><i class="fa-solid fa-chart-line w-6 text-center text-green-400"></i> المبيعات والأرباح</button>
+            <button onclick="switchTab('reports', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"><i class="fa-solid fa-file-invoice w-6 text-center text-purple-400"></i> التقارير الذكية</button>
+            <button onclick="switchTab('followups', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"><i class="fa-solid fa-calendar-check w-6 text-center text-yellow-400"></i> مهام المتابعة</button>
+            <button onclick="switchTab('support', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"><i class="fa-solid fa-headset w-6 text-center text-orange-400"></i> خدمة العملاء</button>
+
+            <div class="pt-4 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">إدارة النظام</div>
+            <button onclick="switchTab('alerts', this)" class="nav-btn w-full text-right flex items-center justify-between px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors">
+                <div><i class="fa-solid fa-bell w-6 text-center text-red-400"></i> التنبيهات</div>
+                <span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full">3</span>
+            </button>
+            <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors"><i class="fa-solid fa-gears w-6 text-center"></i> الإعدادات</button>
         </nav>
 
-        <div class="p-4 border-t border-slate-700/50 bg-slate-900/30">
-            <button onclick="auth.signOut()" class="w-full flex items-center justify-center gap-2 text-red-400 hover:text-red-300 text-sm font-bold transition-colors py-2"><i class="fa-solid fa-power-off"></i> تسجيل الخروج</button>
+        <div class="p-4 border-t border-slate-800 bg-slate-900">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('profile', document.querySelector('.nav-btn'))">
+                    <img src="https://ui-avatars.com/api/?name=Admin&background=0d9488&color=fff" class="w-8 h-8 rounded-full">
+                    <div><p class="text-xs font-bold text-white">حسابي</p><p class="text-[9px] text-green-400">متصل</p></div>
+                </div>
+                <button onclick="auth.signOut()" class="text-red-400 hover:text-red-300 transition-colors p-2" title="تسجيل الخروج"><i class="fa-solid fa-right-from-bracket"></i></button>
+            </div>
         </div>
     </aside>
 
-    <!-- 🖥 محتوى النظام -->
+    <!-- 🖥 محتوى النظام الرئيسي -->
     <main class="flex-1 flex flex-col min-w-0 h-full relative">
         <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 shadow-sm z-10 shrink-0">
             <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="md:hidden w-10 h-10 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-200"><i class="fa-solid fa-bars text-lg"></i></button>
-                <h2 id="header-title" class="text-lg lg:text-xl font-black text-slate-800">مركز القيادة</h2>
+                <button onclick="toggleSidebar()" class="md:hidden w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-100"><i class="fa-solid fa-bars"></i></button>
+                <h2 id="header-title" class="text-xl font-black text-slate-800">الرئيسية</h2>
             </div>
-            <div class="flex items-center gap-2 lg:gap-4">
-                <span class="hidden lg:flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-circle text-[8px] animate-pulse"></i> متصل لايف</span>
-                <button onclick="openModal('add-order-modal')" class="bg-brand-primary hover:bg-teal-700 text-white px-3 lg:px-4 py-2 rounded-lg text-xs lg:text-sm font-bold shadow-md transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> <span class="hidden lg:inline">طلب جديد</span></button>
+            <div class="flex items-center gap-3">
+                <span class="hidden lg:flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 border border-green-100 px-3 py-1.5 rounded-full"><i class="fa-solid fa-wifi text-[10px]"></i> متصل بقاعدة البيانات</span>
+                <button onclick="openModal('add-order-modal')" class="bg-brand-dark hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> <span class="hidden md:inline">إنشاء طلب</span></button>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto custom-scroll p-4 lg:p-6 pb-20 relative bg-slate-50">
+        <div class="flex-1 overflow-y-auto custom-scroll p-4 lg:p-6 pb-20 bg-slate-50">
 
-            <!-- 1. الرئيسية -->
-            <div id="view-dashboard" class="page-view active space-y-6 h-full">
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-5">
-                    <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-green-500"></div><p class="text-xs font-bold text-slate-400 mb-2">مبيعات اليوم</p><h3 id="dash-sales" class="text-xl lg:text-3xl font-black text-slate-800">0 ج</h3></div>
-                    <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-brand-primary"></div><p class="text-xs font-bold text-slate-400 mb-2">إجمالي العملاء</p><h3 id="dash-customers" class="text-xl lg:text-3xl font-black text-slate-800">0</h3></div>
-                    <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-yellow-400"></div><p class="text-xs font-bold text-slate-400 mb-2">طلبات قيد التجهيز</p><h3 id="dash-pending" class="text-xl lg:text-3xl font-black text-slate-800">0</h3></div>
-                    <div class="bg-white p-4 lg:p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-red-500"></div><p class="text-xs font-bold text-slate-400 mb-2">عملاء مفقودين</p><h3 id="dash-lost" class="text-xl lg:text-3xl font-black text-red-600">0</h3></div>
+            <!-- ======================= 1. الرئيسية (Dashboard) ======================= -->
+            <div id="view-dashboard" class="page-view active space-y-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-blue-500"></div><p class="text-xs font-bold text-slate-400 mb-1">إجمالي العملاء</p><h3 id="dash-customers" class="text-2xl font-black text-slate-800">0</h3></div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-slate-800"></div><p class="text-xs font-bold text-slate-400 mb-1">إجمالي الطلبات</p><h3 id="dash-orders-total" class="text-2xl font-black text-slate-800">0</h3></div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-brand-primary"></div><p class="text-xs font-bold text-slate-400 mb-1">مبيعات اليوم</p><h3 id="dash-sales-day" class="text-2xl font-black text-brand-primary">0 <span class="text-sm">ج</span></h3></div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-green-500"></div><p class="text-xs font-bold text-slate-400 mb-1">مبيعات الشهر</p><h3 id="dash-sales-month" class="text-2xl font-black text-green-600">0 <span class="text-sm">ج</span></h3></div>
+                    
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-yellow-400"></div><p class="text-xs font-bold text-slate-400 mb-1">قيد التنفيذ (جديد-تجهيز-توصيل)</p><h3 id="dash-pending" class="text-2xl font-black text-slate-800">0</h3></div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-teal-400"></div><p class="text-xs font-bold text-slate-400 mb-1">الطلبات المكتملة</p><h3 id="dash-completed" class="text-2xl font-black text-slate-800">0</h3></div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-purple-500"></div><p class="text-xs font-bold text-slate-400 mb-1">عملاء جدد (هذا الشهر)</p><h3 id="dash-new-cust" class="text-2xl font-black text-slate-800">0</h3></div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 w-1.5 h-full bg-red-500"></div><p class="text-xs font-bold text-slate-400 mb-1">عملاء مفقودين (+30 يوم)</p><h3 id="dash-lost-cust" class="text-2xl font-black text-red-600">0</h3></div>
+                </div>
+
+                <!-- الرسم البياني (Mockup) -->
+                <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+                    <h3 class="font-black text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-chart-area text-brand-primary"></i> تحليل المبيعات (أسبوعي)</h3>
+                    <div class="h-64 w-full flex items-end justify-between gap-2 border-b border-slate-200 pb-2 relative">
+                        <div class="w-full bg-slate-100 rounded-t-lg h-[40%] relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">السبت: 1200</div></div>
+                        <div class="w-full bg-brand-primary rounded-t-lg h-[80%] relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">الأحد: 3500</div></div>
+                        <div class="w-full bg-slate-100 rounded-t-lg h-[60%] relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">الإثنين: 2100</div></div>
+                        <div class="w-full bg-green-500 rounded-t-lg h-[95%] relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">الثلاثاء: 4200</div></div>
+                        <div class="w-full bg-slate-100 rounded-t-lg h-[30%] relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">الأربعاء: 900</div></div>
+                        <div class="w-full bg-slate-100 rounded-t-lg h-[50%] relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">الخميس: 1800</div></div>
+                        <div class="w-full bg-brand-accent rounded-t-lg h-[70%] relative group"><div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded hidden group-hover:block">الجمعة: 2800</div></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- 2. إدارة الطلبات (Kanban) -->
+            <!-- ======================= 2. إدارة الطلبات (Kanban Board) ======================= -->
             <div id="view-orders" class="page-view h-full flex flex-col">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="font-black text-slate-800 text-lg">الطلبات الحية</h3>
-                    <button onclick="openModal('add-order-modal')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> طلب جديد</button>
+                    <div class="flex gap-2">
+                        <input type="text" placeholder="بحث برقم الطلب..." class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-brand-primary">
+                        <button class="bg-white border border-slate-200 px-3 rounded-lg text-slate-600 hover:bg-slate-50"><i class="fa-solid fa-filter"></i></button>
+                    </div>
                 </div>
-                <!-- Kanban Columns -->
+                
+                <!-- 6 Kanban Columns -->
                 <div class="flex gap-4 overflow-x-auto custom-scroll flex-1 pb-4">
-                    <!-- Column: New -->
-                    <div class="min-w-[280px] w-1/4 bg-slate-200/50 rounded-2xl p-3 flex flex-col">
-                        <h4 class="font-black text-slate-700 mb-3 px-2 flex justify-between">جديد <span id="count-new" class="bg-white px-2 py-0.5 rounded-full text-xs">0</span></h4>
-                        <div id="col-new" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div>
-                    </div>
-                    <!-- Column: Preparing -->
-                    <div class="min-w-[280px] w-1/4 bg-slate-200/50 rounded-2xl p-3 flex flex-col">
-                        <h4 class="font-black text-slate-700 mb-3 px-2 flex justify-between">جاري التجهيز <span id="count-preparing" class="bg-white px-2 py-0.5 rounded-full text-xs">0</span></h4>
-                        <div id="col-preparing" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div>
-                    </div>
-                    <!-- Column: Shipping -->
-                    <div class="min-w-[280px] w-1/4 bg-slate-200/50 rounded-2xl p-3 flex flex-col">
-                        <h4 class="font-black text-slate-700 mb-3 px-2 flex justify-between">خرج للتوصيل <span id="count-shipping" class="bg-white px-2 py-0.5 rounded-full text-xs">0</span></h4>
-                        <div id="col-shipping" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div>
-                    </div>
-                    <!-- Column: Delivered -->
-                    <div class="min-w-[280px] w-1/4 bg-slate-200/50 rounded-2xl p-3 flex flex-col">
-                        <h4 class="font-black text-slate-700 mb-3 px-2 flex justify-between">تم التسليم <span id="count-delivered" class="bg-white px-2 py-0.5 rounded-full text-xs">0</span></h4>
-                        <div id="col-delivered" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div>
-                    </div>
+                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-slate-300 pb-2 flex justify-between">جديد 🟢 <span id="k-count-new" class="bg-white text-xs px-2 rounded-full">0</span></h4><div id="k-col-new" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
+                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-yellow-400 pb-2 flex justify-between">تجهيز 🟡 <span id="k-count-preparing" class="bg-white text-xs px-2 rounded-full">0</span></h4><div id="k-col-preparing" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
+                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-orange-400 pb-2 flex justify-between">جاهز 🟠 <span id="k-count-ready" class="bg-white text-xs px-2 rounded-full">0</span></h4><div id="k-col-ready" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
+                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-blue-400 pb-2 flex justify-between">توصيل 🚚 <span id="k-count-shipping" class="bg-white text-xs px-2 rounded-full">0</span></h4><div id="k-col-shipping" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
+                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-green-500 pb-2 flex justify-between">تم التسليم ✅ <span id="k-count-delivered" class="bg-white text-xs px-2 rounded-full">0</span></h4><div id="k-col-delivered" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
+                    <div class="min-w-[260px] w-[260px] bg-slate-200/60 rounded-2xl p-3 flex flex-col"><h4 class="font-black text-slate-700 mb-3 px-2 border-b-2 border-red-500 pb-2 flex justify-between">ملغي ❌ <span id="k-count-canceled" class="bg-white text-xs px-2 rounded-full">0</span></h4><div id="k-col-canceled" class="space-y-3 flex-1 overflow-y-auto custom-scroll pr-1"></div></div>
                 </div>
             </div>
 
-            <!-- 3. العملاء (CRM) -->
+            <!-- ======================= 3. العملاء (CRM) ======================= -->
             <div id="view-customers" class="page-view h-full flex flex-col">
-                <div class="flex justify-between gap-4 mb-6">
-                    <div class="relative w-full lg:w-96">
-                        <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
-                        <input type="text" id="search-customer" onkeyup="filterCustomers()" placeholder="ابحث بالاسم أو الهاتف..." class="w-full pl-4 pr-12 py-3 rounded-xl border border-slate-200 focus:border-brand-primary outline-none text-sm font-bold">
+                <div class="flex flex-col md:flex-row justify-between gap-3 mb-4">
+                    <div class="relative w-full md:w-96">
+                        <i class="fa-solid fa-search absolute right-4 top-3 text-slate-400"></i>
+                        <input type="text" id="search-customer" onkeyup="filterCustomers()" placeholder="بحث بالاسم أو الهاتف..." class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 focus:border-brand-primary outline-none text-sm font-bold bg-white shadow-sm">
                     </div>
-                    <button onclick="openModal('add-customer-modal')" class="bg-slate-800 text-white px-4 py-3 rounded-xl text-sm font-bold shadow-md shrink-0"><i class="fa-solid fa-user-plus lg:mr-2"></i><span class="hidden lg:inline"> إضافة عميل</span></button>
+                    <div class="flex gap-2">
+                        <button class="bg-white border border-slate-200 px-4 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-50"><i class="fa-solid fa-filter"></i> فلترة</button>
+                        <button onclick="openModal('add-customer-modal')" class="bg-brand-primary text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-teal-700 flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> إضافة عميل</button>
+                    </div>
                 </div>
                 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
                     <div class="overflow-x-auto custom-scroll flex-1">
                         <table class="w-full text-right text-sm whitespace-nowrap">
                             <thead class="bg-slate-50 text-slate-500 sticky top-0 z-10 border-b border-slate-200">
                                 <tr>
-                                    <th class="py-4 px-6 font-bold">العميل</th>
-                                    <th class="py-4 px-6 font-bold text-center">الطلبات</th>
-                                    <th class="py-4 px-6 font-bold text-center">الإجمالي (LTV)</th>
-                                    <th class="py-4 px-6 font-bold">التصنيف</th>
-                                    <th class="py-4 px-6 font-bold text-center">إجراءات</th>
+                                    <th class="py-3 px-5 font-bold">العميل</th>
+                                    <th class="py-3 px-5 font-bold text-center">آخر طلب</th>
+                                    <th class="py-3 px-5 font-bold text-center">عدد الطلبات</th>
+                                    <th class="py-3 px-5 font-bold text-center">الإجمالي</th>
+                                    <th class="py-3 px-5 font-bold text-center">إجراءات سريعة</th>
                                 </tr>
                             </thead>
                             <tbody id="customers-tbody" class="divide-y divide-slate-100"></tbody>
@@ -169,32 +211,96 @@
                 </div>
             </div>
 
-            <!-- 4. جرد الفريزر -->
-            <div id="view-inventory" class="page-view h-full">
-                <h3 class="font-black text-slate-800 text-xl mb-6"><i class="fa-solid fa-snowflake text-blue-500 mr-2"></i> الجرد الحي للفريزر</h3>
+            <!-- ======================= 4. المخزون (Inventory) ======================= -->
+            <div id="view-inventory" class="page-view h-full space-y-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-snowflake text-blue-500 mr-2"></i> الجرد الحي للفريزر</h3>
+                    <button class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md"><i class="fa-solid fa-plus mr-1"></i> إضافة صنف</button>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Jumbo -->
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-primary"></div>
-                        <h4 class="text-lg font-black text-slate-800 mb-4">سمان جامبو</h4>
-                        <div class="flex justify-between mb-2 text-sm"><span class="text-slate-500 font-bold">المحجوز في الطلبات:</span><span id="inv-jumbo-res" class="font-black">0</span></div>
-                        <div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="text-sm font-black text-brand-primary">المتبقي الفعلي:</span><span id="inv-jumbo-left" class="text-2xl font-black text-brand-primary">--</span></div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-primary"></div><h4 class="text-lg font-black text-slate-800 mb-4">سمان جامبو</h4><div class="flex justify-between mb-2 text-sm"><span class="text-slate-500 font-bold">المتاح الكلي:</span><span class="font-black">50</span></div><div class="flex justify-between mb-2 text-sm text-yellow-600"><span class="font-bold">المحجوز (في الطلبات):</span><span id="inv-jumbo-res" class="font-black">0</span></div><div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="text-sm font-black text-brand-primary">المتبقي الفعلي للبيع:</span><span id="inv-jumbo-left" class="text-2xl font-black text-brand-primary">--</span></div></div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-accent"></div><h4 class="text-lg font-black text-slate-800 mb-4">سمان اسبيشيال</h4><div class="flex justify-between mb-2 text-sm"><span class="text-slate-500 font-bold">المتاح الكلي:</span><span class="font-black">50</span></div><div class="flex justify-between mb-2 text-sm text-yellow-600"><span class="font-bold">المحجوز (في الطلبات):</span><span id="inv-special-res" class="font-black">0</span></div><div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="text-sm font-black text-brand-accent">المتبقي الفعلي للبيع:</span><span id="inv-special-left" class="text-2xl font-black text-brand-accent">--</span></div></div>
+                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden"><div class="absolute top-0 right-0 left-0 h-1.5 bg-purple-500"></div><h4 class="text-lg font-black text-slate-800 mb-4">سمان رويال</h4><div class="flex justify-between mb-2 text-sm"><span class="text-slate-500 font-bold">المتاح الكلي:</span><span class="font-black">50</span></div><div class="flex justify-between mb-2 text-sm text-yellow-600"><span class="font-bold">المحجوز (في الطلبات):</span><span id="inv-royal-res" class="font-black">0</span></div><div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="text-sm font-black text-purple-600">المتبقي الفعلي للبيع:</span><span id="inv-royal-left" class="text-2xl font-black text-purple-600">--</span></div></div>
+                </div>
+            </div>
+
+            <!-- ======================= 5. شاشات هيكلية (UI Mockups) ======================= -->
+            
+            <!-- المبيعات -->
+            <div id="view-sales" class="page-view space-y-6">
+                <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-chart-line text-green-500 mr-2"></i> المبيعات والأرباح</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center"><p class="text-xs font-bold text-slate-400">إجمالي الإيرادات</p><h3 class="text-2xl font-black text-slate-800 mt-2">124,500 ج</h3></div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center"><p class="text-xs font-bold text-slate-400">المصروفات (علف، نقل، الخ)</p><h3 class="text-2xl font-black text-red-500 mt-2">84,000 ج</h3></div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center border-b-4 border-b-green-500"><p class="text-xs font-bold text-slate-400">صافي الربح التقديري</p><h3 class="text-2xl font-black text-green-600 mt-2">40,500 ج</h3></div>
+                </div>
+            </div>
+
+            <!-- التقارير -->
+            <div id="view-reports" class="page-view space-y-6">
+                <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-file-invoice text-purple-500 mr-2"></i> التقارير الذكية</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <h4 class="font-bold text-sm text-slate-800 mb-4 border-b pb-2">🏆 أفضل 5 عملاء (VIP)</h4>
+                        <ul class="space-y-3 text-sm font-bold text-slate-600">
+                            <li class="flex justify-between"><span>1. محمد أحمد</span><span class="text-brand-primary">12,400 ج</span></li>
+                            <li class="flex justify-between"><span>2. إبراهيم السيد</span><span class="text-brand-primary">9,850 ج</span></li>
+                            <li class="flex justify-between"><span>3. مطعم الرضا</span><span class="text-brand-primary">8,200 ج</span></li>
+                        </ul>
                     </div>
-                    <!-- Special -->
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 right-0 left-0 h-1.5 bg-brand-accent"></div>
-                        <h4 class="text-lg font-black text-slate-800 mb-4">سمان اسبيشيال</h4>
-                        <div class="flex justify-between mb-2 text-sm"><span class="text-slate-500 font-bold">المحجوز في الطلبات:</span><span id="inv-special-res" class="font-black">0</span></div>
-                        <div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="text-sm font-black text-brand-accent">المتبقي الفعلي:</span><span id="inv-special-left" class="text-2xl font-black text-brand-accent">--</span></div>
-                    </div>
-                    <!-- Royal -->
-                    <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 right-0 left-0 h-1.5 bg-purple-500"></div>
-                        <h4 class="text-lg font-black text-slate-800 mb-4">سمان رويال</h4>
-                        <div class="flex justify-between mb-2 text-sm"><span class="text-slate-500 font-bold">المحجوز في الطلبات:</span><span id="inv-royal-res" class="font-black">0</span></div>
-                        <div class="flex justify-between items-center pt-3 border-t border-slate-100"><span class="text-sm font-black text-purple-600">المتبقي الفعلي:</span><span id="inv-royal-left" class="text-2xl font-black text-purple-600">--</span></div>
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+                        <h4 class="font-bold text-sm text-slate-800 mb-4 border-b pb-2">📍 أكثر المناطق طلباً</h4>
+                        <ul class="space-y-3 text-sm font-bold text-slate-600">
+                            <li class="flex justify-between"><span>1. الزقازيق</span><span class="text-slate-800">45%</span></li>
+                            <li class="flex justify-between"><span>2. ههيا</span><span class="text-slate-800">30%</span></li>
+                            <li class="flex justify-between"><span>3. أبو كبير</span><span class="text-slate-800">15%</span></li>
+                        </ul>
                     </div>
                 </div>
+            </div>
+
+            <!-- المتابعات -->
+            <div id="view-followups" class="page-view space-y-4">
+                <div class="flex justify-between items-center"><h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-calendar-check text-yellow-500 mr-2"></i> مهام المتابعة</h3><button class="bg-brand-dark text-white px-4 py-2 rounded-lg text-sm font-bold"><i class="fa-solid fa-plus mr-1"></i> مهمة جديدة</button></div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center border-r-4 border-r-red-500">
+                    <div><h4 class="font-bold text-sm text-slate-800">اتصال بعميل: محمود سعيد</h4><p class="text-xs text-slate-500">لم يطلب منذ شهر، عرض خصم استرجاع.</p></div>
+                    <span class="text-xs font-bold text-red-500 bg-red-50 px-2 py-1 rounded">اليوم 2:00 م</span>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center border-r-4 border-r-blue-500">
+                    <div><h4 class="font-bold text-sm text-slate-800">تأكيد حجز: علي جابر</h4><p class="text-xs text-slate-500">متابعة تأكيد عدد 20 جوز رويال لغداً.</p></div>
+                    <span class="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">غداً 10:00 ص</span>
+                </div>
+            </div>
+
+            <!-- خدمة العملاء -->
+            <div id="view-support" class="page-view text-center pt-20 text-slate-400">
+                <i class="fa-solid fa-headset text-6xl mb-4 text-orange-200"></i><h3 class="text-2xl font-black text-slate-600">مركز خدمة العملاء والشكاوى</h3><p class="text-sm mt-2">تسجيل تذاكر الدعم الفني والملاحظات.</p>
+            </div>
+
+            <!-- التنبيهات -->
+            <div id="view-alerts" class="page-view space-y-4">
+                <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-bell text-red-500 mr-2"></i> مركز التنبيهات</h3>
+                <div class="bg-red-50 p-4 rounded-xl border border-red-100 flex gap-3 items-start"><i class="fa-solid fa-triangle-exclamation text-red-500 mt-1"></i><div><h4 class="font-bold text-sm text-slate-800">مخزون منخفض</h4><p class="text-xs text-slate-600">سمان جامبو أوشك على النفاذ.</p></div></div>
+                <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex gap-3 items-start"><i class="fa-solid fa-clock text-yellow-600 mt-1"></i><div><h4 class="font-bold text-sm text-slate-800">طلب متأخر</h4><p class="text-xs text-slate-600">الطلب #1045 لم يتم تسليمه منذ 24 ساعة.</p></div></div>
+            </div>
+
+            <!-- الإعدادات -->
+            <div id="view-settings" class="page-view space-y-6">
+                <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-gears text-slate-500 mr-2"></i> الإعدادات</h3>
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm max-w-2xl">
+                    <h4 class="font-bold text-sm mb-4 border-b pb-2">أسعار المنتجات الافتراضية</h4>
+                    <div class="grid grid-cols-3 gap-4 mb-6">
+                        <div><label class="text-xs font-bold text-slate-500 block mb-1">جامبو</label><input type="number" value="120" class="w-full border rounded-lg p-2 text-sm font-bold outline-none"></div>
+                        <div><label class="text-xs font-bold text-slate-500 block mb-1">اسبيشيال</label><input type="number" value="100" class="w-full border rounded-lg p-2 text-sm font-bold outline-none"></div>
+                        <div><label class="text-xs font-bold text-slate-500 block mb-1">رويال</label><input type="number" value="150" class="w-full border rounded-lg p-2 text-sm font-bold outline-none"></div>
+                    </div>
+                    <button class="bg-brand-primary text-white px-4 py-2 rounded-lg text-sm font-bold">حفظ الإعدادات</button>
+                </div>
+            </div>
+
+            <!-- حسابي -->
+            <div id="view-profile" class="page-view text-center pt-20 text-slate-400">
+                <i class="fa-solid fa-user-shield text-6xl mb-4 text-slate-200"></i><h3 class="text-2xl font-black text-slate-600">إدارة الصلاحيات وحسابي</h3><button class="mt-4 bg-slate-200 text-slate-600 px-4 py-2 rounded-lg text-sm font-bold">📥 تحميل نسخة احتياطية (قريباً)</button>
             </div>
 
         </div>
@@ -202,124 +308,133 @@
 
     <!-- ======================= Modals (النوافذ المنبثقة) ======================= -->
 
-    <!-- نافذة إضافة طلب جديد -->
+    <!-- 1. نموذج إضافة طلب احترافي -->
     <div id="add-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-[fadeIn_0.3s_ease-out] flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-[fadeIn_0.2s_ease-out] flex flex-col max-h-[95vh]">
             <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
                 <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-cart-plus text-brand-primary mr-2"></i> إنشاء طلب جديد</h3>
                 <button onclick="closeModal('add-order-modal')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
             <div class="p-5 overflow-y-auto custom-scroll space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-slate-500 block mb-1">رقم هاتف العميل (للبحث أو الإضافة)</label>
-                    <input type="tel" id="new-order-phone" class="w-full border-2 border-slate-200 rounded-xl p-2.5 outline-none focus:border-brand-primary font-bold" dir="ltr" placeholder="010..." onblur="checkCustomerExists()">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">رقم هاتف العميل</label><input type="tel" id="no-phone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold" dir="ltr" onblur="checkCustomerExists()"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">اسم العميل</label><input type="text" id="no-name" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
                 </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 block mb-1">اسم العميل</label>
-                    <input type="text" id="new-order-name" class="w-full border-2 border-slate-200 rounded-xl p-2.5 outline-none focus:border-brand-primary font-bold">
-                </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 block mb-1">المنطقة / العنوان</label>
-                    <input type="text" id="new-order-zone" class="w-full border-2 border-slate-200 rounded-xl p-2.5 outline-none focus:border-brand-primary font-bold" placeholder="مثال: الزقازيق، ههيا...">
-                </div>
+                <div><label class="text-xs font-bold text-slate-500 block mb-1">المنطقة</label><input type="text" id="no-zone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
                 
                 <div class="border-t border-slate-100 pt-3">
-                    <label class="text-xs font-black text-slate-800 block mb-2">الأصناف المطلوبة</label>
+                    <label class="text-xs font-black text-slate-800 block mb-2">الأصناف (الكمية)</label>
                     <div class="grid grid-cols-3 gap-2">
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-500 block text-center">جامبو</span>
-                            <input type="number" id="qty-jumbo" min="0" class="w-full border border-slate-200 rounded-lg p-2 text-center font-black" placeholder="0">
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-500 block text-center">اسبيشيال</span>
-                            <input type="number" id="qty-special" min="0" class="w-full border border-slate-200 rounded-lg p-2 text-center font-black" placeholder="0">
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold text-slate-500 block text-center">رويال</span>
-                            <input type="number" id="qty-royal" min="0" class="w-full border border-slate-200 rounded-lg p-2 text-center font-black" placeholder="0">
-                        </div>
+                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">جامبو</span><input type="number" id="no-q-jumbo" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
+                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">اسبيشيال</span><input type="number" id="no-q-special" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
+                        <div><span class="text-[10px] font-bold text-slate-500 block text-center">رويال</span><input type="number" id="no-q-royal" min="0" class="w-full border rounded-lg p-2 text-center font-black" placeholder="0"></div>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-3 gap-4 border-t border-slate-100 pt-3">
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">سعر الأصناف</label><input type="number" id="no-price" class="w-full border border-slate-200 rounded-lg p-2 font-bold" placeholder="0"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">تكلفة التوصيل</label><input type="number" id="no-delivery" class="w-full border border-slate-200 rounded-lg p-2 font-bold" placeholder="0"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">خصم</label><input type="number" id="no-discount" class="w-full border border-slate-200 rounded-lg p-2 font-bold text-red-500" placeholder="0"></div>
+                </div>
+
+                <div><label class="text-xs font-bold text-slate-500 block mb-1">ملاحظات الطلب</label><textarea id="no-notes" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary text-sm" rows="2"></textarea></div>
 
                 <div>
-                    <label class="text-xs font-bold text-slate-500 block mb-1">السعر الإجمالي (شامل التوصيل)</label>
-                    <input type="number" id="new-order-total" class="w-full border-2 border-brand-primary bg-teal-50 rounded-xl p-2.5 outline-none font-black text-brand-primary text-xl" placeholder="0">
+                    <label class="text-xs font-bold text-slate-500 block mb-1">الإجمالي النهائي المطلوب</label>
+                    <div class="flex gap-2">
+                        <button onclick="calcTotal()" class="bg-slate-200 px-3 rounded-xl text-xs font-bold hover:bg-slate-300">احسب</button>
+                        <input type="number" id="no-total" class="flex-1 border-2 border-brand-primary bg-teal-50 rounded-xl p-2 outline-none font-black text-brand-primary text-lg" placeholder="0">
+                    </div>
                 </div>
             </div>
-            <div class="p-5 border-t border-slate-200 bg-slate-50 shrink-0">
-                <button onclick="submitNewOrder()" id="btn-save-order" class="w-full bg-brand-primary hover:bg-teal-700 text-white font-black py-3 rounded-xl transition-all shadow-md">حفظ الطلب وتحديث المخزون</button>
+            <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0">
+                <button onclick="submitNewOrder()" id="btn-save-order" class="w-full bg-brand-primary hover:bg-teal-700 text-white font-black py-3 rounded-xl transition-all shadow-md">تأكيد وحفظ الطلب</button>
             </div>
         </div>
     </div>
 
-    <!-- نافذة إضافة عميل -->
+    <!-- 2. إضافة عميل -->
     <div id="add-customer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden animate-[fadeIn_0.3s_ease-out]">
-            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-user-plus text-brand-primary mr-2"></i> تسجيل عميل جديد</h3>
-                <button onclick="closeModal('add-customer-modal')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
-            </div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50"><h3 class="text-lg font-black text-slate-800">تسجيل عميل جديد</h3><button onclick="closeModal('add-customer-modal')" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button></div>
             <div class="p-5 space-y-4">
-                <input type="tel" id="new-cust-phone" class="w-full border-2 border-slate-200 rounded-xl p-3 outline-none focus:border-brand-primary font-bold" dir="ltr" placeholder="رقم الهاتف (010...)">
-                <input type="text" id="new-cust-name" class="w-full border-2 border-slate-200 rounded-xl p-3 outline-none focus:border-brand-primary font-bold" placeholder="الاسم بالكامل">
-                <input type="text" id="new-cust-zone" class="w-full border-2 border-slate-200 rounded-xl p-3 outline-none focus:border-brand-primary font-bold" placeholder="المنطقة (مثال: الزقازيق)">
-                <button onclick="submitNewCustomer()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-xl transition-all shadow-md">حفظ العميل</button>
+                <input type="tel" id="nc-phone" class="w-full border-2 border-slate-200 rounded-xl p-3 outline-none focus:border-brand-primary font-bold" dir="ltr" placeholder="رقم الهاتف">
+                <input type="text" id="nc-name" class="w-full border-2 border-slate-200 rounded-xl p-3 outline-none focus:border-brand-primary font-bold" placeholder="الاسم بالكامل">
+                <input type="text" id="nc-zone" class="w-full border-2 border-slate-200 rounded-xl p-3 outline-none focus:border-brand-primary font-bold" placeholder="المنطقة">
+                <button onclick="submitNewCustomer()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3 rounded-xl shadow-md">حفظ العميل</button>
             </div>
         </div>
     </div>
 
-    <!-- نافذة ملف العميل (مع سجل طلباته) -->
+    <!-- 3. ملف العميل المتقدم (بتبويبات) -->
     <div id="customer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4 lg:p-0 transition-opacity">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
             <div class="bg-slate-50 p-5 border-b border-slate-200 flex justify-between items-start shrink-0">
                 <div class="flex gap-4 items-center">
-                    <div class="w-12 h-12 rounded-xl bg-brand-dark text-white flex items-center justify-center text-xl font-black"><i class="fa-regular fa-user"></i></div>
+                    <div class="w-14 h-14 rounded-2xl bg-brand-dark text-white flex items-center justify-center text-2xl font-black shadow-md"><i class="fa-regular fa-user"></i></div>
                     <div>
-                        <h2 id="modal-name" class="text-xl font-black text-slate-800 mb-1">اسم العميل</h2>
-                        <p id="modal-phone" class="text-slate-500 font-bold text-xs" dir="ltr"></p>
+                        <h2 id="cm-name" class="text-xl font-black text-slate-800 mb-1">اسم العميل</h2>
+                        <div class="flex gap-3 text-xs font-bold text-slate-500">
+                            <span id="cm-phone" dir="ltr"></span>
+                            <span id="cm-zone"><i class="fa-solid fa-location-dot text-brand-primary"></i> </span>
+                        </div>
                     </div>
                 </div>
-                <button onclick="closeModal('customer-modal')" class="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                <div class="flex gap-2">
+                    <button onclick="printInvoice()" class="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-brand-primary" title="طباعة فاتورة"><i class="fa-solid fa-print"></i></button>
+                    <button onclick="closeModal('customer-modal')" class="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                </div>
             </div>
             
-            <div class="p-5 flex-1 overflow-y-auto custom-scroll">
-                <div class="grid grid-cols-2 gap-3 mb-5">
-                    <div class="bg-brand-bg rounded-xl p-3 border border-slate-100 text-center">
-                        <p class="text-[10px] font-bold text-slate-400 mb-1">إجمالي المشتريات (LTV)</p>
-                        <p id="modal-ltv" class="text-lg font-black text-brand-primary">0 ج</p>
-                    </div>
-                    <div class="bg-brand-bg rounded-xl p-3 border border-slate-100 text-center">
-                        <p class="text-[10px] font-bold text-slate-400 mb-1">عدد الطلبات</p>
-                        <p id="modal-orders" class="text-lg font-black text-slate-800">0</p>
-                    </div>
-                </div>
-                
-                <!-- سجل الطلبات -->
-                <h4 class="font-black text-sm text-slate-700 mb-3 border-b border-slate-100 pb-2"><i class="fa-solid fa-clock-rotate-left text-brand-primary mr-1"></i> سجل الطلبات السابقة</h4>
-                <div id="modal-history" class="space-y-2"></div>
+            <!-- التبويبات -->
+            <div class="flex px-5 border-b border-slate-200 bg-white shrink-0">
+                <button onclick="openModalTab('cm-tab-info', this)" class="tab-btn active px-4 py-3 text-sm font-bold text-slate-500 hover:text-slate-800">البيانات والإحصائيات</button>
+                <button onclick="openModalTab('cm-tab-history', this)" class="tab-btn px-4 py-3 text-sm font-bold text-slate-500 hover:text-slate-800">سجل الطلبات</button>
+                <button onclick="openModalTab('cm-tab-notes', this)" class="tab-btn px-4 py-3 text-sm font-bold text-slate-500 hover:text-slate-800">الملاحظات</button>
             </div>
 
-            <div class="p-5 border-t border-slate-100 flex gap-3 shrink-0 bg-white">
-                <a id="modal-wa" href="#" target="_blank" class="flex-1 bg-green-500 hover:bg-green-600 text-white p-2.5 rounded-xl text-sm font-bold transition-colors flex justify-center items-center gap-2"><i class="fa-brands fa-whatsapp text-lg"></i> واتساب</a>
-                <a id="modal-call" href="#" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white p-2.5 rounded-xl text-sm font-bold transition-colors flex justify-center items-center gap-2"><i class="fa-solid fa-phone text-lg"></i> اتصال</a>
+            <div class="p-5 flex-1 overflow-y-auto custom-scroll bg-slate-50">
+                <!-- تاب البيانات -->
+                <div id="cm-tab-info" class="tab-content active space-y-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 text-center"><p class="text-xs font-bold text-slate-400 mb-1">إجمالي المنفق</p><p id="cm-ltv" class="text-xl font-black text-brand-primary">0 ج</p></div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 text-center"><p class="text-xs font-bold text-slate-400 mb-1">عدد الطلبات</p><p id="cm-orders" class="text-xl font-black text-slate-800">0</p></div>
+                        <div class="bg-white rounded-xl p-4 border border-slate-200 text-center col-span-2 md:col-span-2 flex flex-col justify-center items-center"><p class="text-xs font-bold text-slate-400 mb-1">التصنيف</p><div id="cm-tags" class="flex gap-1"></div></div>
+                    </div>
+                    <!-- أزرار سريعة -->
+                    <div class="grid grid-cols-3 gap-3 pt-2">
+                        <a id="cm-btn-wa" href="#" target="_blank" class="bg-green-500 hover:bg-green-600 text-white p-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 shadow-sm"><i class="fa-brands fa-whatsapp text-lg"></i> واتساب</a>
+                        <a id="cm-btn-call" href="#" class="bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 shadow-sm"><i class="fa-solid fa-phone text-lg"></i> اتصال</a>
+                        <button onclick="closeModal('customer-modal'); document.getElementById('no-phone').value = document.getElementById('cm-phone').innerText; openModal('add-order-modal'); checkCustomerExists();" class="bg-slate-800 hover:bg-slate-900 text-white p-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 shadow-sm"><i class="fa-solid fa-cart-plus"></i> طلب جديد</button>
+                    </div>
+                </div>
+
+                <!-- تاب السجل -->
+                <div id="cm-tab-history" class="tab-content space-y-3">
+                    <div id="cm-history-list" class="space-y-2 text-sm"></div>
+                </div>
+
+                <!-- تاب الملاحظات -->
+                <div id="cm-tab-notes" class="tab-content">
+                    <textarea class="w-full border-2 border-slate-200 rounded-xl p-3 outline-none focus:border-brand-primary text-sm font-bold h-32" placeholder="اكتب ملاحظات حول تفضيلات العميل أو شكاوى سابقة هنا... (تصميم فقط حالياً)"></textarea>
+                    <button class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-bold mt-2">حفظ الملاحظة</button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- ⚙️ JavaScript & Firebase Logic -->
     <script>
-        // --- 1. UI Logic (الواجهة) ---
+        // --- UI Logic ---
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('mobile-overlay');
         
         function toggleSidebar() {
             sidebar.classList.toggle('open');
             if(sidebar.classList.contains('open')) {
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.add('opacity-100'), 10);
+                overlay.classList.remove('hidden'); setTimeout(() => overlay.classList.add('opacity-100'), 10);
             } else {
-                overlay.classList.remove('opacity-100');
-                setTimeout(() => overlay.classList.add('hidden'), 300);
+                overlay.classList.remove('opacity-100'); setTimeout(() => overlay.classList.add('hidden'), 300);
             }
         }
 
@@ -327,17 +442,36 @@
             document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.add('active');
             document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.className = "nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-all";
+                btn.className = "nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400 transition-colors";
             });
-            btnElement.className = "nav-btn active w-full text-right flex items-center px-4 py-3 rounded-xl text-sm font-bold bg-brand-primary text-white shadow-md transition-all";
-            document.getElementById('header-title').innerText = btnElement.innerText;
+            btnElement.className = "nav-btn active w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold bg-brand-primary text-white shadow-md mb-2 transition-all";
+            document.getElementById('header-title').innerText = btnElement.innerText.trim();
             if(window.innerWidth < 768) toggleSidebar();
         }
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
 
-        // --- 2. Firebase Database Logic (البيانات الحية) ---
+        function openModalTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        function printInvoice() {
+            alert("هذه الميزة ستقوم بتجهيز فاتورة بصيغة A4/حرارية للطباعة. (UI Ready)");
+            window.print();
+        }
+
+        function calcTotal() {
+            let p = Number(document.getElementById('no-price').value) || 0;
+            let d = Number(document.getElementById('no-delivery').value) || 0;
+            let disc = Number(document.getElementById('no-discount').value) || 0;
+            document.getElementById('no-total').value = (p + d) - disc;
+        }
+
+        // --- Firebase Database Logic ---
         const firebaseConfig = { 
             apiKey: "AIzaSyD7ZJP8n8fhMewPfEsTBANn0h9To_q15BY", 
             authDomain: "sman-ca8f8.firebaseapp.com", 
@@ -351,7 +485,6 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Auth
         auth.onAuthStateChanged(user => {
             if (user) {
                 document.getElementById('login-screen').style.opacity = '0';
@@ -366,36 +499,37 @@
         window.loginApp = () => {
             const e = document.getElementById('login-email').value, p = document.getElementById('login-password').value;
             auth.signInWithEmailAndPassword(e, p).catch(err => {
-                document.getElementById('login-error').innerText = "بيانات الدخول خاطئة!";
-                document.getElementById('login-error').classList.remove('hidden');
+                let errEl = document.getElementById('login-error');
+                errEl.innerText = "بيانات الدخول خاطئة!"; errEl.classList.remove('hidden');
             });
         };
 
-        // الداتا المركزية
         let customersData = []; 
 
         function startCRM() {
             const nowStr = new Date().toLocaleDateString('en-US');
 
-            // أ. سحب الطلبات الحية (Kanban + Dashboard + Inventory)
+            // سحب الطلبات الحية (Dashboard + Kanban + Inventory)
             db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
-                let todaySales = 0, pending = 0;
-                let cols = { new: '', preparing: '', shipping: '', delivered: '' };
-                let counts = { new: 0, preparing: 0, shipping: 0, delivered: 0 };
+                let dSales = 0, mSales = 0, pending = 0, completed = 0;
+                let cols = { new: '', preparing: '', ready: '', shipping: '', delivered: '', canceled: '' };
+                let counts = { new: 0, preparing: 0, ready: 0, shipping: 0, delivered: 0, canceled: 0 };
                 let resJumbo = 0, resSpecial = 0, resRoyal = 0;
+
+                const currentMonth = new Date().getMonth();
 
                 snap.forEach(doc => {
                     const o = doc.data();
                     const id = doc.id;
                     const stat = o.status || 'new';
 
-                    // حسابات الداش بورد
-                    if (o.orderDate === nowStr || (o.createdAt && new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') === nowStr)) {
-                        todaySales += Number(o.total) || 0;
-                    }
-
-                    // حسابات المخزون
-                    if (['new', 'preparing'].includes(stat)) {
+                    // حسابات
+                    let orderDateObj = o.createdAt ? new Date(o.createdAt.toMillis()) : new Date();
+                    
+                    if (orderDateObj.toLocaleDateString('en-US') === nowStr) dSales += Number(o.total) || 0;
+                    if (orderDateObj.getMonth() === currentMonth && stat !== 'canceled') mSales += Number(o.total) || 0;
+                    
+                    if (['new', 'preparing', 'ready', 'shipping'].includes(stat)) {
                         pending++;
                         if(o.items) {
                             o.items.forEach(item => {
@@ -406,52 +540,54 @@
                             });
                         }
                     }
+                    if(stat === 'delivered') completed++;
 
-                    // بناء كروت الكانبان
+                    // كانبان
                     if(cols[stat] !== undefined) {
                         counts[stat]++;
                         let itemsStr = o.items ? o.items.map(i => `${i.quantity} ${i.name.split(' ')[1] || i.name}`).join('، ') : 'بدون تفاصيل';
-                        let borderColor = stat==='new'?'border-brand-primary':(stat==='preparing'?'border-yellow-400':(stat==='shipping'?'border-blue-400':'border-green-400'));
+                        let borderColor = stat==='new'?'border-slate-400':(stat==='preparing'?'border-yellow-400':(stat==='ready'?'border-orange-400':(stat==='shipping'?'border-blue-400':(stat==='delivered'?'border-green-500':'border-red-500'))));
                         
                         cols[stat] += `
                         <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 border-r-4 ${borderColor} kanban-card relative">
-                            <h5 class="font-bold text-sm text-slate-800">${o.customerName || 'بدون اسم'}</h5>
-                            <p class="text-[10px] text-slate-500 mb-2 truncate">${itemsStr}</p>
-                            <div class="flex justify-between items-center mt-2">
+                            <div class="flex justify-between"><h5 class="font-bold text-sm text-slate-800 truncate">${o.customerName || 'بدون اسم'}</h5><span class="text-[10px] text-slate-400">${orderDateObj.toLocaleDateString()}</span></div>
+                            <p class="text-xs text-slate-500 mb-2 mt-1 truncate">${itemsStr}</p>
+                            ${o.notes ? `<p class="text-[10px] text-red-500 bg-red-50 p-1 rounded mb-2 truncate">${o.notes}</p>` : ''}
+                            <div class="flex justify-between items-center mt-2 border-t border-slate-100 pt-2">
                                 <span class="font-black text-brand-primary text-sm">${o.total || 0} ج</span>
-                                <select onchange="updateOrderStatus('${id}', this.value)" class="text-[10px] font-bold bg-slate-100 rounded px-1 py-1 outline-none">
+                                <select onchange="updateOrderStatus('${id}', this.value)" class="text-[10px] font-bold bg-slate-100 rounded px-1 py-1 outline-none text-slate-700">
                                     <option value="new" ${stat==='new'?'selected':''}>جديد</option>
                                     <option value="preparing" ${stat==='preparing'?'selected':''}>تجهيز</option>
+                                    <option value="ready" ${stat==='ready'?'selected':''}>جاهز</option>
                                     <option value="shipping" ${stat==='shipping'?'selected':''}>توصيل</option>
-                                    <option value="delivered" ${stat==='delivered'?'selected':''}>مكتمل</option>
+                                    <option value="delivered" ${stat==='delivered'?'selected':''}>تسليم</option>
+                                    <option value="canceled" ${stat==='canceled'?'selected':''}>إلغاء</option>
                                 </select>
                             </div>
                         </div>`;
                     }
                 });
 
-                // تحديث الشاشات
-                document.getElementById('dash-sales').innerText = `${todaySales.toLocaleString()} ج`;
+                document.getElementById('dash-orders-total').innerText = snap.size;
+                document.getElementById('dash-sales-day').innerHTML = `${dSales.toLocaleString()} <span class="text-sm">ج</span>`;
+                document.getElementById('dash-sales-month').innerHTML = `${mSales.toLocaleString()} <span class="text-sm">ج</span>`;
                 document.getElementById('dash-pending').innerText = pending;
+                document.getElementById('dash-completed').innerText = completed;
                 
-                ['new', 'preparing', 'shipping', 'delivered'].forEach(s => {
-                    document.getElementById(`col-${s}`).innerHTML = cols[s] || `<div class="text-center text-xs text-slate-400 py-4">فارغ</div>`;
-                    document.getElementById(`count-${s}`).innerText = counts[s];
+                ['new', 'preparing', 'ready', 'shipping', 'delivered', 'canceled'].forEach(s => {
+                    document.getElementById(`k-col-${s}`).innerHTML = cols[s] || `<div class="text-center text-xs text-slate-400 py-4">فارغ</div>`;
+                    document.getElementById(`k-count-${s}`).innerText = counts[s];
                 });
 
-                // تحديث جرد الفريزر (بافتراض السعة 50 مؤقتاً)
-                document.getElementById('inv-jumbo-res').innerText = resJumbo;
-                document.getElementById('inv-jumbo-left').innerText = (50 - resJumbo);
-                document.getElementById('inv-special-res').innerText = resSpecial;
-                document.getElementById('inv-special-left').innerText = (50 - resSpecial);
-                document.getElementById('inv-royal-res').innerText = resRoyal;
-                document.getElementById('inv-royal-left').innerText = (50 - resRoyal);
+                document.getElementById('inv-jumbo-res').innerText = resJumbo; document.getElementById('inv-jumbo-left').innerText = (50 - resJumbo);
+                document.getElementById('inv-special-res').innerText = resSpecial; document.getElementById('inv-special-left').innerText = (50 - resSpecial);
+                document.getElementById('inv-royal-res').innerText = resRoyal; document.getElementById('inv-royal-left').innerText = (50 - resRoyal);
             });
 
-            // ب. سحب العملاء
+            // سحب العملاء
             db.collection('customers').orderBy('lastOrderDate', 'desc').onSnapshot(snap => {
                 document.getElementById('dash-customers').innerText = snap.size;
-                let lostCount = 0;
+                let lostCount = 0, newCount = 0;
                 customersData = [];
                 let tbody = '';
 
@@ -460,30 +596,28 @@
                     customersData.push(c);
                     let tags = c.tags || [];
                     if(tags.includes('مفقود')) lostCount++;
+                    if(tags.includes('جديد')) newCount++; // افتراض مبسط
 
-                    let tagHtml = tags.map(t => {
-                        if(t === 'VIP') return `<span class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-2 py-0.5 rounded text-[10px] font-black mx-0.5">⭐ VIP</span>`;
-                        if(t === 'مفقود') return `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded text-[10px] font-black mx-0.5">مفقود</span>`;
-                        return `<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded text-[10px] font-black mx-0.5">${t}</span>`;
-                    }).join('');
+                    let lastOrderStr = c.lastOrderDate ? new Date(c.lastOrderDate.toMillis()).toLocaleDateString('en-US') : 'غير محدد';
 
                     tbody += `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone}">
-                        <td class="py-3 px-6"><div class="font-black text-slate-800 cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div><div class="text-[10px] text-slate-500 font-bold" dir="ltr">${c.phone || ''}</div></td>
-                        <td class="py-3 px-6 text-center font-black text-slate-700">${c.ordersCount || 0}</td>
-                        <td class="py-3 px-6 text-center font-black text-brand-primary">${(c.totalSpent || 0).toLocaleString()} ج</td>
-                        <td class="py-3 px-6">${tagHtml}</td>
-                        <td class="py-3 px-6 text-center">
-                            <button onclick="openCustomerCard('${c.phone}')" class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-800 hover:text-white transition-colors"><i class="fa-regular fa-folder-open"></i></button>
+                        <td class="py-3 px-5"><div class="font-black text-slate-800 cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div><div class="text-[10px] text-slate-500 font-bold" dir="ltr">${c.phone || ''}</div></td>
+                        <td class="py-3 px-5 text-center text-xs text-slate-500 font-bold">${lastOrderStr}</td>
+                        <td class="py-3 px-5 text-center font-black text-slate-700">${c.ordersCount || 0}</td>
+                        <td class="py-3 px-5 text-center font-black text-brand-primary">${(c.totalSpent || 0).toLocaleString()} ج</td>
+                        <td class="py-3 px-5 text-center">
+                            <button onclick="openCustomerCard('${c.phone}')" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-800 hover:text-white transition-colors">عرض الملف</button>
                         </td>
                     </tr>`;
                 });
-                document.getElementById('dash-lost').innerText = lostCount;
+                
+                document.getElementById('dash-lost-cust').innerText = lostCount;
+                document.getElementById('dash-new-cust').innerText = newCount;
                 document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="5" class="text-center p-10 text-slate-400 font-bold">لا يوجد عملاء</td></tr>`;
             });
         }
 
-        // --- ميزة البحث المباشر ---
         function filterCustomers() {
             let filter = document.getElementById('search-customer').value.toLowerCase();
             document.querySelectorAll('.customer-row').forEach(row => {
@@ -491,134 +625,99 @@
             });
         }
 
-        // --- تحديث حالة الأوردر (في الكانبان) ---
         window.updateOrderStatus = (orderId, newStatus) => {
-            db.collection('orders').doc(orderId).update({ status: newStatus }).catch(e => alert('فشل التحديث'));
+            db.collection('orders').doc(orderId).update({ status: newStatus });
         };
 
-        // --- فتح بروفايل العميل وجلب طلباته السابقة ---
         window.openCustomerCard = async (phone) => {
             let c = customersData.find(x => x.phone === phone);
             if(!c) return;
 
-            document.getElementById('modal-name').innerText = c.name;
-            document.getElementById('modal-phone').innerHTML = `<i class="fa-solid fa-phone text-brand-primary mr-1"></i> ${c.phone}`;
-            document.getElementById('modal-ltv').innerText = `${(c.totalSpent || 0).toLocaleString()} ج`;
-            document.getElementById('modal-orders').innerText = `${c.ordersCount || 0} طلب`;
-            document.getElementById('modal-wa').href = `https://wa.me/${c.phone.startsWith('0')?'2'+c.phone:c.phone}`;
-            document.getElementById('modal-call').href = `tel:${c.phone}`;
-
-            // جلب الأرشيف الخاص به
-            let historyDiv = document.getElementById('modal-history');
-            historyDiv.innerHTML = '<p class="text-xs text-slate-400">جاري التحميل...</p>';
+            document.getElementById('cm-name').innerText = c.name;
+            document.getElementById('cm-phone').innerText = c.phone;
+            document.getElementById('cm-zone').innerHTML = `<i class="fa-solid fa-location-dot text-brand-primary"></i> ${c.zone || 'غير مسجل'}`;
+            document.getElementById('cm-ltv').innerText = `${(c.totalSpent || 0).toLocaleString()} ج`;
+            document.getElementById('cm-orders').innerText = c.ordersCount || 0;
             
+            let tagsHtml = (c.tags || []).map(t => `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold">${t}</span>`).join('');
+            document.getElementById('cm-tags').innerHTML = tagsHtml;
+
+            document.getElementById('cm-btn-wa').href = `https://wa.me/${c.phone.startsWith('0')?'2'+c.phone:c.phone}`;
+            document.getElementById('cm-btn-call').href = `tel:${c.phone}`;
+
+            // جلب الأرشيف
+            let hDiv = document.getElementById('cm-history-list');
+            hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">جاري التحميل...</p>';
             try {
-                const snap = await db.collection('orders').where('customerPhone', '==', phone).get();
-                if(snap.empty) { historyDiv.innerHTML = '<p class="text-xs text-slate-400">لا يوجد طلبات سابقة.</p>'; }
+                const snap = await db.collection('orders').where('customerPhone', '==', phone).orderBy('createdAt', 'desc').get();
+                if(snap.empty) { hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">لا يوجد سجل طلبات.</p>'; }
                 else {
                     let h = '';
                     snap.forEach(doc => {
                         let o = doc.data();
-                        let date = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
-                        let items = o.items ? o.items.map(i=>`${i.quantity}x ${i.name}`).join(' | ') : '';
-                        h += `<div class="bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center">
-                            <div><span class="text-xs font-bold text-slate-500">${date}</span><p class="text-xs font-black text-slate-700 mt-1">${items}</p></div>
-                            <span class="font-black text-brand-primary text-sm">${o.total} ج</span>
-                        </div>`;
+                        let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString() : '');
+                        let i = o.items ? o.items.map(x=>`${x.quantity}x ${x.name}`).join('، ') : '';
+                        h += `<div class="bg-white p-3 rounded-lg border border-slate-200 flex justify-between items-center"><div class="flex-1 pr-2 border-r-2 ${o.status==='delivered'?'border-green-500':'border-yellow-400'}"><span class="text-[10px] font-bold text-slate-400">${d}</span><p class="text-xs font-black text-slate-700 mt-1">${i}</p></div><div class="text-left pl-2"><span class="font-black text-brand-primary text-sm block">${o.total} ج</span><span class="text-[9px] bg-slate-100 px-1 rounded">${o.status}</span></div></div>`;
                     });
-                    historyDiv.innerHTML = h;
+                    hDiv.innerHTML = h;
                 }
-            } catch(e) { historyDiv.innerHTML = '<p class="text-xs text-red-500">حدث خطأ في الجلب</p>'; }
+            } catch(e) { hDiv.innerHTML = '<p class="text-xs text-red-500">حدث خطأ</p>'; }
 
+            // Reset tabs
+            openModalTab('cm-tab-info', document.querySelectorAll('.tab-btn')[0]);
             openModal('customer-modal');
         };
 
-        // --- وظائف الإضافة (أوردر وعميل) ---
-        
-        // التحقق لو العميل موجود تلقائياً في شاشة الأوردر
         window.checkCustomerExists = () => {
-            let phone = document.getElementById('new-order-phone').value.trim();
+            let phone = document.getElementById('no-phone').value.trim();
             if(!phone) return;
             let c = customersData.find(x => x.phone === phone);
-            if(c) document.getElementById('new-order-name').value = c.name;
+            if(c) { document.getElementById('no-name').value = c.name; document.getElementById('no-zone').value = c.zone || ''; }
         };
 
-        // حفظ الأوردر الجديد وتحديث العميل
         window.submitNewOrder = async () => {
-            let phone = document.getElementById('new-order-phone').value.trim();
-            let name = document.getElementById('new-order-name').value.trim();
-            let zone = document.getElementById('new-order-zone').value.trim();
-            let total = Number(document.getElementById('new-order-total').value) || 0;
-            let btn = document.getElementById('btn-save-order');
+            let phone = document.getElementById('no-phone').value.trim(), name = document.getElementById('no-name').value.trim(), zone = document.getElementById('no-zone').value.trim();
+            let total = Number(document.getElementById('no-total').value) || 0, notes = document.getElementById('no-notes').value.trim();
+            let qJ = Number(document.getElementById('no-q-jumbo').value)||0, qS = Number(document.getElementById('no-q-special').value)||0, qR = Number(document.getElementById('no-q-royal').value)||0;
 
-            let qJ = Number(document.getElementById('qty-jumbo').value) || 0;
-            let qS = Number(document.getElementById('qty-special').value) || 0;
-            let qR = Number(document.getElementById('qty-royal').value) || 0;
-
-            if(!phone || !name || total === 0) return alert('يرجى كتابة الهاتف والاسم والسعر!');
+            if(!phone || !name || total === 0) return alert('أكمل بيانات العميل والسعر النهائي!');
             
             let items = [];
             if(qJ > 0) items.push({name: 'سمان جامبو', quantity: qJ});
             if(qS > 0) items.push({name: 'سمان اسبيشيال', quantity: qS});
             if(qR > 0) items.push({name: 'سمان رويال', quantity: qR});
+            if(items.length === 0) return alert('أضف صنف واحد على الأقل!');
 
-            if(items.length === 0) return alert('يرجى إضافة صنف واحد على الأقل!');
-
-            btn.innerText = "جاري الحفظ...";
-            btn.disabled = true;
+            let btn = document.getElementById('btn-save-order');
+            btn.innerText = "جاري الحفظ..."; btn.disabled = true;
 
             try {
-                // 1. حفظ الأوردر
                 await db.collection('orders').add({
-                    customerName: name, customerPhone: phone, zone: zone, total: total,
+                    customerName: name, customerPhone: phone, zone: zone, total: total, notes: notes,
                     items: items, status: 'new', orderDate: new Date().toLocaleDateString('en-US'),
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // 2. تحديث ملف العميل الذكي (LTV)
                 let custRef = db.collection('customers').doc(phone);
                 let custDoc = await custRef.get();
                 if(custDoc.exists) {
-                    await custRef.update({
-                        ordersCount: firebase.firestore.FieldValue.increment(1),
-                        totalSpent: firebase.firestore.FieldValue.increment(total),
-                        lastOrderDate: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    await custRef.update({ ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrderDate: firebase.firestore.FieldValue.serverTimestamp() });
                 } else {
-                    await custRef.set({
-                        name: name, phone: phone, zone: zone, ordersCount: 1, totalSpent: total,
-                        tags: ['جديد'], lastOrderDate: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    await custRef.set({ name: name, phone: phone, zone: zone, ordersCount: 1, totalSpent: total, tags: ['جديد'], lastOrderDate: firebase.firestore.FieldValue.serverTimestamp() });
                 }
 
-                alert('تم حفظ الأوردر بنجاح! وسمع في المخزون والعملاء.');
                 closeModal('add-order-modal');
-                // تفريغ الحقول
-                document.getElementById('new-order-phone').value = ''; document.getElementById('new-order-name').value = '';
-                document.getElementById('qty-jumbo').value = ''; document.getElementById('qty-special').value = ''; document.getElementById('qty-royal').value = ''; document.getElementById('new-order-total').value = '';
-                btn.innerText = "حفظ الطلب وتحديث المخزون"; btn.disabled = false;
-            } catch(e) {
-                alert('حدث خطأ'); btn.innerText = "حفظ الطلب"; btn.disabled = false;
-            }
+                document.querySelectorAll('#add-order-modal input, #add-order-modal textarea').forEach(i => i.value = '');
+                btn.innerText = "تأكيد وحفظ الطلب"; btn.disabled = false;
+            } catch(e) { alert('خطأ'); btn.innerText = "تأكيد وحفظ الطلب"; btn.disabled = false; }
         };
 
-        // إضافة عميل جديد فقط
         window.submitNewCustomer = async () => {
-            let phone = document.getElementById('new-cust-phone').value.trim();
-            let name = document.getElementById('new-cust-name').value.trim();
-            let zone = document.getElementById('new-cust-zone').value.trim();
-
+            let phone = document.getElementById('nc-phone').value.trim(), name = document.getElementById('nc-name').value.trim(), zone = document.getElementById('nc-zone').value.trim();
             if(!phone || !name) return alert("مطلوب الاسم ورقم الهاتف");
-            
-            await db.collection('customers').doc(phone).set({
-                name: name, phone: phone, zone: zone, ordersCount: 0, totalSpent: 0, tags: ['جديد'],
-                lastOrderDate: firebase.firestore.FieldValue.serverTimestamp()
-            }, {merge: true});
-
-            alert('تم تسجيل العميل بنجاح');
+            await db.collection('customers').doc(phone).set({ name: name, phone: phone, zone: zone, ordersCount: 0, totalSpent: 0, tags: ['جديد'], lastOrderDate: null }, {merge: true});
             closeModal('add-customer-modal');
         };
-
     </script>
 </body>
 </html>
