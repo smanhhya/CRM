@@ -246,8 +246,6 @@
                 </div>
 
             </div>
-
-            </div>
             <!-- ======================= شاشة: جدول الطلبات وإكسيل ======================= -->
             <div id="view-orders-table" class="page-view h-full flex flex-col space-y-4">
                 <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm shrink-0">
@@ -453,7 +451,7 @@
             document.getElementById('header-title').innerText = btnElement.innerText.trim();
             
             const saveBtn = document.getElementById('global-save-btn');
-            if(['inventory', 'settings', 'marketing', 'batches'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
+            if(['inventory', 'settings', 'marketing', 'batches', 'visuals'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden'); saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
             if(window.innerWidth < 768) toggleSidebar();
         }
 
@@ -478,6 +476,7 @@
             const nowStr = new Date().toLocaleDateString('en-US');
 
             // سحب المخزون والإعدادات
+            // سحب المخزون والإعدادات
             db.collection('inventory').onSnapshot(snap => {
                 snap.forEach(doc => {
                     if(doc.id === 'settings') { storeSettings = Object.assign(storeSettings, doc.data()); storeProducts = storeSettings.productsData || {}; }
@@ -486,8 +485,35 @@
                     if(doc.id === 'batches') storeBatches = doc.data() || {};
                 });
                 renderInventoryUI(); renderSettingsUI(); renderMarketingUI(); generateDynamicOrderInputs(); renderBatchesUI();
-
+                renderTrustBadges();
             });
+
+            // سحب الطلبات لايف
+            db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
+                let dSales = 0, mSales = 0, counts = { new: 0, processing: 0, completed: 0, canceled: 0 };
+                allOrdersRaw = []; dispatchOrdersRaw = [];
+                const currentMonth = new Date().getMonth();
+
+                snap.forEach(doc => {
+                    const o = doc.data(); const id = doc.id; const stat = o.status || 'new';
+                    allOrdersRaw.push({id, ...o});
+                    let orderDateObj = o.createdAt ? new Date(o.createdAt.toMillis()) : new Date();
+                    
+                    if (orderDateObj.toLocaleDateString('en-US') === nowStr && stat !== 'canceled') dSales += Number(o.total) || 0;
+                    if (orderDateObj.getMonth() === currentMonth && stat !== 'canceled') mSales += Number(o.total) || 0;
+                    if (['new', 'processing'].includes(stat)) dispatchOrdersRaw.push({id, ...o}); 
+                    if(counts[stat] !== undefined) counts[stat]++;
+                });
+
+                document.getElementById('dash-orders-total').innerText = snap.size;
+                document.getElementById('dash-sales-day').innerHTML = `${dSales.toLocaleString()} <span class="text-sm">ج</span>`;
+                document.getElementById('dash-sales-month').innerHTML = `${mSales.toLocaleString()} <span class="text-sm">ج</span>`;
+                ['new', 'processing', 'completed'].forEach(s => { let b = document.getElementById(`badge-${s}`); if(b) b.innerText = counts[s]; });
+                
+                renderOrdersList();
+                renderOrdersTable();
+            });
+
 
             // سحب الطلبات لايف
             db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
@@ -949,6 +975,7 @@
                     storeSettings.freeDeliveryActive = document.getElementById('st-free-del').checked;
                     storeSettings.freeDeliveryThreshold = parseInt(document.getElementById('st-free-th').value) || 0;
                 }
+                
                 if(document.getElementById('mkt-banner-active')) {
                     storeSettings.bannerActive = document.getElementById('mkt-banner-active').checked;
                     storeSettings.marqueeMessages = document.getElementById('mkt-banner-texts').value.split('\n').map(s=>s.trim()).filter(s=>s);
@@ -957,6 +984,34 @@
                     storeSettings.liveNotiPlaces = document.getElementById('mkt-noti-places').value.split('،').map(s=>s.trim()).filter(s=>s);
                     storeSettings.showPromoField = document.getElementById('mkt-show-promo').checked;
                 }
+
+                if(document.getElementById('admin-whatsapp-template')) {
+                    storeSettings.whatsappTemplate = document.getElementById('admin-whatsapp-template').value;
+                    storeSettings.dispatchTemplate = document.getElementById('admin-dispatch-template').value;
+                    storeSettings.ticktickTemplate = document.getElementById('admin-ticktick-template').value;
+                    storeSettings.batchHashtag = document.getElementById('admin-batch-hashtag').value;
+                }
+
+                if(document.getElementById('trust-badges-container')) {
+                    storeSettings.trustBadges = [0,1,2,3].map(i => ({ icon: storeSettings.trustBadges[i].icon, title: storeSettings.trustBadges[i].title, desc: storeSettings.trustBadges[i].desc }));
+                }
+
+                storeSettings.deliveryZones = storeSettings.deliveryZones.filter(z => z.name.trim() !== '');
+                storeSettings.drivers = storeSettings.drivers.filter(d => d.name.trim() !== '' || d.phone.trim() !== '');
+                storeSettings.promoCodes = storeSettings.promoCodes.filter(p => p.code.trim() !== '');
+                storeSettings.productsData = storeProducts;
+
+                await Promise.all([ 
+                    db.collection("inventory").doc("settings").set(storeSettings, {merge: true}), 
+                    db.collection("inventory").doc("stock").set(storeStock, {merge: true}), 
+                    db.collection("inventory").doc("prices").set(storePrices, {merge: true}), 
+                    db.collection("inventory").doc("batches").set(storeBatches) 
+                ]);
+                alert('تم الحفظ وتحديث متجر الزبائن لايف! 🚀');
+            } catch(e) { alert('خطأ في الحفظ!'); }
+            btn.innerHTML = origHtml; btn.disabled = false;
+        };
+
 
                 // 👇 السطور الجديدة لحفظ قوالب الرسائل والهاشتاج 👇
                 if(document.getElementById('admin-whatsapp-template')) {
@@ -1408,6 +1463,60 @@
                 alert('حدث خطأ أثناء الرفع لقاعدة البيانات!');
             }
             btn.innerHTML = '<i class="fa-solid fa-file-import text-green-400"></i> <span class="hidden md:inline">استيراد تيك تيك</span>';
+        };
+        // 1. دالة عرض المربعات الأربعة
+        function renderTrustBadges() {
+            const cont = document.getElementById('trust-badges-container');
+            if(!cont) return;
+            if(!storeSettings.trustBadges) {
+                storeSettings.trustBadges = [
+                    {icon: 'fa-regular fa-circle-check', title: 'أوزان دقيقة', desc: 'زي ما طلبت'},
+                    {icon: 'fa-regular fa-star', title: 'طلبك باسمك', desc: 'استيكر مخصص'},
+                    {icon: 'fa-regular fa-clock', title: 'تجهيز يومي', desc: 'طازج'},
+                    {icon: 'fa-solid fa-shield-halved', title: 'تغليف آمن', desc: 'أطباق صحية'}
+                ];
+            }
+            cont.innerHTML = storeSettings.trustBadges.map((b, i) => `
+                <div class="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
+                    <span class="font-black text-slate-400 text-xs w-6 text-center">${i+1}</span>
+                    <input type="text" value="${b.icon}" onchange="storeSettings.trustBadges[${i}].icon=this.value" class="w-1/4 border rounded p-2 text-[10px] font-bold" placeholder="أيقونة" dir="ltr">
+                    <input type="text" value="${b.title}" onchange="storeSettings.trustBadges[${i}].title=this.value" class="flex-1 border rounded p-2 text-xs font-bold" placeholder="العنوان">
+                    <input type="text" value="${b.desc}" onchange="storeSettings.trustBadges[${i}].desc=this.value" class="flex-1 border rounded p-2 text-xs font-bold" placeholder="الوصف">
+                </div>
+            `).join('');
+        }
+
+        // 2. دالة ملء جدول الطلبات (الكلاسيكي)
+        function renderOrdersTable() {
+            const tbody = document.getElementById('orders-table-tbody');
+            if(!tbody) return;
+            tbody.innerHTML = allOrdersRaw.map(o => `
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50">
+                    <td class="py-2 px-4 text-xs text-slate-500 font-bold">${o.orderDate || ''}</td>
+                    <td class="py-2 px-4 text-sm font-black text-slate-800">${o.customerName || ''}</td>
+                    <td class="py-2 px-4 text-center text-xs font-bold text-slate-600" dir="ltr">${o.customerPhone || ''}</td>
+                    <td class="py-2 px-4 text-center text-[10px] font-bold text-slate-500">${o.zone || ''} ${o.customerAddress ? '- ' + o.customerAddress : ''}</td>
+                    <td class="py-2 px-4 text-center text-xs font-bold text-brand-primary">${o.items ? o.items.map(i => i.quantity + 'x ' + i.name).join('، ') : ''}</td>
+                    <td class="py-2 px-4 text-center text-sm font-black text-slate-800">${o.total || 0} ج</td>
+                    <td class="py-2 px-4 text-center text-[10px] font-bold">${o.status === 'new' ? 'جديد' : (o.status === 'processing' ? 'قيد التجهيز' : (o.status === 'completed' ? 'مكتمل' : 'ملغي'))}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 3. دالة تصدير الإكسيل
+        window.exportOrdersToExcel = () => {
+            if(allOrdersRaw.length === 0) return alert("لا توجد طلبات للتصدير!");
+            let csv = "التاريخ,العميل,الرقم,المنطقة,العنوان,الأصناف,الإجمالي,الحالة\n";
+            allOrdersRaw.forEach(o => {
+                let itemsStr = o.items ? o.items.map(i => `${i.quantity}x ${i.name}`).join(' - ') : '';
+                let statusAr = o.status === 'new' ? 'جديد' : (o.status === 'processing' ? 'قيد التجهيز' : (o.status === 'completed' ? 'مكتمل' : 'ملغي'));
+                csv += `${o.orderDate},${o.customerName},${o.customerPhone},${o.zone || ''},${o.customerAddress || ''},"${itemsStr}",${o.total},${statusAr}\n`;
+            });
+            const blob = new Blob(["\ufeff", csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Saman_Orders_${new Date().toLocaleDateString('en-GB')}.csv`;
+            link.click();
         };
 
     </script>
