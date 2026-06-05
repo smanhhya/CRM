@@ -451,7 +451,7 @@
             document.getElementById('header-title').innerText = btnElement.innerText.trim();
             
             const saveBtn = document.getElementById('global-save-btn');
-            if(['inventory', 'settings', 'marketing', 'batches', 'visuals'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden'); saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
+            if(['inventory', 'settings', 'marketing', 'batches', 'visuals'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
             if(window.innerWidth < 768) toggleSidebar();
         }
 
