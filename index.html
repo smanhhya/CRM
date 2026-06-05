@@ -977,9 +977,6 @@
         };
 
 
-
-        // === 7. المخزون والإعدادات والتسويق (شامل) ===
-        // === 7. المخزون والإعدادات والتسويق (شامل) ===
         function renderInventoryUI() {
             const cont = document.getElementById('products-list-container'); if(!cont) return; cont.innerHTML = '';
             Object.keys(storeProducts).forEach(id => {
@@ -1019,6 +1016,11 @@
             storePrices[newId] = 0; storeStock[newId] = 0; 
             renderInventoryUI(); generateDynamicOrderInputs(); 
         };
+
+        window.deleteProductUI = (id) => { 
+            if(confirm("حذف المنتج من المتجر تماماً؟")) { delete storeProducts[id]; delete storePrices[id]; delete storeStock[id]; renderInventoryUI(); generateDynamicOrderInputs(); } 
+        };
+
 
         function renderSettingsUI() {
             document.getElementById('st-name').value = storeSettings.storeName || ''; document.getElementById('st-phone').value = storeSettings.storePhone || ''; document.getElementById('st-min-order').value = storeSettings.minOrder || 0; document.getElementById('st-is-open').checked = storeSettings.storeOpen !== false; document.getElementById('st-free-del').checked = storeSettings.freeDeliveryActive; document.getElementById('st-free-th').value = storeSettings.freeDeliveryThreshold || 0; document.getElementById('st-free-th').disabled = !storeSettings.freeDeliveryActive;
