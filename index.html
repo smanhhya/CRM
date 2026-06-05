@@ -642,6 +642,23 @@
         };
      
 
+        window.sendMessageToCustomer = (phone, orderId) => {
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            if(!order) return;
+            let itemsText = order.items ? order.items.map(i => `${i.quantity}x ${i.name}`).join('\n') : '';
+            let msg = `مرحباً ${order.customerName}،\nتفاصيل طلبك:\n${itemsText}\nالإجمالي: ${order.total} ج.م\nشكراً لتعاملك معنا!`;
+            let waNumber = phone.startsWith('0') ? '2' + phone : phone;
+            window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+        window.sendRatingRequest = (phone, orderId) => {
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            if(!order) return;
+            let msg = `شكراً ${order.customerName} على طلبك!\nتقدر تقيم تجربتك معانا من هنا:\n⭐️ [رابط التقييم]\n(سيتم إضافة الرابط لاحقاً)`;
+            let waNumber = phone.startsWith('0') ? '2' + phone : phone;
+            window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
@@ -677,7 +694,9 @@
                     
                     <div class="flex flex-col sm:flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100 gap-3">
                         <div class="flex gap-2 w-full sm:w-auto">
-                            <button onclick="addOrderNote('${o.id}')" class="flex-1 sm:flex-none text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-comment-dots mr-1"></i> ملاحظة</button>
+                            <button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-brands fa-whatsapp"></i> رسالة</button>
+                            ${o.status === 'completed' ? `<button onclick="sendRatingRequest('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-star"></i> تقييم</button>` : ''}
+                            <button onclick="addOrderNote('${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm border border-slate-200" title="إضافة ملاحظة"><i class="fa-solid fa-comment-dots"></i></button>
                         </div>
                         <div class="flex items-center justify-between w-full sm:w-auto gap-4">
                             <span class="font-black text-brand-primary text-xl">${o.total || 0} ج</span>
@@ -692,6 +711,7 @@
                 </div>`;
             }).join('');
         };
+
 
         window.updateOrderStatus = async (id, s) => { 
             if(s === 'canceled' && !confirm('إلغاء هذا الطلب؟ (سيتم خصمه من المبيعات)')) return;
