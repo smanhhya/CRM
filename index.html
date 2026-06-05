@@ -183,28 +183,68 @@
                 <div id="products-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1"></div>
             </div>
 
+            <!-- ======================= شاشة: التسويق والأكواد ونظام الولاء ======================= -->
             <div id="view-marketing" class="page-view space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-bell text-blue-500 mr-2"></i> الإشعارات الحية والشريط</h3>
-                        <label class="flex items-center gap-2 mb-4 font-bold text-sm"><input type="checkbox" id="mkt-banner-active" class="accent-brand-primary w-4 h-4"> تفعيل شريط الأخبار المتحرك</label>
-                        <textarea id="mkt-banner-texts" rows="2" class="w-full border rounded-xl p-3 text-xs font-bold outline-none focus:border-brand-primary mb-4 bg-slate-50" placeholder="اكتب كل رسالة في سطر..."></textarea>
-                        
-                        <label class="flex items-center gap-2 mb-2 font-bold text-sm border-t border-slate-100 pt-4"><input type="checkbox" id="mkt-noti-active" class="accent-brand-primary w-4 h-4"> تفعيل إشعارات الشراء الوهمية</label>
-                        <input type="text" id="mkt-noti-names" class="w-full border rounded-xl p-3 text-xs font-bold outline-none mb-2" placeholder="أسماء (أحمد، محمد، سارة...)">
-                        <input type="text" id="mkt-noti-places" class="w-full border rounded-xl p-3 text-xs font-bold outline-none" placeholder="مناطق (ههيا، الزقازيق...)">
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-black text-slate-800 text-lg"><i class="fa-solid fa-ticket text-brand-cyan mr-2"></i> أكواد الخصم الثابتة</h3>
-                            <button onclick="addNewPromoCode()" class="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg shadow font-bold">+ كود جديد</button>
+                
+                <!-- القسم الأول: الإشعارات الحية وشريط الأخبار -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-t-4 border-t-blue-500">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="font-black text-slate-800 text-base mb-3"><i class="fa-solid fa-bell text-blue-500 mr-2"></i> الإشعارات الحية الوهمية</h3>
+                            <label class="flex items-center gap-2 mb-2 font-bold text-sm"><input type="checkbox" id="mkt-noti-active" class="accent-blue-500 w-4 h-4"> تفعيل إشعارات الشراء</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="mkt-noti-names" class="flex-1 border rounded-lg p-2 text-xs font-bold outline-none" placeholder="أسماء (أحمد، محمد...)">
+                                <input type="text" id="mkt-noti-places" class="flex-1 border rounded-lg p-2 text-xs font-bold outline-none" placeholder="مناطق (ههيا، الزقازيق...)">
+                            </div>
                         </div>
-                        <label class="flex items-center gap-2 mb-4 font-bold text-xs"><input type="checkbox" id="mkt-show-promo" class="accent-brand-primary w-4 h-4"> إظهار خانة "عندك كود خصم؟" للعميل</label>
-                        <div id="promos-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-2 max-h-64"></div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-base mb-3"><i class="fa-solid fa-bullhorn text-yellow-500 mr-2"></i> شريط الأخبار المتحرك</h3>
+                            <label class="flex items-center gap-2 mb-2 font-bold text-sm"><input type="checkbox" id="mkt-banner-active" class="accent-yellow-500 w-4 h-4"> تفعيل شريط الأخبار</label>
+                            <textarea id="mkt-banner-texts" rows="2" class="w-full border rounded-lg p-2 text-xs font-bold outline-none bg-slate-50" placeholder="اكتب كل رسالة في سطر..."></textarea>
+                        </div>
                     </div>
                 </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <!-- القسم الثاني: نظام الولاء وإرسال الواتساب -->
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-green-500">
+                            <h3 class="font-black text-slate-800 text-lg mb-3"><i class="fa-solid fa-gift text-green-500 mr-2"></i> نظام الولاء الذكي (كود تلقائي)</h3>
+                            <label class="flex items-center gap-2 mb-4 font-bold text-xs"><input type="checkbox" id="mkt-reward-active" class="accent-green-500 w-4 h-4"> إرسال كود خصم للعميل تلقائياً بعد الشراء</label>
+                            <div class="grid grid-cols-2 gap-3 bg-green-50 p-3 rounded-xl border border-green-100">
+                                <div><label class="text-[10px] font-bold text-slate-500 block mb-1">نوع الخصم</label><select id="mkt-reward-type" class="w-full border rounded-lg p-2 font-bold text-slate-800 outline-none"><option value="fixed">مبلغ ثابت</option><option value="percent">نسبة %</option><option value="free_delivery">توصيل مجاني</option></select></div>
+                                <div><label class="text-[10px] font-bold text-slate-500 block mb-1">القيمة</label><input type="number" id="mkt-reward-value" class="w-full border rounded-lg p-2 font-bold text-slate-800 outline-none text-center"></div>
+                                <div class="col-span-2"><label class="text-[10px] font-bold text-slate-500 block mb-1">رسالة العميل (التي تظهر مع الكود)</label><textarea id="mkt-loyalty-msg" rows="1" class="w-full border rounded-lg p-2 text-xs font-bold text-slate-800 outline-none">تم إصدار كود خصم خاص بك لطلبك القادم 🎁</textarea></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-purple-500">
+                            <h3 class="font-black text-slate-800 text-lg mb-3"><i class="fa-solid fa-users text-purple-500 mr-2"></i> إرسال أكواد لعملاء سابقين</h3>
+                            <textarea id="mkt-bulk-numbers" rows="2" class="w-full border rounded-xl p-3 font-bold text-slate-800 bg-slate-50 outline-none mb-2" dir="ltr" placeholder="ضع الأرقام هنا (كل رقم في سطر)..."></textarea>
+                            <textarea id="mkt-bulk-msg" rows="2" class="w-full border rounded-xl p-2 font-bold text-slate-800 outline-none text-xs">شكراً لثقتك! كود الخصم للأوردر الجاي: {الكود}</textarea>
+                            <div class="grid grid-cols-2 gap-2 mt-3">
+                                <select id="mkt-bulk-type" class="w-full border rounded-lg p-2 text-xs font-bold text-slate-800 outline-none"><option value="fixed">مبلغ ثابت</option><option value="percent">نسبة %</option><option value="free_delivery">توصيل مجاني</option></select>
+                                <input type="number" id="mkt-bulk-val" placeholder="قيمة الخصم" class="w-full border rounded-lg p-2 text-xs font-bold text-center outline-none">
+                            </div>
+                            <button onclick="generateBulkWhatsAppLinks()" class="w-full mt-3 bg-purple-600 hover:bg-purple-700 text-white font-black py-2.5 rounded-xl shadow-md transition-colors">توليد وتجهيز الواتساب</button>
+                            <div id="bulk-whatsapp-links" class="mt-3 space-y-2 hidden max-h-40 overflow-y-auto bg-slate-50 p-2 rounded-xl border border-slate-200 custom-scroll"></div>
+                        </div>
+                    </div>
+
+                    <!-- القسم الثالث: إدارة الأكواد الثابتة (الرادار) -->
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col h-full border-r-4 border-r-brand-cyan">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-black text-slate-800 text-lg"><i class="fa-solid fa-ticket text-brand-cyan mr-2"></i> رادار الأكواد الثابتة</h3>
+                            <button onclick="addNewPromoCode()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-lg shadow font-bold transition-colors">+ كود جديد</button>
+                        </div>
+                        <label class="flex items-center gap-2 mb-4 font-bold text-xs bg-slate-50 p-2 rounded-lg border border-slate-100"><input type="checkbox" id="mkt-show-promo" class="accent-brand-primary w-4 h-4"> إظهار خانة "عندك كود خصم؟" للعميل في المتجر</label>
+                        <div id="promos-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1 max-h-[500px]"></div>
+                    </div>
+
+                </div>
             </div>
+
 
             <div id="view-settings" class="page-view space-y-6">
                 
@@ -939,15 +979,46 @@
 
 
         // === 7. المخزون والإعدادات والتسويق (شامل) ===
+        // === 7. المخزون والإعدادات والتسويق (شامل) ===
         function renderInventoryUI() {
             const cont = document.getElementById('products-list-container'); if(!cont) return; cont.innerHTML = '';
             Object.keys(storeProducts).forEach(id => {
-                const p = storeProducts[id]; const price = storePrices[id] || p.basePrice || 0; const stock = storeStock[id] || 0;
-                cont.innerHTML += `<div class="bg-white p-3 rounded-xl border border-slate-200 flex gap-2 items-center mb-2"><div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-2"><div><label class="text-[9px] font-bold text-slate-500 block">اسم المنتج</label><input type="text" value="${p.name}" onchange="storeProducts['${id}'].name = this.value" class="w-full border rounded p-1.5 text-xs font-bold text-slate-800"></div><div><label class="text-[9px] font-bold text-slate-500 block">الوزن / الوصف</label><input type="text" value="${p.weight||''}" onchange="storeProducts['${id}'].weight = this.value" class="w-full border rounded p-1.5 text-xs font-bold text-slate-800"></div><div><label class="text-[9px] font-bold text-slate-500 block">السعر (ج)</label><input type="number" value="${price}" onchange="storePrices['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-1.5 text-xs font-bold text-brand-primary"></div><div><label class="text-[9px] font-bold text-slate-500 block">المتاح</label><input type="number" value="${stock}" onchange="storeStock['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-1.5 text-xs font-black text-brand-cyan"></div></div><button onclick="deleteProductUI('${id}')" class="w-8 h-8 bg-red-50 text-red-500 rounded flex justify-center items-center hover:bg-red-500 hover:text-white mt-4"><i class="fa-solid fa-trash text-xs"></i></button></div>`;
+                const p = storeProducts[id]; 
+                const price = storePrices[id] || p.basePrice || 0; 
+                const stock = storeStock[id] || 0;
+                const oldPrice = p.oldPrice || '';
+                const imgSrc = (p.images && p.images.length > 0) ? p.images[0] : '';
+                
+                cont.innerHTML += `
+                <div class="bg-white p-3 rounded-xl border border-slate-200 mb-3 shadow-sm">
+                    <div class="flex justify-between items-start gap-2 mb-2">
+                        <div class="flex-1 grid grid-cols-2 md:grid-cols-5 gap-2">
+                            <div><label class="text-[9px] font-bold text-slate-500 block">اسم المنتج</label><input type="text" value="${p.name}" onchange="storeProducts['${id}'].name = this.value" class="w-full border rounded p-1.5 text-xs font-bold text-slate-800"></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">الوزن / الوصف</label><input type="text" value="${p.weight||''}" onchange="storeProducts['${id}'].weight = this.value" class="w-full border rounded p-1.5 text-xs font-bold text-slate-800"></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">السعر (ج)</label><input type="number" value="${price}" onchange="storePrices['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-1.5 text-xs font-bold text-brand-primary"></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">المتاح</label><input type="number" value="${stock}" onchange="storeStock['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-1.5 text-xs font-black text-brand-cyan"></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">رابط الصورة</label><input type="text" value="${imgSrc}" onchange="storeProducts['${id}'].images = [this.value]" class="w-full border rounded p-1.5 text-[10px] font-bold text-slate-500" dir="ltr" placeholder="https://..."></div>
+                        </div>
+                        <button onclick="deleteProductUI('${id}')" class="w-8 h-8 bg-red-50 text-red-500 rounded flex justify-center items-center hover:bg-red-500 hover:text-white mt-4 shrink-0 transition-colors"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                    <div class="flex flex-wrap gap-4 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-slate-700"><input type="checkbox" ${p.isExtra?'checked':''} onchange="storeProducts['${id}'].isExtra = this.checked" class="accent-brand-primary"> منتج إضافي (بالأسفل)</label>
+                        <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-orange-600"><input type="checkbox" ${p.isBest?'checked':''} onchange="storeProducts['${id}'].isBest = this.checked" class="accent-orange-500"> الأكثر طلباً 🔥</label>
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-red-600"><input type="checkbox" ${p.isDisc?'checked':''} onchange="storeProducts['${id}'].isDisc = this.checked; renderInventoryUI();" class="accent-red-500"> تفعيل سعر مشطوب (خصم)</label>
+                            ${p.isDisc ? `<input type="number" value="${oldPrice}" onchange="storeProducts['${id}'].oldPrice = parseInt(this.value) || 0" class="w-16 border rounded p-1 text-[10px] font-bold text-red-500 text-center line-through" placeholder="السعر">` : ''}
+                        </div>
+                    </div>
+                </div>`;
             });
         }
-        window.addNewProductUI = () => { const newId = 'p_' + Date.now(); storeProducts[newId] = { name: "صنف جديد", basePrice: 0, weight: "", images: [""], isExtra: false }; storePrices[newId] = 0; storeStock[newId] = 0; renderInventoryUI(); generateDynamicOrderInputs(); };
-        window.deleteProductUI = (id) => { if(confirm("حذف المنتج من المتجر تماماً؟")) { delete storeProducts[id]; delete storePrices[id]; delete storeStock[id]; renderInventoryUI(); generateDynamicOrderInputs(); } };
+
+        window.addNewProductUI = () => { 
+            const newId = 'p_' + Date.now(); 
+            storeProducts[newId] = { name: "صنف جديد", basePrice: 0, weight: "", images: [""], isExtra: false, isBest: false, isDisc: false, oldPrice: 0 }; 
+            storePrices[newId] = 0; storeStock[newId] = 0; 
+            renderInventoryUI(); generateDynamicOrderInputs(); 
+        };
 
         function renderSettingsUI() {
             document.getElementById('st-name').value = storeSettings.storeName || ''; document.getElementById('st-phone').value = storeSettings.storePhone || ''; document.getElementById('st-min-order').value = storeSettings.minOrder || 0; document.getElementById('st-is-open').checked = storeSettings.storeOpen !== false; document.getElementById('st-free-del').checked = storeSettings.freeDeliveryActive; document.getElementById('st-free-th').value = storeSettings.freeDeliveryThreshold || 0; document.getElementById('st-free-th').disabled = !storeSettings.freeDeliveryActive;
@@ -982,8 +1053,11 @@
         }
         window.addNewPromoCode = () => { if(!storeSettings.promoCodes) storeSettings.promoCodes = []; storeSettings.promoCodes.unshift({ code: 'CODE-' + Math.floor(100 + Math.random() * 900), discount: 10, type: 'fixed', usesLeft: null, minOrder: 0 }); renderMarketingUI(); };
 
-                window.saveAllSettings = async () => {
-            const btn = document.getElementById('global-save-btn'); const origHtml = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; btn.disabled = true;
+        window.saveAllSettings = async () => {
+            const btn = document.getElementById('global-save-btn'); 
+            const origHtml = btn.innerHTML; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; 
+            btn.disabled = true;
             try {
                 // 1. الإعدادات الأساسية
                 if(document.getElementById('st-name')) {
@@ -995,14 +1069,21 @@
                     storeSettings.freeDeliveryThreshold = parseInt(document.getElementById('st-free-th').value) || 0;
                 }
                 
-                // 2. إعدادات التسويق
+                // 2. إعدادات التسويق ونظام الولاء
                 if(document.getElementById('mkt-banner-active')) {
                     storeSettings.bannerActive = document.getElementById('mkt-banner-active').checked;
-                    storeSettings.marqueeMessages = document.getElementById('mkt-banner-texts').value.split('\n').map(s=>s.trim()).filter(s=>s);
-                    storeSettings.liveNotiActive = document.getElementById('mkt-noti-active').checked;
-                    storeSettings.liveNotiNames = document.getElementById('mkt-noti-names').value.split('،').map(s=>s.trim()).filter(s=>s);
-                    storeSettings.liveNotiPlaces = document.getElementById('mkt-noti-places').value.split('،').map(s=>s.trim()).filter(s=>s);
-                    storeSettings.showPromoField = document.getElementById('mkt-show-promo').checked;
+                    storeSettings.marqueeMessages = document.getElementById('mkt-banner-texts') ? document.getElementById('mkt-banner-texts').value.split('\n').map(s=>s.trim()).filter(s=>s) : [];
+                    storeSettings.liveNotiActive = document.getElementById('mkt-noti-active') ? document.getElementById('mkt-noti-active').checked : false;
+                    storeSettings.liveNotiNames = document.getElementById('mkt-noti-names') ? document.getElementById('mkt-noti-names').value.split('،').map(s=>s.trim()).filter(s=>s) : [];
+                    storeSettings.liveNotiPlaces = document.getElementById('mkt-noti-places') ? document.getElementById('mkt-noti-places').value.split('،').map(s=>s.trim()).filter(s=>s) : [];
+                    storeSettings.showPromoField = document.getElementById('mkt-show-promo') ? document.getElementById('mkt-show-promo').checked : true;
+                    
+                    if(document.getElementById('mkt-reward-active')) {
+                        storeSettings.rewardActive = document.getElementById('mkt-reward-active').checked;
+                        storeSettings.rewardType = document.getElementById('mkt-reward-type').value;
+                        storeSettings.rewardValue = parseInt(document.getElementById('mkt-reward-value').value) || 0;
+                        storeSettings.autoPromoModalMsg = document.getElementById('mkt-loyalty-msg').value.trim();
+                    }
                 }
 
                 // 3. قوالب الرسائل
@@ -1013,8 +1094,8 @@
                 }
 
                 // 4. المربعات الأربعة (عناصر الثقة)
-                if(document.getElementById('trust-badges-container')) {
-                    storeSettings.trustBadges = [0,1,2,3].map(i => ({ icon: storeSettings.trustBadges[i].icon, title: storeSettings.trustBadges[i].title, desc: storeSettings.trustBadges[i].desc }));
+                if(document.getElementById('trust-badges-container') && storeSettings.trustBadges) {
+                    storeSettings.trustBadges = storeSettings.trustBadges.map(b => ({ icon: b.icon || '', title: b.title || '', desc: b.desc || '' }));
                 }
 
                 // 5. القاموس (نصوص الواجهة)
@@ -1034,15 +1115,16 @@
                 // 6. الإعدادات المتقدمة
                 if(document.getElementById('adv-vip-msg')) {
                     storeSettings.vipMessage = document.getElementById('adv-vip-msg').value.trim();
-                    storeSettings.batchHashtag = document.getElementById('adv-batch-hashtag').value.trim();
+                    storeSettings.batchHashtag = document.getElementById('adv-batch-hashtag') ? document.getElementById('adv-batch-hashtag').value.trim() : '';
                 }
 
-                // تنظيف المصفوفات قبل الحفظ
-                storeSettings.deliveryZones = storeSettings.deliveryZones.filter(z => z.name.trim() !== '');
-                storeSettings.drivers = storeSettings.drivers.filter(d => d.name.trim() !== '' || d.phone.trim() !== '');
-                storeSettings.promoCodes = storeSettings.promoCodes.filter(p => p.code.trim() !== '');
+                // تنظيف المصفوفات بشكل آمن جداً
+                storeSettings.deliveryZones = (storeSettings.deliveryZones || []).filter(z => z && z.name && z.name.trim() !== '');
+                storeSettings.drivers = (storeSettings.drivers || []).filter(d => d && (d.name || d.phone));
+                storeSettings.promoCodes = (storeSettings.promoCodes || []).filter(p => p && p.code && p.code.trim() !== '');
                 storeSettings.productsData = storeProducts;
 
+                // إرسال البيانات لقاعدة البيانات
                 await Promise.all([ 
                     db.collection("inventory").doc("settings").set(storeSettings, {merge: true}), 
                     db.collection("inventory").doc("stock").set(storeStock, {merge: true}), 
@@ -1056,6 +1138,7 @@
             }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
+
 
 
         // === 8. المناديب (واتساب) والتوجيه الذكي ===
