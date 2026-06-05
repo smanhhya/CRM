@@ -197,6 +197,7 @@
             </div>
 
             <div id="view-settings" class="page-view space-y-6">
+                
                 <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                     <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-shop text-purple-500 mr-2"></i> إعدادات المتجر الأساسية</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -208,6 +209,35 @@
                         <label class="flex items-center gap-2 cursor-pointer font-bold text-sm text-green-700"><input type="checkbox" id="st-is-open" class="w-5 h-5 accent-green-600"> استقبال الطلبات (مفتوح)</label>
                         <label class="flex items-center gap-2 cursor-pointer font-bold text-sm text-blue-700"><input type="checkbox" id="st-free-del" class="w-5 h-5 accent-blue-600" onchange="document.getElementById('st-free-th').disabled = !this.checked"> توصيل مجاني فوق <input type="number" id="st-free-th" class="w-16 border rounded p-1 text-center bg-white" placeholder="0"> ج.م</label>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-black text-slate-800 text-lg"><i class="fa-solid fa-map-location-dot text-brand-primary mr-2"></i> مناطق التوصيل</h3>
+                            <button onclick="addNewZoneUI()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="zones-list-container" class="space-y-2"></div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-black text-slate-800 text-lg"><i class="fa-solid fa-motorcycle text-brand-accent mr-2"></i> المناديب</h3>
+                            <button onclick="addNewDriverUI()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div id="drivers-list-container" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-l-4 border-l-brand-cyan">
+                    <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-language text-brand-cyan mr-2"></i> قوالب رسائل النظام والهاشتاج</h3>
+                    <div class="space-y-4">
+                        <div><label class="text-xs font-bold text-slate-500 block mb-1">رسالة الواتساب للعميل</label><textarea id="admin-whatsapp-template" rows="2" class="w-full border rounded-lg p-2 text-xs font-bold bg-slate-50 outline-none focus:border-brand-primary"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 block mb-1">رسالة إرسال الأوردر للمندوب</label><textarea id="admin-dispatch-template" rows="2" class="w-full border rounded-lg p-2 text-xs font-bold bg-slate-50 outline-none focus:border-brand-primary"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 block mb-1">شكل أوردر تيك تيك (TickTick)</label><textarea id="admin-ticktick-template" rows="2" class="w-full border rounded-lg p-2 text-xs font-bold bg-slate-50 outline-none focus:border-brand-primary"></textarea></div>
+                        <div><label class="text-xs font-bold text-slate-500 block mb-1">هاشتاج الدفعة (يكتب هكذا: #دفعة_الخميس)</label><input type="text" id="admin-batch-hashtag" class="w-full border rounded-lg p-2 text-xs font-bold bg-slate-50 outline-none focus:border-brand-primary"></div>
+                    </div>
+                </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -851,9 +881,19 @@
             document.getElementById('st-name').value = storeSettings.storeName || ''; document.getElementById('st-phone').value = storeSettings.storePhone || ''; document.getElementById('st-min-order').value = storeSettings.minOrder || 0; document.getElementById('st-is-open').checked = storeSettings.storeOpen !== false; document.getElementById('st-free-del').checked = storeSettings.freeDeliveryActive; document.getElementById('st-free-th').value = storeSettings.freeDeliveryThreshold || 0; document.getElementById('st-free-th').disabled = !storeSettings.freeDeliveryActive;
             const zCont = document.getElementById('zones-list-container'); if(zCont) { zCont.innerHTML = ''; (storeSettings.deliveryZones || []).forEach((z, i) => { zCont.innerHTML += `<div class="flex gap-2"><input type="text" value="${z.name}" onchange="storeSettings.deliveryZones[${i}].name=this.value" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800" placeholder="المنطقة"><input type="number" value="${z.price}" onchange="storeSettings.deliveryZones[${i}].price=parseInt(this.value)||0" class="w-20 border rounded p-2 text-xs font-bold text-brand-primary" placeholder="السعر"><button onclick="storeSettings.deliveryZones.splice(${i}, 1); renderSettingsUI();" class="w-8 bg-red-50 text-red-500 rounded"><i class="fa-solid fa-trash"></i></button></div>`; }); }
             const dCont = document.getElementById('drivers-list-container'); if(dCont) { dCont.innerHTML = ''; (storeSettings.drivers || []).forEach((d, i) => { dCont.innerHTML += `<div class="flex gap-2"><input type="text" value="${d.name}" onchange="storeSettings.drivers[${i}].name=this.value" placeholder="اسم المندوب" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800"><input type="text" value="${d.phone}" onchange="storeSettings.drivers[${i}].phone=this.value" placeholder="رقم الواتساب" class="w-28 border rounded p-2 text-xs font-bold text-slate-800" dir="ltr"><button onclick="storeSettings.drivers.splice(${i}, 1); renderSettingsUI();" class="w-8 bg-red-50 text-red-500 rounded"><i class="fa-solid fa-trash"></i></button></div>`; }); }
+            
+            // 👇 السطور الجديدة عشان نعرض قوالب الرسائل والهاشتاج في الشاشة 👇
+            if(document.getElementById('admin-whatsapp-template')) {
+                document.getElementById('admin-whatsapp-template').value = storeSettings.whatsappTemplate || '';
+                document.getElementById('admin-dispatch-template').value = storeSettings.dispatchTemplate || '';
+                document.getElementById('admin-ticktick-template').value = storeSettings.ticktickTemplate || '';
+                document.getElementById('admin-batch-hashtag').value = storeSettings.batchHashtag || '';
+            }
+            // 👆 نهاية السطور الجديدة 👆
         }
         window.addNewZoneUI = () => { if(!storeSettings.deliveryZones) storeSettings.deliveryZones = []; storeSettings.deliveryZones.push({name:'', price:0}); renderSettingsUI(); };
         window.addNewDriverUI = () => { if(!storeSettings.drivers) storeSettings.drivers = []; storeSettings.drivers.push({name:'', phone:''}); renderSettingsUI(); };
+
 
         function renderMarketingUI() {
             document.getElementById('mkt-banner-active').checked = storeSettings.bannerActive;
@@ -889,6 +929,16 @@
                     storeSettings.liveNotiPlaces = document.getElementById('mkt-noti-places').value.split('،').map(s=>s.trim()).filter(s=>s);
                     storeSettings.showPromoField = document.getElementById('mkt-show-promo').checked;
                 }
+
+                // 👇 السطور الجديدة لحفظ قوالب الرسائل والهاشتاج 👇
+                if(document.getElementById('admin-whatsapp-template')) {
+                    storeSettings.whatsappTemplate = document.getElementById('admin-whatsapp-template').value;
+                    storeSettings.dispatchTemplate = document.getElementById('admin-dispatch-template').value;
+                    storeSettings.ticktickTemplate = document.getElementById('admin-ticktick-template').value;
+                    storeSettings.batchHashtag = document.getElementById('admin-batch-hashtag').value;
+                }
+                // 👆 نهاية السطور الجديدة 👆
+
                 storeSettings.deliveryZones = storeSettings.deliveryZones.filter(z => z.name.trim() !== '');
                 storeSettings.drivers = storeSettings.drivers.filter(d => d.name.trim() !== '' || d.phone.trim() !== '');
                 storeSettings.promoCodes = storeSettings.promoCodes.filter(p => p.code.trim() !== '');
@@ -899,6 +949,7 @@
             } catch(e) { alert('خطأ في الحفظ!'); }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
+
 
         // === 8. المناديب (واتساب) والتوجيه الذكي ===
         window.openDispatchModal = () => {
