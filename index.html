@@ -349,11 +349,45 @@
 
             <!-- ======================= شاشة: متقدم (ومنطقة الخطر) ======================= -->
             <div id="view-advanced" class="page-view space-y-6">
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-orange-500">
-                    <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-gear text-orange-500 mr-2"></i> إعدادات متقدمة</h3>
-                    <div class="space-y-4">
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">رسالة حجز الـ VIP</label><textarea id="adv-vip-msg" rows="2" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-orange-500">السلام عليكم، أريد الانضمام لقائمة الـ VIP وحجز ({اسم_المنتج}) من الدفعة القادمة قبل نزولها المتجر. 👑</textarea></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">هاشتاج الدفعة (يكتب هكذا: #دفعة_الخميس)</label><input type="text" id="adv-batch-hashtag" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-orange-500"></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-orange-500">
+                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-gear text-orange-500 mr-2"></i> إعدادات متقدمة</h3>
+                        <div class="space-y-4">
+                            <div><label class="text-xs font-bold text-slate-500 block mb-1">رسالة حجز الـ VIP</label><textarea id="adv-vip-msg" rows="2" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-orange-500">السلام عليكم، أريد الانضمام لقائمة الـ VIP وحجز ({اسم_المنتج}) من الدفعة القادمة قبل نزولها المتجر. 👑</textarea></div>
+                            <div><label class="text-xs font-bold text-slate-500 block mb-1">هاشتاج الدفعة (يكتب هكذا: #دفعة_الخميس)</label><input type="text" id="adv-batch-hashtag" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-orange-500"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-brand-cyan">
+                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-lightbulb text-brand-cyan mr-2"></i> الاقتراح الذكي (Cross-sell)</h3>
+                        <p class="text-[10px] font-bold text-slate-400 mb-3">اقترح منتج معين للعميل قبل إتمام الشراء لزيادة المبيعات.</p>
+                        <label class="flex items-center gap-2 mb-3 font-bold text-xs"><input type="checkbox" id="adv-crosssell-active" class="accent-brand-primary w-4 h-4"> تفعيل نافذة الاقتراح للعميل</label>
+                        <label class="text-xs font-bold text-slate-500 block mb-1">اختر المنتج المقترح:</label>
+                        <select id="adv-crosssell-product" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-brand-primary"></select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-yellow-500">
+                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-images text-yellow-500 mr-2"></i> صور الكتالوج (السلايدر)</h3>
+                        <div id="gallery-list-container" class="space-y-2 mb-3"></div>
+                        <button onclick="addNewGalleryImage()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-lg transition-colors shadow-sm"><i class="fa-solid fa-plus"></i> إضافة صورة جديدة</button>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-purple-500">
+                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-palette text-purple-500 mr-2"></i> ألوان المتجر</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <label class="text-xs font-bold text-slate-700">اللون الأساسي (أخضر)</label>
+                                <input type="color" id="theme-color-main" class="w-10 h-8 border-0 rounded cursor-pointer bg-transparent">
+                            </div>
+                            <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                <label class="text-xs font-bold text-slate-700">لون الأزرار / التميز (أحمر)</label>
+                                <input type="color" id="theme-color-accent" class="w-10 h-8 border-0 rounded cursor-pointer bg-transparent">
+                            </div>
+                            <button onclick="resetThemeColors()" class="w-full mt-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 rounded-lg shadow-sm transition-colors">استعادة ألوان سمان ههيا الأصلية</button>
+                        </div>
                     </div>
                 </div>
 
@@ -368,6 +402,7 @@
 
         </div>
     </main>
+
 
     <div id="add-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
@@ -1134,11 +1169,19 @@
                     };
                 }
 
-                // 6. الإعدادات المتقدمة
+                // 6. الإعدادات المتقدمة والسلايدر والألوان
                 if(document.getElementById('adv-vip-msg')) {
                     storeSettings.vipMessage = document.getElementById('adv-vip-msg').value.trim();
                     storeSettings.batchHashtag = document.getElementById('adv-batch-hashtag') ? document.getElementById('adv-batch-hashtag').value.trim() : '';
+                    
+                    storeSettings.crossSellActive = document.getElementById('adv-crosssell-active').checked;
+                    storeSettings.crossSellProductId = document.getElementById('adv-crosssell-product').value;
+                    
+                    storeSettings.galleryImages = (storeSettings.galleryImages || []).filter(img => img.trim() !== '');
+                    storeSettings.themeColorMain = document.getElementById('theme-color-main').value;
+                    storeSettings.themeColorAccent = document.getElementById('theme-color-accent').value;
                 }
+
 
                 // تنظيف المصفوفات بشكل آمن جداً
                 storeSettings.deliveryZones = (storeSettings.deliveryZones || []).filter(z => z && z.name && z.name.trim() !== '');
@@ -1609,13 +1652,47 @@
             document.getElementById('dict-empty-cart').value = d.emptyCart || '';
         }
 
-        function renderAdvancedUI() {
+                function renderAdvancedUI() {
             if(!document.getElementById('adv-vip-msg')) return;
             document.getElementById('adv-vip-msg').value = storeSettings.vipMessage || 'السلام عليكم، أريد الانضمام لقائمة الـ VIP وحجز ({اسم_المنتج}) من الدفعة القادمة قبل نزولها المتجر. 👑';
             document.getElementById('adv-batch-hashtag').value = storeSettings.batchHashtag || '';
+
+            // الاقتراح الذكي
+            document.getElementById('adv-crosssell-active').checked = storeSettings.crossSellActive || false;
+            const csSelect = document.getElementById('adv-crosssell-product');
+            csSelect.innerHTML = '<option value="">-- بدون اقتراح --</option>';
+            Object.keys(storeProducts).forEach(id => {
+                csSelect.innerHTML += `<option value="${id}" ${storeSettings.crossSellProductId === id ? 'selected' : ''}>${storeProducts[id].name}</option>`;
+            });
+
+            // السلايدر والصور
+            const gCont = document.getElementById('gallery-list-container');
+            if(!storeSettings.galleryImages) storeSettings.galleryImages = ["all-sizes.jpg"];
+            gCont.innerHTML = storeSettings.galleryImages.map((img, i) => `
+                <div class="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span class="font-black text-slate-400 text-[10px] w-4">${i+1}</span>
+                    <input type="text" value="${img}" onchange="storeSettings.galleryImages[${i}]=this.value.trim()" class="flex-1 border rounded p-1.5 text-[10px] font-bold outline-none" dir="ltr" placeholder="رابط الصورة">
+                    <button onclick="storeSettings.galleryImages.splice(${i}, 1); renderAdvancedUI();" class="text-red-500 hover:bg-red-100 w-6 h-6 flex items-center justify-center rounded transition-colors"><i class="fa-solid fa-trash text-xs"></i></button>
+                </div>
+            `).join('');
+
+            // الألوان
+            document.getElementById('theme-color-main').value = storeSettings.themeColorMain || '#1b4332';
+            document.getElementById('theme-color-accent').value = storeSettings.themeColorAccent || '#b91c1c';
         }
 
-        // ==========================================
+        window.addNewGalleryImage = () => {
+            if(!storeSettings.galleryImages) storeSettings.galleryImages = [];
+            storeSettings.galleryImages.push("");
+            renderAdvancedUI();
+        };
+
+        window.resetThemeColors = () => {
+            document.getElementById('theme-color-main').value = '#1b4332';
+            document.getElementById('theme-color-accent').value = '#b91c1c';
+            alert('تم استعادة الألوان. لا تنسى ضغط "حفظ التعديلات".');
+        };
+
         // دوال منطقة الخطر
         // ==========================================
         window.resetStatsDanger = async () => {
