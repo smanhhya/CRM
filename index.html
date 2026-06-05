@@ -6,6 +6,8 @@
     <title>سمان ههيا | الإدارة المركزية (CRM)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -121,10 +123,15 @@
             </div>
 
             <div id="view-customers" class="page-view h-full flex flex-col">
-                <div class="relative w-full md:w-96 mb-4">
-                    <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
-                    <input type="text" id="search-customer" onkeyup="filterCustomers()" placeholder="بحث في الأرشيف..." class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm font-bold bg-white shadow-sm focus:border-brand-primary">
+                <div class="flex gap-2 mb-4 w-full">
+                    <div class="relative flex-1 md:w-96">
+                        <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
+                        <input type="text" id="search-customer" onkeyup="filterCustomers()" placeholder="بحث في الأرشيف..." class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm font-bold bg-white shadow-sm focus:border-brand-primary">
+                    </div>
+                    <button onclick="document.getElementById('ticktick-file').click()" class="bg-brand-dark text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 flex items-center gap-2 shrink-0"><i class="fa-solid fa-file-import text-green-400"></i> <span class="hidden md:inline">استيراد تيك تيك</span></button>
+                    <input type="file" id="ticktick-file" accept=".csv" class="hidden" onchange="processTickTickCSV(event)">
                 </div>
+
                 <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
                     <div class="overflow-x-auto custom-scroll flex-1">
                         <table class="w-full text-right text-sm whitespace-nowrap">
@@ -896,6 +903,108 @@
 
         window.deleteBatchUI = (bId) => {
             if(confirm("هل أنت متأكد من حذف هذه الدفعة نهائياً؟")) { delete storeBatches[bId]; renderBatchesUI(); }
+        };
+        // === 10. أداة الاستيراد الذكية من تيك تيك ===
+        window.processTickTickCSV = (event) => {
+            const file = event.target.files[0];
+            if(!file) return;
+            
+            const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري القراءة والفلترة...';
+            btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                let text = e.target.result;
+                // تخطي المقدمة اللي بيكتبها تيك تيك والوصول للداتا مباشرة
+                const headerIndex = text.indexOf('"Folder Name"');
+                if(headerIndex !== -1) text = text.substring(headerIndex);
+                
+                Papa.parse(text, {
+                    header: true, skipEmptyLines: true,
+                    complete: function(results) {
+                        let parsedCustomers = [];
+                        results.data.forEach(row => {
+                            let title = row['Title'] || '';
+                            let content = row['Content'] || '';
+                            // تحديد المنطقة من اسم القائمة
+                            let zone = (row['Column Name'] && row['Column Name'] !== 'nan') ? row['Column Name'] : (row['List Name'] || '');
+                            if(!title) return;
+                            
+                            // اصطياد رقم الموبايل باستخدام الذكاء (ريجيكس)
+                            let phoneMatch = content.match(/(01[0125][0-9]{8})/);
+                            let phone = phoneMatch ? phoneMatch[1] : '';
+                            if(!phone) { let tMatch = title.match(/(01[0125][0-9]{8})/); if(tMatch) phone = tMatch[1]; }
+                            
+                            // اصطياد العنوان إن وُجد
+                            let address = '';
+                            let addrMatch = content.match(/العنوان\s*[:：]\s*(.*?)(?=\n|$)/);
+                            if(addrMatch) address = addrMatch[1].trim();
+                            
+                            // ضغط الملاحظات في سطر واحد
+                            let notes = content.replace(/\n/g, ' | ');
+                            
+                            if(phone || title.length > 2) {
+                                parsedCustomers.push({ 
+                                    name: title.replace(/(01[0125][0-9]{8})/, '').trim(), 
+                                    phone: phone, 
+                                    zone: zone, 
+                                    address: address, 
+                                    adminNotes: notes 
+                                });
+                            }
+                        });
+                        
+                        btn.innerHTML = originalHtml; btn.disabled = false;
+                        document.getElementById('ticktick-file').value = ''; // تصفير الملف
+                        
+                        if(confirm(`تم استخراج وفلترة [ ${parsedCustomers.length} ] عميل من الملف بنجاح!\n\nتم فصل الرقم، العنوان، والمنطقة بدقة، وحفظ باقي طلبات العميل في الملاحظات.\n\nهل تريد حفظهم في أرشيف الموقع على فايربيس الآن؟`)) {
+                            uploadTickTickToFirebase(parsedCustomers);
+                        }
+                    }
+                });
+            };
+            reader.readAsText(file);
+        };
+
+        window.uploadTickTickToFirebase = async (customers) => {
+            const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-green-400"></i> جاري الرفع لفايربيس...';
+            
+            const batches = [];
+            let currentBatch = db.batch();
+            let count = 0;
+            let validUploads = 0;
+            
+            customers.forEach(c => {
+                if(!c.phone) return; // يجب أن يكون هناك رقم
+                let cleanPhone = c.phone.startsWith('0') ? c.phone : '0'+c.phone;
+                let docRef = db.collection('customers').doc(cleanPhone);
+                
+                currentBatch.set(docRef, { 
+                    name: c.name, 
+                    phone: cleanPhone, 
+                    zone: c.zone, 
+                    address: c.address, 
+                    adminNotes: c.adminNotes, 
+                    ordersCount: firebase.firestore.FieldValue.increment(0), 
+                    totalSpent: firebase.firestore.FieldValue.increment(0) 
+                }, { merge: true }); // Merge true عشان ميحذفش داتا لو العميل متسجل قبل كده
+                
+                count++; validUploads++;
+                if(count === 400) { batches.push(currentBatch.commit()); currentBatch = db.batch(); count = 0; }
+            });
+            
+            if(count > 0) batches.push(currentBatch.commit());
+            
+            try {
+                await Promise.all(batches);
+                alert(`تم استيراد وحفظ ${validUploads} عميل في أرشيف المتجر بنجاح! 🎉\nكل أرقامهم وعناوينهم وتفاصيلهم معاك دلوقتي.`);
+            } catch(e) {
+                alert('حدث خطأ أثناء الرفع لقاعدة البيانات!');
+            }
+            btn.innerHTML = '<i class="fa-solid fa-file-import text-green-400"></i> <span class="hidden md:inline">استيراد تيك تيك</span>';
         };
 
     </script>
