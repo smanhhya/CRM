@@ -352,7 +352,23 @@
         </div>
     </div>
 
+    <div id="batch-bookings-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh]">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-users text-green-600 mr-2"></i> حجوزات الدفعة: <span id="bb-title" class="text-brand-primary"></span></h3>
+                <div class="flex gap-3">
+                    <button onclick="printBatchBookings()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-slate-700 flex items-center gap-2"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
+                    <button onclick="closeModal('batch-bookings-modal')" class="w-8 h-8 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-brand-cyan"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scroll flex-1 bg-white" id="bb-content">
+                </div>
+        </div>
+    </div>
+
     <script>
+        // === 1. متغيرات النظام ===
+
         // === 1. متغيرات النظام ===
         let storeSettings = { deliveryZones: [], drivers: [], promoCodes: [], storeOpen: true };
         let storeProducts = {}; let storePrices = {}; let storeStock = {}; let storeBatches = {};
@@ -990,7 +1006,10 @@
                         </div>
                         <div class="flex items-center gap-4 w-full md:w-auto justify-between">
                             <label class="flex items-center gap-2 text-xs font-bold cursor-pointer"><input type="checkbox" ${b.isOpen ? 'checked' : ''} onchange="storeBatches['${bId}'].isOpen = this.checked; renderBatchesUI();" class="accent-green-600 w-5 h-5"> مفتوحة للحجز</label>
-                            <button onclick="deleteBatchUI('${bId}')" class="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-colors"><i class="fa-solid fa-trash mr-1"></i> حذف</button>
+                            <div class="flex items-center gap-2">
+                                <button onclick="viewBatchBookings('${bId}')" class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-blue-600 hover:text-white transition-colors"><i class="fa-solid fa-clipboard-list mr-1"></i> كشف الحجوزات</button>
+                                <button onclick="deleteBatchUI('${bId}')" class="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-colors"><i class="fa-solid fa-trash mr-1"></i> حذف</button>
+                            </div>
                         </div>
                     </div>
                     ${stockHtml}
@@ -1075,6 +1094,122 @@
                 });
             };
             reader.readAsText(file);
+        };
+        // جلب كشف الحجوزات الخاصة بدفعة معينة
+        window.viewBatchBookings = async (bId) => {
+            const b = storeBatches[bId];
+            if(!b) return;
+            
+            document.getElementById('bb-title').innerText = b.name;
+            const contentDiv = document.getElementById('bb-content');
+            contentDiv.innerHTML = '<p class="text-center text-slate-500 font-bold py-10"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>جاري تجميع كشف الحجوزات...</p>';
+            openModal('batch-bookings-modal');
+            
+            try {
+                // سحب الأوردرات المربوطة بالدفعة دي (ونتجاهل الملغية)
+                const snap = await db.collection('orders').where('batchId', '==', bId).get();
+                let orders = [];
+                snap.forEach(doc => {
+                    let data = doc.data();
+                    if(data.status !== 'canceled') orders.push(data);
+                });
+                
+                if(orders.length === 0) {
+                    contentDiv.innerHTML = '<p class="text-center text-slate-400 font-bold py-10 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">لم يتم تأكيد أي حجوزات في هذه الدفعة حتى الآن.</p>';
+                    return;
+                }
+                
+                // رسم الجدول
+                let tableHtml = `
+                <table class="w-full text-right text-sm border-collapse" id="print-table">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 border-b-2 border-slate-200">
+                            <th class="p-3 font-black">العميل / المنطقة والعنوان</th>
+                            <th class="p-3 font-black">الرقم</th>
+                            <th class="p-3 font-black">الأصناف (الكمية)</th>
+                            <th class="p-3 font-black text-center">الإجمالي</th>
+                            <th class="p-3 font-black text-blue-700">ملاحظات للأوردر</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                `;
+                
+                let totalMoney = 0;
+                orders.forEach(o => {
+                    let itemsStr = o.items ? o.items.map(i => `<span class="bg-brand-bg px-2 py-0.5 rounded text-brand-primary border border-slate-100 whitespace-nowrap">${i.quantity}x ${i.name}</span>`).join(' ') : '';
+                    let locationStr = `${o.zone || 'بدون منطقة'} ${o.customerAddress ? '- ' + o.customerAddress : ''}`;
+                    totalMoney += Number(o.total) || 0;
+                    
+                    tableHtml += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-3">
+                            <div class="font-black text-slate-800 text-base">${o.customerName}</div>
+                            <div class="text-[10px] text-slate-500 font-bold mt-1"><i class="fa-solid fa-location-dot"></i> ${locationStr}</div>
+                        </td>
+                        <td class="p-3 font-black text-slate-600" dir="ltr">${o.customerPhone}</td>
+                        <td class="p-3 font-bold flex flex-wrap gap-1 mt-2">${itemsStr}</td>
+                        <td class="p-3 font-black text-slate-800 text-center text-lg">${o.total} ج</td>
+                        <td class="p-3 text-[11px] font-bold text-red-600 max-w-[150px]">${o.adminNote || '-'}</td>
+                    </tr>
+                    `;
+                });
+                tableHtml += `</tbody></table>`;
+                
+                // شريط إحصائيات الدفعة
+                let summaryHtml = `
+                <div class="mb-5 flex flex-wrap gap-4 bg-green-50 p-4 rounded-xl border border-green-200 shadow-sm">
+                    <div class="flex-1"><p class="text-[10px] text-green-600 font-bold mb-1">إجمالي عدد الحجوزات</p><h4 class="font-black text-green-800 text-xl">${orders.length} <span class="text-sm font-bold">أوردر</span></h4></div>
+                    <div class="flex-1"><p class="text-[10px] text-green-600 font-bold mb-1">إجمالي التحصيل المتوقع</p><h4 class="font-black text-green-800 text-xl">${totalMoney.toLocaleString()} <span class="text-sm font-bold">جنية</span></h4></div>
+                </div>`;
+                
+                contentDiv.innerHTML = summaryHtml + tableHtml;
+                
+            } catch (e) {
+                contentDiv.innerHTML = '<p class="text-center text-red-500 font-bold py-10 border-2 border-dashed border-red-200 rounded-xl bg-red-50">حدث خطأ أثناء جلب البيانات من السيرفر!</p>';
+            }
+        };
+
+        // دالة الطباعة الاحترافية
+        window.printBatchBookings = () => {
+            let content = document.getElementById('bb-content').innerHTML;
+            let title = document.getElementById('bb-title').innerText;
+            
+            // فتح نافذة جديدة للطباعة عشان منبوظش التصميم الأصلي
+            let printWindow = window.open('', '', 'width=900,height=700');
+            printWindow.document.write(`
+                <html lang="ar" dir="rtl">
+                <head>
+                    <title>كشف حجوزات - ${title}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: 'Cairo', sans-serif; padding: 20px; color: #333; }
+                        .header-print { text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #333; }
+                        h2 { margin: 0; font-size: 24px; font-weight: 900; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                        th, td { border: 1px solid #94a3b8; padding: 10px; font-size: 14px; text-align: right; }
+                        th { background-color: #f1f5f9; font-weight: bold; }
+                        .text-center { text-align: center; }
+                        .bg-green-50 { background-color: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; display: flex; justify-content: space-around; font-weight: bold; margin-bottom: 20px;}
+                        .text-red-600 { color: #dc2626; }
+                        /* إخفاء الأيقونات وتنسيقات الموقع المعقدة وقت الطباعة */
+                        i, .bg-brand-bg, .rounded, .border, .shadow-sm { border: none !important; background: transparent !important; box-shadow: none !important; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header-print">
+                        <h2>سمان ههيا - كشف تسليمات</h2>
+                        <p>اسم الدفعة: <strong>${title}</strong></p>
+                    </div>
+                    ${content}
+                    <div style="text-align: center; margin-top: 30px; font-size: 12px; color: #666;">تمت الطباعة بواسطة النظام المركزي (CRM)</div>
+                    <script>
+                        // تشغيل أمر الطباعة التلقائي بمجرد ما الصفحة تحمل
+                        window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         };
 
         window.uploadTickTickToFirebase = async (customers) => {
