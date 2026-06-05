@@ -222,7 +222,11 @@
                     <div><label class="text-xs font-bold text-slate-500 block mb-1">الموبايل (هيبحث في الأرشيف فوراً)</label><input type="tel" id="no-phone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold" dir="ltr" oninput="checkCustomerExists()"></div>
                     <div><label class="text-xs font-bold text-slate-500 block mb-1">اسم العميل</label><input type="text" id="no-name" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
                 </div>
-                <div><label class="text-xs font-bold text-slate-500 block mb-1">المنطقة / العنوان</label><input type="text" id="no-zone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">المنطقة (من الإعدادات)</label><select id="no-zone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold bg-white" onchange="autoSetDeliveryPrice()"></select></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">العنوان التفصيلي (الشارع/العمارة)</label><input type="text" id="no-address" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
+                </div>
+
                 
                 <div class="border-t border-slate-100 pt-3">
                     <label class="text-xs font-black text-slate-800 block mb-2">الأصناف (الكمية)</label>
@@ -498,15 +502,6 @@
         // === 5. أرشيف العملاء ===
         window.filterCustomers = () => { let filter = document.getElementById('search-customer').value.toLowerCase(); document.querySelectorAll('.customer-row').forEach(row => { row.style.display = row.getAttribute('data-search').toLowerCase().includes(filter) ? '' : 'none'; }); };
         
-        window.openCustomerCard = async (phone) => {
-            let c = customersData.find(x => x.phone === phone); if(!c) return;
-            document.getElementById('cm-name').innerText = c.name || 'غير مسجل'; document.getElementById('cm-phone').innerText = c.phone || '';
-            document.getElementById('cm-ltv').innerText = `${(c.totalSpent || 0).toLocaleString()} ج`; document.getElementById('cm-orders').innerText = c.ordersCount || 0;
-            document.getElementById('cm-btn-wa').href = `https://wa.me/${(c.phone||'').startsWith('0')?'2'+c.phone:c.phone}`;
-            document.getElementById('cm-btn-call').href = `tel:${c.phone}`;
-            document.getElementById('cm-permanent-notes').value = c.adminNotes || '';
-
-            let hDiv = document.getElementById('cm-history-list'); hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> جاري جلب الأرشيف...</p>';
             try {
                 const snap = await db.collection('orders').where('customerPhone', '==', phone).get();
                 if(snap.empty) { 
@@ -516,25 +511,16 @@
                     orders.sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
                     
                     hDiv.innerHTML = orders.map((o, index) => {
-                        // تجهيز الأصناف
-                        let itemsHtml = o.items && o.items.length > 0 
-                            ? o.items.map(i => `<div class="flex justify-between text-xs font-bold text-slate-600 border-b border-slate-50 py-1.5 last:border-0"><span>${i.quantity}x ${i.name}</span><span>${i.price * i.quantity} ج</span></div>`).join('') 
-                            : '<p class="text-xs text-slate-400">لا توجد تفاصيل للأصناف</p>';
-
-                        // تجهيز حالة الطلب واللون
+                        let itemsHtml = o.items && o.items.length > 0 ? o.items.map(i => `<div class="flex justify-between text-xs font-bold text-slate-600 border-b border-slate-50 py-1.5 last:border-0"><span>${i.quantity}x ${i.name}</span><span>${i.price * i.quantity} ج</span></div>`).join('') : '<p class="text-xs text-slate-400">لا توجد تفاصيل للأصناف</p>';
                         let statusAr = o.status === 'new' ? 'جديد' : (o.status === 'processing' ? 'قيد التجهيز' : (o.status === 'completed' ? 'مكتمل' : 'ملغي'));
                         let statusColor = o.status === 'new' ? 'text-brand-cyan bg-red-50 border-red-100' : (o.status === 'processing' ? 'text-brand-accent bg-orange-50 border-orange-100' : (o.status === 'completed' ? 'text-green-600 bg-green-50 border-green-100' : 'text-slate-500 bg-slate-100 border-slate-200'));
-
-                        // الملاحظات
                         let noteHtml = o.adminNote ? `<div class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-[11px] font-bold text-blue-700 shadow-sm"><i class="fa-solid fa-pen-to-square mr-1"></i> <strong>ملاحظة الإدارة:</strong> ${o.adminNote}</div>` : '';
-
-                        // عرض اسم المندوب لو موجود، أو حالة التوصيل
                         let driverNameText = o.driverName ? `تم التوجيه لـ: <strong>${o.driverName}</strong>` : `حالة التوصيل: ${statusAr}`;
                         let driverHtml = `<div class="mt-2 bg-slate-50 border border-slate-100 rounded-lg p-2.5 text-[11px] text-slate-600 flex items-center gap-2"><i class="fa-solid fa-motorcycle text-brand-primary text-sm"></i> <span>${driverNameText}</span></div>`;
+                        let orderLocationHtml = `<div class="mt-2 bg-brand-bg border border-slate-100 rounded-lg p-2.5 text-[11px] font-bold text-slate-700 flex items-center gap-2"><i class="fa-solid fa-map-location-dot text-brand-primary text-sm"></i> <span><strong>راح على:</strong> ${o.zone || 'غير مسجل'} ${o.customerAddress ? '- ' + o.customerAddress : ''}</span></div>`;
 
                         return `
                         <div class="bg-white rounded-xl border border-slate-200 shadow-sm mb-2 overflow-hidden transition-all">
-                            <!-- رأس الطلب (قابل للضغط) -->
                             <div class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50" onclick="toggleOrderDetails('cm-order-details-${index}', 'cm-icon-${index}')">
                                 <div class="flex flex-col gap-1.5">
                                     <span class="text-[10px] font-black text-slate-500"><i class="fa-solid fa-calendar-day mr-1"></i> ${o.orderDate || 'أرشيف'}</span>
@@ -545,8 +531,6 @@
                                     <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center"><i id="cm-icon-${index}" class="fa-solid fa-chevron-down text-slate-500 text-[10px] transition-transform duration-300"></i></div>
                                 </div>
                             </div>
-                            
-                            <!-- تفاصيل الطلب (مخفية افتراضياً) -->
                             <div id="cm-order-details-${index}" class="hidden border-t border-slate-100 bg-slate-50/50 p-3">
                                 <h6 class="text-[10px] font-black text-brand-primary mb-1.5"><i class="fa-solid fa-box-open mr-1"></i> محتويات الأوردر:</h6>
                                 <div class="bg-white border border-slate-100 rounded-lg p-2 mb-2 shadow-sm">
@@ -555,6 +539,7 @@
                                         <span>الإجمالي النهائي</span><span class="text-brand-primary">${o.total} ج</span>
                                     </div>
                                 </div>
+                                ${orderLocationHtml}
                                 ${driverHtml}
                                 ${noteHtml}
                             </div>
@@ -564,9 +549,8 @@
             } catch(e) { 
                 hDiv.innerHTML = '<p class="text-xs text-brand-cyan text-center">حدث خطأ في جلب الأرشيف!</p>'; 
             }
-            
-            // فتح كارد العميل وقفلة الدالة اللي كانت ناقصة
             openModal('customer-modal');
+
         };
 
 
@@ -594,13 +578,34 @@
             document.getElementById(`${prefix}-total`).value = itemsTotal + d - disc;
         };
 
-        window.startOrderForCustomer = () => { const phone = document.getElementById('cm-phone').innerText; const name = document.getElementById('cm-name').innerText; closeModal('customer-modal'); openModal('add-order-modal'); document.getElementById('no-phone').value = phone; document.getElementById('no-name').value = name; };
-        window.checkCustomerExists = () => { let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, ''); if(!phone) return; let c = customersData.find(x => x.phone === phone || x.phone === '0'+phone); if(c) { document.getElementById('no-name').value = c.name; document.getElementById('no-zone').value = c.zone || ''; } };
+        window.startOrderForCustomer = () => { const phone = document.getElementById('cm-phone').innerText; const name = document.getElementById('cm-name').innerText; closeModal('customer-modal'); openModal('add-order-modal'); document.getElementById('no-phone').value = phone; document.getElementById('no-name').value = name; checkCustomerExists(); };
+        
+        window.checkCustomerExists = () => { 
+            let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, ''); if(!phone) return; 
+            let c = customersData.find(x => x.phone === phone || x.phone === '0'+phone); 
+            if(c) { 
+                document.getElementById('no-name').value = c.name || ''; 
+                document.getElementById('no-zone').value = c.zone || ''; 
+                document.getElementById('no-address').value = c.address || ''; 
+                autoSetDeliveryPrice();
+            } 
+        };
+
+        window.autoSetDeliveryPrice = () => {
+            const sel = document.getElementById('no-zone');
+            if(sel.selectedIndex > 0) {
+                const price = sel.options[sel.selectedIndex].getAttribute('data-price');
+                if(price) { document.getElementById('no-delivery').value = price; calcTotal('no'); }
+            }
+        };
         
         window.submitNewOrder = async () => {
-            let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, ''), name = document.getElementById('no-name').value.trim(), zone = document.getElementById('no-zone').value.trim();
+            let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, ''), name = document.getElementById('no-name').value.trim();
+            let zone = document.getElementById('no-zone').value, address = document.getElementById('no-address').value.trim();
             let total = Number(document.getElementById('no-total').value) || 0, notes = document.getElementById('no-notes').value.trim();
+            
             if(!phone || !name || total === 0) return alert('أكمل بيانات العميل والسعر!');
+            if(!zone) return alert('برجاء اختيار المنطقة!');
             
             let items = []; let subtotal = 0;
             Object.keys(storeProducts).forEach(id => {
@@ -611,16 +616,18 @@
             
             let btn = document.getElementById('btn-save-order'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true;
             try {
-                const orderData = { customerName: name, customerPhone: phone, zone: zone, total: total, subtotal: subtotal, adminNote: notes, items: items, status: 'new', orderDate: new Date().toLocaleDateString('en-US'), createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+                const orderData = { customerName: name, customerPhone: phone, zone: zone, customerAddress: address, total: total, subtotal: subtotal, adminNote: notes, items: items, status: 'new', orderDate: new Date().toLocaleDateString('en-US'), createdAt: firebase.firestore.FieldValue.serverTimestamp() };
                 await db.collection('orders').add(orderData);
                 await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(total), orders: firebase.firestore.FieldValue.increment(1) });
                 let cleanPhoneForDB = phone.startsWith('0') ? phone : '0'+phone;
-                await db.collection('customers').doc(cleanPhoneForDB).set({ name: name, phone: cleanPhoneForDB, zone: zone, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                await db.collection('customers').doc(cleanPhoneForDB).set({ name: name, phone: cleanPhoneForDB, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 
                 closeModal('add-order-modal'); document.querySelectorAll('#add-order-modal input, #add-order-modal textarea').forEach(i => i.value = '');
+                document.getElementById('no-zone').selectedIndex = 0;
             } catch(e) { alert('خطأ في الحفظ'); }
             btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
         };
+
 
         // === 7. المخزون والإعدادات والتسويق (شامل) ===
         function renderInventoryUI() {
