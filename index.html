@@ -130,9 +130,10 @@
                             <thead class="bg-slate-50 text-slate-500 sticky top-0 z-10 border-b border-slate-200">
                                 <tr>
                                     <th class="py-3 px-5 font-bold">العميل</th>
+                                    <th class="py-3 px-5 font-bold text-center">العنوان والتفاصيل</th>
                                     <th class="py-3 px-5 font-bold text-center">عدد الطلبات</th>
                                     <th class="py-3 px-5 font-bold text-center">إجمالي الإنفاق</th>
-                                    <th class="py-3 px-5 font-bold text-center">سجل وتاريخ العميل</th>
+                                    <th class="py-3 px-5 font-bold text-center">الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody id="customers-tbody" class="divide-y divide-slate-100"></tbody>
@@ -395,16 +396,33 @@
                 
                 let tbody = '';
                 customersData.forEach(c => {
+                    // تجميع العنوان والملاحظات
+                    let location = c.zone || '';
+                    if(c.address) location += ' - ' + c.address;
+                    // إضافة الملاحظات الدائمة لو موجودة
+                    let details = c.adminNotes ? `<div class="text-[10px] text-yellow-600 font-bold mt-1 max-w-[160px] truncate mx-auto" title="${c.adminNotes}"><i class="fa-solid fa-thumbtack"></i> ${c.adminNotes}</div>` : '';
+
                     tbody += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone}">
-                        <td class="py-3 px-5"><div class="font-black text-slate-800 cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div><div class="text-[10px] text-slate-500 font-bold" dir="ltr">${c.phone || ''}</div></td>
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${location}">
+                        <td class="py-3 px-5">
+                            <div class="font-black text-slate-800 cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div>
+                            <div class="text-[10px] text-slate-500 font-bold" dir="ltr">${c.phone || ''}</div>
+                        </td>
+                        <td class="py-3 px-5 text-center">
+                            <div class="text-xs font-bold text-slate-700">${location || '<span class="text-slate-400">غير مسجل</span>'}</div>
+                            ${details}
+                        </td>
                         <td class="py-3 px-5 text-center font-black text-slate-700">${c.ordersCount || 0}</td>
                         <td class="py-3 px-5 text-center font-black text-brand-primary">${(c.totalSpent || 0).toLocaleString()} ج</td>
-                        <td class="py-3 px-5 text-center"><button onclick="openCustomerCard('${c.phone}')" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-brand-primary hover:text-white transition-colors">السجل</button></td>
+                        <td class="py-3 px-5 text-center">
+                            <button onclick="openCustomerCard('${c.phone}')" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-brand-primary hover:text-white transition-colors">السجل</button>
+                        </td>
                     </tr>`;
                 });
-                document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="4" class="text-center p-10 text-slate-400 font-bold">لا يوجد عملاء</td></tr>`;
+                // لاحظ تم تعديل colspan إلى 5 بدل 4
+                document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="5" class="text-center p-10 text-slate-400 font-bold">لا يوجد عملاء</td></tr>`;
             });
+
         }
 
         // === 4. إدارة الطلبات ===
@@ -491,14 +509,62 @@
             let hDiv = document.getElementById('cm-history-list'); hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> جاري جلب الأرشيف...</p>';
             try {
                 const snap = await db.collection('orders').where('customerPhone', '==', phone).get();
-                if(snap.empty) { hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 border-2 border-dashed rounded-xl">لا يوجد سجل.</p>'; }
-                else {
-                    let orders = []; snap.forEach(d => orders.push(d.data())); orders.sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
-                    hDiv.innerHTML = orders.map(o => `<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-2"><div class="flex justify-between items-center mb-1"><span class="text-[10px] font-black text-slate-500">${o.orderDate || 'أرشيف'}</span><span class="text-[10px] font-bold ${o.status==='completed'?'text-green-600':'text-brand-accent'}">${o.status==='completed'?'مكتمل':'حالي'}</span></div><p class="text-xs font-black text-slate-700">${o.items ? o.items.map(x=>`${x.quantity}x ${x.name}`).join('، ') : 'بدون تفاصيل'}</p><div class="text-left mt-1 font-black text-brand-primary text-sm">${o.total} ج</div></div>`).join('');
+                if(snap.empty) { 
+                    hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4 border-2 border-dashed rounded-xl">لا يوجد سجل.</p>'; 
+                } else {
+                    let orders = []; snap.forEach(d => orders.push(d.data())); 
+                    orders.sort((a,b) => (b.createdAt?.toMillis()||0) - (a.createdAt?.toMillis()||0));
+                    
+                    hDiv.innerHTML = orders.map((o, index) => {
+                        // تجهيز الأصناف
+                        let itemsHtml = o.items && o.items.length > 0 
+                            ? o.items.map(i => `<div class="flex justify-between text-xs font-bold text-slate-600 border-b border-slate-50 py-1.5 last:border-0"><span>${i.quantity}x ${i.name}</span><span>${i.price * i.quantity} ج</span></div>`).join('') 
+                            : '<p class="text-xs text-slate-400">لا توجد تفاصيل للأصناف</p>';
+
+                        // تجهيز حالة الطلب واللون
+                        let statusAr = o.status === 'new' ? 'جديد' : (o.status === 'processing' ? 'قيد التجهيز' : (o.status === 'completed' ? 'مكتمل' : 'ملغي'));
+                        let statusColor = o.status === 'new' ? 'text-brand-cyan bg-red-50 border-red-100' : (o.status === 'processing' ? 'text-brand-accent bg-orange-50 border-orange-100' : (o.status === 'completed' ? 'text-green-600 bg-green-50 border-green-100' : 'text-slate-500 bg-slate-100 border-slate-200'));
+
+                        // الملاحظات
+                        let noteHtml = o.adminNote ? `<div class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-[11px] font-bold text-blue-700 shadow-sm"><i class="fa-solid fa-pen-to-square mr-1"></i> <strong>ملاحظة الإدارة:</strong> ${o.adminNote}</div>` : '';
+
+                        // عرض اسم المندوب لو موجود، أو حالة التوصيل
+                        let driverNameText = o.driverName ? `تم التوجيه لـ: <strong>${o.driverName}</strong>` : `حالة التوصيل: ${statusAr}`;
+                        let driverHtml = `<div class="mt-2 bg-slate-50 border border-slate-100 rounded-lg p-2.5 text-[11px] text-slate-600 flex items-center gap-2"><i class="fa-solid fa-motorcycle text-brand-primary text-sm"></i> <span>${driverNameText}</span></div>`;
+
+                        return `
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm mb-2 overflow-hidden transition-all">
+                            <!-- رأس الطلب (قابل للضغط) -->
+                            <div class="p-3 flex justify-between items-center cursor-pointer hover:bg-slate-50" onclick="toggleOrderDetails('cm-order-details-${index}', 'cm-icon-${index}')">
+                                <div class="flex flex-col gap-1.5">
+                                    <span class="text-[10px] font-black text-slate-500"><i class="fa-solid fa-calendar-day mr-1"></i> ${o.orderDate || 'أرشيف'}</span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded border ${statusColor} w-max">${statusAr}</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <div class="text-left font-black text-brand-primary text-sm">${o.total} ج</div>
+                                    <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center"><i id="cm-icon-${index}" class="fa-solid fa-chevron-down text-slate-500 text-[10px] transition-transform duration-300"></i></div>
+                                </div>
+                            </div>
+                            
+                            <!-- تفاصيل الطلب (مخفية افتراضياً) -->
+                            <div id="cm-order-details-${index}" class="hidden border-t border-slate-100 bg-slate-50/50 p-3">
+                                <h6 class="text-[10px] font-black text-brand-primary mb-1.5"><i class="fa-solid fa-box-open mr-1"></i> محتويات الأوردر:</h6>
+                                <div class="bg-white border border-slate-100 rounded-lg p-2 mb-2 shadow-sm">
+                                    ${itemsHtml}
+                                    <div class="flex justify-between text-xs font-black text-slate-800 pt-2 mt-1 border-t border-slate-100">
+                                        <span>الإجمالي النهائي</span><span class="text-brand-primary">${o.total} ج</span>
+                                    </div>
+                                </div>
+                                ${driverHtml}
+                                ${noteHtml}
+                            </div>
+                        </div>`;
+                    }).join('');
                 }
-            } catch(e) { hDiv.innerHTML = '<p class="text-xs text-brand-cyan">خطأ!</p>'; }
-            openModal('customer-modal');
-        };
+            } catch(e) { 
+                hDiv.innerHTML = '<p class="text-xs text-brand-cyan text-center">حدث خطأ في جلب الأرشيف!</p>'; 
+            }
+
 
         window.savePermanentNotes = async () => { let phone = document.getElementById('cm-phone').innerText; let notes = document.getElementById('cm-permanent-notes').value.trim(); if(!phone) return; try { await db.collection('customers').doc(phone).update({ adminNotes: notes }); alert("تم الحفظ!"); } catch(e) { alert("خطأ"); } };
 
@@ -625,17 +691,52 @@
             openModal('dispatch-modal');
         };
         window.toggleAllDispatchCheckboxes = () => { let cbs = document.querySelectorAll('.disp-cb'); let allChecked = Array.from(cbs).every(cb => cb.checked); cbs.forEach(cb => cb.checked = !allChecked); };
-        window.sendOrdersToDriver = () => {
-            const phone = document.getElementById('dispatch-driver-select').value; if(!phone) return alert("اختر المندوب أولاً!");
-            let selectedIds = Array.from(document.querySelectorAll('.disp-cb:checked')).map(cb => cb.value); if(selectedIds.length === 0) return alert("حدد طلبات!");
+        window.sendOrdersToDriver = async () => {
+            const selectElement = document.getElementById('dispatch-driver-select');
+            const phone = selectElement.value;
+            if(!phone) return alert("اختر المندوب أولاً!");
+            
+            // استخراج اسم المندوب عشان نحفظه في الأوردر
+            const driverName = selectElement.options[selectElement.selectedIndex].text;
+
+            let selectedIds = Array.from(document.querySelectorAll('.disp-cb:checked')).map(cb => cb.value); 
+            if(selectedIds.length === 0) return alert("حدد طلبات!");
+            
             let msg = `طلبيات للتوصيل 🚚:\n\n`;
-            selectedIds.forEach(id => {
+            
+            // تحديث الطلبات في فايربيس
+            for (let id of selectedIds) {
                 let o = dispatchOrdersRaw.find(x => x.id === id);
-                if(o) msg += `👤 ${o.customerName}\n📞 ${o.customerPhone}\n📍 ${o.zone} ${o.customerAddress?'- '+o.customerAddress:''}\n📦 ${o.items.map(i=>`${i.quantity} ${i.name}`).join(' + ')}\n💰 التحصيل: ${o.total} ج\n${o.adminNote ? `📝 ملاحظة: ${o.adminNote}\n` : ''}----------\n`;
-            });
-            window.open(`https://wa.me/${phone.startsWith('0')?'2'+phone:phone}?text=${encodeURIComponent(msg)}`, '_blank');
+                if(o) {
+                    msg += `👤 ${o.customerName}\n📞 ${o.customerPhone}\n📍 ${o.zone} ${o.customerAddress ? '- ' + o.customerAddress : ''}\n📦 ${o.items.map(i=>`${i.quantity} ${i.name}`).join(' + ')}\n💰 التحصيل: ${o.total} ج\n${o.adminNote ? `📝 ملاحظة: ${o.adminNote}\n` : ''}----------\n`;
+                    
+                    // حفظ اسم المندوب وتحويل حالة الطلب لـ "قيد التجهيز" تلقائياً
+                    try {
+                        await db.collection('orders').doc(id).update({ 
+                            driverName: driverName,
+                            status: 'processing'
+                        });
+                    } catch(e) { }
+                }
+            }
+            
+            window.open(`https://wa.me/${phone.startsWith('0') ? '2' + phone : phone}?text=${encodeURIComponent(msg)}`, '_blank');
             closeModal('dispatch-modal');
         };
+
+        // دالة لفتح وإغلاق تفاصيل الطلب في أرشيف العميل
+        window.toggleOrderDetails = (detailsId, iconId) => {
+            const detailsDiv = document.getElementById(detailsId);
+            const icon = document.getElementById(iconId);
+            if (detailsDiv.classList.contains('hidden')) {
+                detailsDiv.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                detailsDiv.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        };
+
     </script>
 </body>
 </html>
