@@ -492,7 +492,7 @@
             document.getElementById('header-title').innerText = btnElement.innerText.trim();
             
             const saveBtn = document.getElementById('global-save-btn');
-            if(['inventory', 'settings', 'marketing', 'batches', 'visuals'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
+            if(['inventory', 'settings', 'marketing', 'batches', 'visuals', 'dictionary', 'advanced'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
             if(window.innerWidth < 768) toggleSidebar();
         }
 
@@ -516,7 +516,7 @@
         function startCRM() {
             const nowStr = new Date().toLocaleDateString('en-US');
 
-            // سحب المخزون والإعدادات
+                        // سحب المخزون والإعدادات
             db.collection('inventory').onSnapshot(snap => {
                 snap.forEach(doc => {
                     if(doc.id === 'settings') { storeSettings = Object.assign(storeSettings, doc.data()); storeProducts = storeSettings.productsData || {}; }
@@ -526,7 +526,10 @@
                 });
                 renderInventoryUI(); renderSettingsUI(); renderMarketingUI(); generateDynamicOrderInputs(); renderBatchesUI();
                 renderTrustBadges();
+                renderDictionaryUI(); // 👈 القاموس
+                renderAdvancedUI();   // 👈 متقدم
             });
+
 
             // سحب الطلبات لايف
             db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
@@ -979,9 +982,10 @@
         }
         window.addNewPromoCode = () => { if(!storeSettings.promoCodes) storeSettings.promoCodes = []; storeSettings.promoCodes.unshift({ code: 'CODE-' + Math.floor(100 + Math.random() * 900), discount: 10, type: 'fixed', usesLeft: null, minOrder: 0 }); renderMarketingUI(); };
 
-        window.saveAllSettings = async () => {
+                window.saveAllSettings = async () => {
             const btn = document.getElementById('global-save-btn'); const origHtml = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; btn.disabled = true;
             try {
+                // 1. الإعدادات الأساسية
                 if(document.getElementById('st-name')) {
                     storeSettings.storeName = document.getElementById('st-name').value;
                     storeSettings.storePhone = document.getElementById('st-phone').value;
@@ -991,6 +995,7 @@
                     storeSettings.freeDeliveryThreshold = parseInt(document.getElementById('st-free-th').value) || 0;
                 }
                 
+                // 2. إعدادات التسويق
                 if(document.getElementById('mkt-banner-active')) {
                     storeSettings.bannerActive = document.getElementById('mkt-banner-active').checked;
                     storeSettings.marqueeMessages = document.getElementById('mkt-banner-texts').value.split('\n').map(s=>s.trim()).filter(s=>s);
@@ -1000,17 +1005,39 @@
                     storeSettings.showPromoField = document.getElementById('mkt-show-promo').checked;
                 }
 
+                // 3. قوالب الرسائل
                 if(document.getElementById('admin-whatsapp-template')) {
                     storeSettings.whatsappTemplate = document.getElementById('admin-whatsapp-template').value;
                     storeSettings.dispatchTemplate = document.getElementById('admin-dispatch-template').value;
                     storeSettings.ticktickTemplate = document.getElementById('admin-ticktick-template').value;
-                    storeSettings.batchHashtag = document.getElementById('admin-batch-hashtag').value;
                 }
 
+                // 4. المربعات الأربعة (عناصر الثقة)
                 if(document.getElementById('trust-badges-container')) {
                     storeSettings.trustBadges = [0,1,2,3].map(i => ({ icon: storeSettings.trustBadges[i].icon, title: storeSettings.trustBadges[i].title, desc: storeSettings.trustBadges[i].desc }));
                 }
 
+                // 5. القاموس (نصوص الواجهة)
+                if(document.getElementById('dict-cart-total')) {
+                    storeSettings.dictionary = {
+                        cartTotal: document.getElementById('dict-cart-total').value.trim(),
+                        cartBtn: document.getElementById('dict-cart-btn').value.trim(),
+                        checkoutTitle: document.getElementById('dict-checkout-title').value.trim(),
+                        promoBtn: document.getElementById('dict-promo-btn').value.trim(),
+                        ordersValue: document.getElementById('dict-orders-value').value.trim(),
+                        deliveryFee: document.getElementById('dict-delivery-fee').value.trim(),
+                        finalTotal: document.getElementById('dict-final-total').value.trim(),
+                        emptyCart: document.getElementById('dict-empty-cart').value.trim()
+                    };
+                }
+
+                // 6. الإعدادات المتقدمة
+                if(document.getElementById('adv-vip-msg')) {
+                    storeSettings.vipMessage = document.getElementById('adv-vip-msg').value.trim();
+                    storeSettings.batchHashtag = document.getElementById('adv-batch-hashtag').value.trim();
+                }
+
+                // تنظيف المصفوفات قبل الحفظ
                 storeSettings.deliveryZones = storeSettings.deliveryZones.filter(z => z.name.trim() !== '');
                 storeSettings.drivers = storeSettings.drivers.filter(d => d.name.trim() !== '' || d.phone.trim() !== '');
                 storeSettings.promoCodes = storeSettings.promoCodes.filter(p => p.code.trim() !== '');
@@ -1023,9 +1050,13 @@
                     db.collection("inventory").doc("batches").set(storeBatches) 
                 ]);
                 alert('تم الحفظ وتحديث متجر الزبائن لايف! 🚀');
-            } catch(e) { alert('خطأ في الحفظ!'); }
+            } catch(e) { 
+                console.error(e);
+                alert('خطأ في الحفظ!'); 
+            }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
+
 
         // === 8. المناديب (واتساب) والتوجيه الذكي ===
         window.openDispatchModal = () => {
@@ -1457,6 +1488,63 @@
             }
             btn.innerHTML = '<i class="fa-solid fa-file-import text-green-400"></i> <span class="hidden md:inline">استيراد تيك تيك</span>';
         };
+        // ==========================================
+        // دوال القاموس والإعدادات المتقدمة
+        // ==========================================
+        function renderDictionaryUI() {
+            if(!document.getElementById('dict-cart-total')) return;
+            const d = storeSettings.dictionary || {};
+            document.getElementById('dict-cart-total').value = d.cartTotal || '';
+            document.getElementById('dict-cart-btn').value = d.cartBtn || '';
+            document.getElementById('dict-checkout-title').value = d.checkoutTitle || '';
+            document.getElementById('dict-promo-btn').value = d.promoBtn || '';
+            document.getElementById('dict-orders-value').value = d.ordersValue || '';
+            document.getElementById('dict-delivery-fee').value = d.deliveryFee || '';
+            document.getElementById('dict-final-total').value = d.finalTotal || '';
+            document.getElementById('dict-empty-cart').value = d.emptyCart || '';
+        }
+
+        function renderAdvancedUI() {
+            if(!document.getElementById('adv-vip-msg')) return;
+            document.getElementById('adv-vip-msg').value = storeSettings.vipMessage || 'السلام عليكم، أريد الانضمام لقائمة الـ VIP وحجز ({اسم_المنتج}) من الدفعة القادمة قبل نزولها المتجر. 👑';
+            document.getElementById('adv-batch-hashtag').value = storeSettings.batchHashtag || '';
+        }
+
+        // ==========================================
+        // دوال منطقة الخطر
+        // ==========================================
+        window.resetStatsDanger = async () => {
+            const confirmText = prompt('تحذير: سيتم تصفير أرقام (المبيعات) و (الطلبات) في لوحة التحكم الرئيسية.\nللتأكيد، اكتب كلمة: تصفير');
+            if(confirmText !== 'تصفير') return alert('تم إلغاء العملية.');
+            try {
+                await db.collection('inventory').doc('stats').set({ sales: 0, orders: 0 });
+                alert('تم تصفير الإحصائيات بنجاح!');
+            } catch(e) { alert('حدث خطأ!'); }
+        };
+
+        window.deleteAllOrdersDanger = async () => {
+            const confirmText = prompt('🚨 تحذير خطير 🚨\nسيتم مسح جميع سجلات الطلبات نهائياً من قاعدة البيانات ولن يمكنك استرجاعها!\nللتأكيد، اكتب: مسح نهائي');
+            if(confirmText !== 'مسح نهائي') return alert('تم إلغاء العملية بأمان.');
+            
+            const btn = document.querySelector('button[onclick="deleteAllOrdersDanger()"]');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المسح...';
+            
+            try {
+                const snap = await db.collection('orders').get();
+                const batches = []; let currentBatch = db.batch(); let count = 0;
+                snap.forEach(doc => {
+                    currentBatch.delete(doc.ref);
+                    count++;
+                    if(count === 400) { batches.push(currentBatch.commit()); currentBatch = db.batch(); count = 0; }
+                });
+                if(count > 0) batches.push(currentBatch.commit());
+                await Promise.all(batches);
+                alert('تم مسح جميع الطلبات بنجاح وموقعك الآن صفحة بيضاء!');
+            } catch(e) { alert('حدث خطأ أثناء المسح!'); }
+            btn.innerHTML = origHtml;
+        };
+
         // 1. دالة عرض المربعات الأربعة
         function renderTrustBadges() {
             const cont = document.getElementById('trust-badges-container');
