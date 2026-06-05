@@ -564,6 +564,11 @@
             } catch(e) { 
                 hDiv.innerHTML = '<p class="text-xs text-brand-cyan text-center">حدث خطأ في جلب الأرشيف!</p>'; 
             }
+            
+            // فتح كارد العميل وقفلة الدالة اللي كانت ناقصة
+            openModal('customer-modal');
+        };
+
 
 
         window.savePermanentNotes = async () => { let phone = document.getElementById('cm-phone').innerText; let notes = document.getElementById('cm-permanent-notes').value.trim(); if(!phone) return; try { await db.collection('customers').doc(phone).update({ adminNotes: notes }); alert("تم الحفظ!"); } catch(e) { alert("خطأ"); } };
