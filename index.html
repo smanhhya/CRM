@@ -67,6 +67,7 @@
             
             <div class="pt-4 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">التحكم في المتجر</div>
             <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-boxes-packing w-6 text-center text-blue-400"></i> المخزون والمنتجات</button>
+            <button onclick="switchTab('batches', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-layer-group w-6 text-center text-green-400"></i> نظام الدفعات والحجوزات</button>
             <button onclick="switchTab('marketing', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-bullhorn w-6 text-center text-purple-400"></i> التسويق والأكواد</button>
             <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gears w-6 text-center text-slate-400"></i> الإعدادات والتوصيل</button>
         </nav>
@@ -139,6 +140,19 @@
                             <tbody id="customers-tbody" class="divide-y divide-slate-100"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+            <!-- شاشة نظام الدفعات -->
+            <div id="view-batches" class="page-view h-full flex flex-col space-y-4">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+                    <div>
+                        <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-layer-group text-green-500 mr-2"></i> إدارة الدفعات (الدورات)</h3>
+                        <p class="text-xs text-slate-500 font-bold mt-1">حدد كميات الدفعة وتابع الحجوزات المسبقة</p>
+                    </div>
+                    <button onclick="addNewBatchUI()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-green-700 flex items-center gap-2"><i class="fa-solid fa-plus"></i> فتح دفعة جديدة</button>
+                </div>
+                <div id="batches-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1">
+                    <p class="text-xs text-slate-400 text-center py-10 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد دفعات حالياً. أضف دفعة جديدة للبدء.</p>
                 </div>
             </div>
 
