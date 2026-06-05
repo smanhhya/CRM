@@ -524,6 +524,23 @@
         // === 5. أرشيف العملاء ===
         window.filterCustomers = () => { let filter = document.getElementById('search-customer').value.toLowerCase(); document.querySelectorAll('.customer-row').forEach(row => { row.style.display = row.getAttribute('data-search').toLowerCase().includes(filter) ? '' : 'none'; }); };
         
+        // الدالة التالية كانت بدايتها مفقودة وتمت إضافتها
+        window.openCustomerCard = async (phone) => {
+            // 1. تحديث بيانات الكارد الأساسية للعميل
+            let c = customersData.find(x => x.phone === phone);
+            if(c) {
+                document.getElementById('cm-name').innerText = c.name || 'عميل';
+                document.getElementById('cm-phone').innerText = c.phone || '';
+                document.getElementById('cm-ltv').innerText = (c.totalSpent || 0) + ' ج';
+                document.getElementById('cm-orders').innerText = c.ordersCount || 0;
+                document.getElementById('cm-permanent-notes').value = c.adminNotes || '';
+                document.getElementById('cm-btn-wa').href = `https://wa.me/2${phone}`;
+                document.getElementById('cm-btn-call').href = `tel:${phone}`;
+            }
+
+            const hDiv = document.getElementById('cm-history-list');
+            hDiv.innerHTML = '<p class="text-xs text-slate-400 text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> جاري جلب الأرشيف...</p>';
+            
             try {
                 const snap = await db.collection('orders').where('customerPhone', '==', phone).get();
                 if(snap.empty) { 
@@ -572,11 +589,9 @@
                 hDiv.innerHTML = '<p class="text-xs text-brand-cyan text-center">حدث خطأ في جلب الأرشيف!</p>'; 
             }
             
-            // فتح كارد العميل وقفلة الدالة اللي كانت ناقصة
+            // فتح كارد العميل بعد جلب البيانات
             openModal('customer-modal');
         };
-
-
 
         window.savePermanentNotes = async () => { let phone = document.getElementById('cm-phone').innerText; let notes = document.getElementById('cm-permanent-notes').value.trim(); if(!phone) return; try { await db.collection('customers').doc(phone).update({ adminNotes: notes }); alert("تم الحفظ!"); } catch(e) { alert("خطأ"); } };
 
