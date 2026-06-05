@@ -416,20 +416,27 @@
 
             // سحب العملاء
             db.collection('customers').onSnapshot(snap => {
-                document.getElementById('dash-customers').innerText = snap.size; customersData = [];
+                document.getElementById('dash-customers').innerText = snap.size; 
+                customersData = [];
                 snap.forEach(doc => customersData.push(doc.data()));
+                
+                // ترتيب العملاء حسب عدد الطلبات (واللي ملوش طلبات ينزل تحت)
                 customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0));
                 
                 let tbody = '';
                 customersData.forEach(c => {
-                    // تجميع العنوان والملاحظات
+                    // تجميع العنوان والمكان
                     let location = c.zone || '';
                     if(c.address) location += ' - ' + c.address;
-                    // إضافة الملاحظات الدائمة لو موجودة
-                    let details = c.adminNotes ? `<div class="text-[10px] text-yellow-600 font-bold mt-1 max-w-[160px] truncate mx-auto" title="${c.adminNotes}"><i class="fa-solid fa-thumbtack"></i> ${c.adminNotes}</div>` : '';
+                    
+                    // هنا السحر: تجميع كل حاجة (اسم، رقم، عنوان، وملاحظات TickTick) عشان البحث يلقط أي كلمة
+                    let searchString = `${c.name || ''} ${c.phone || ''} ${location} ${c.adminNotes || ''}`.toLowerCase();
+                    
+                    // عرض الملاحظات في الجدول بشكل مصغر (وممكن تقف عليها بالماوس تقرأها كلها)
+                    let details = c.adminNotes ? `<div class="text-[10px] text-yellow-700 bg-yellow-50 p-1 rounded font-bold mt-1 max-w-[250px] truncate mx-auto border border-yellow-200" title="${c.adminNotes}"><i class="fa-solid fa-note-sticky"></i> ${c.adminNotes}</div>` : '';
 
                     tbody += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${location}">
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${searchString}">
                         <td class="py-3 px-5">
                             <div class="font-black text-slate-800 cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div>
                             <div class="text-[10px] text-slate-500 font-bold" dir="ltr">${c.phone || ''}</div>
@@ -441,11 +448,10 @@
                         <td class="py-3 px-5 text-center font-black text-slate-700">${c.ordersCount || 0}</td>
                         <td class="py-3 px-5 text-center font-black text-brand-primary">${(c.totalSpent || 0).toLocaleString()} ج</td>
                         <td class="py-3 px-5 text-center">
-                            <button onclick="openCustomerCard('${c.phone}')" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-brand-primary hover:text-white transition-colors">السجل</button>
+                            <button onclick="openCustomerCard('${c.phone}')" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-brand-primary hover:text-white transition-colors">السجل والبيانات</button>
                         </td>
                     </tr>`;
                 });
-                // لاحظ تم تعديل colspan إلى 5 بدل 4
                 document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="5" class="text-center p-10 text-slate-400 font-bold">لا يوجد عملاء</td></tr>`;
             });
 
