@@ -324,7 +324,7 @@
     <script>
         // === 1. متغيرات النظام ===
         let storeSettings = { deliveryZones: [], drivers: [], promoCodes: [], storeOpen: true };
-        let storeProducts = {}; let storePrices = {}; let storeStock = {};
+        let storeProducts = {}; let storePrices = {}; let storeStock = {}; let storeBatches = {};
         let customersData = []; let allOrdersRaw = []; let dispatchOrdersRaw = [];
         let currentOrderTab = 'all';
 
@@ -348,7 +348,7 @@
             document.getElementById('header-title').innerText = btnElement.innerText.trim();
             
             const saveBtn = document.getElementById('global-save-btn');
-            if(['inventory', 'settings', 'marketing'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
+            if(['inventory', 'settings', 'marketing', 'batches'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
             if(window.innerWidth < 768) toggleSidebar();
         }
 
@@ -378,8 +378,10 @@
                     if(doc.id === 'settings') { storeSettings = Object.assign(storeSettings, doc.data()); storeProducts = storeSettings.productsData || {}; }
                     if(doc.id === 'stock') storeStock = doc.data();
                     if(doc.id === 'prices') storePrices = doc.data();
+                    if(doc.id === 'batches') storeBatches = doc.data() || {};
                 });
-                renderInventoryUI(); renderSettingsUI(); renderMarketingUI(); generateDynamicOrderInputs();
+                renderInventoryUI(); renderSettingsUI(); renderMarketingUI(); generateDynamicOrderInputs(); renderBatchesUI();
+
             });
 
             // سحب الطلبات لايف
@@ -702,7 +704,7 @@
                 storeSettings.promoCodes = storeSettings.promoCodes.filter(p => p.code.trim() !== '');
                 storeSettings.productsData = storeProducts;
 
-                await Promise.all([ db.collection("inventory").doc("settings").set(storeSettings, {merge: true}), db.collection("inventory").doc("stock").set(storeStock, {merge: true}), db.collection("inventory").doc("prices").set(storePrices, {merge: true}) ]);
+                await Promise.all([ db.collection("inventory").doc("settings").set(storeSettings, {merge: true}), db.collection("inventory").doc("stock").set(storeStock, {merge: true}), db.collection("inventory").doc("prices").set(storePrices, {merge: true}), db.collection("inventory").doc("batches").set(storeBatches) ]);
                 alert('تم الحفظ وتحديث متجر الزبائن لايف! 🚀');
             } catch(e) { alert('خطأ في الحفظ!'); }
             btn.innerHTML = origHtml; btn.disabled = false;
@@ -762,6 +764,80 @@
                 detailsDiv.classList.add('hidden');
                 icon.style.transform = 'rotate(0deg)';
             }
+        };
+        // === 9. نظام الدفعات والحجوزات ===
+        window.renderBatchesUI = () => {
+            const cont = document.getElementById('batches-list-container'); if(!cont) return;
+            if(Object.keys(storeBatches).length === 0) {
+                cont.innerHTML = '<p class="text-xs text-slate-400 text-center py-10 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد دفعات حالياً. أضف دفعة جديدة للبدء.</p>';
+                return;
+            }
+            
+            cont.innerHTML = '';
+            // ترتيب الدفعات عشان الجديد يظهر فوق
+            Object.keys(storeBatches).reverse().forEach(bId => {
+                const b = storeBatches[bId];
+                
+                // تجهيز حقول المخزن للدفعة دي بناءً على الأصناف الموجودة في المتجر
+                let stockHtml = '<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 border-t border-slate-100 pt-3">';
+                Object.keys(storeProducts).forEach(pId => {
+                    let pName = storeProducts[pId].name;
+                    let bStock = b.stock ? (b.stock[pId] || 0) : 0;
+                    let bBooked = b.booked ? (b.booked[pId] || 0) : 0;
+                    let remaining = bStock - bBooked;
+                    
+                    stockHtml += `
+                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <label class="text-[10px] font-black text-slate-700 block truncate mb-1">${pName}</label>
+                        <div class="flex items-center gap-1">
+                            <div class="flex-1">
+                                <span class="text-[8px] text-slate-400 block text-center">الكمية</span>
+                                <input type="number" value="${bStock}" onchange="updateBatchStock('${bId}', '${pId}', this.value)" class="w-full border rounded p-1 text-xs font-bold text-slate-800 text-center outline-none focus:border-brand-primary">
+                            </div>
+                            <div class="flex-1 text-center bg-white border border-slate-200 rounded p-1">
+                                <span class="text-[8px] text-slate-400 block">محجوز</span>
+                                <span class="text-xs font-black text-brand-cyan">${bBooked}</span>
+                            </div>
+                            <div class="flex-1 text-center bg-green-50 border border-green-200 rounded p-1">
+                                <span class="text-[8px] text-green-600 block">متبقي</span>
+                                <span class="text-xs font-black text-green-700">${remaining}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                stockHtml += '</div>';
+
+                cont.innerHTML += `
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden mb-3">
+                    <div class="absolute top-0 right-0 w-1.5 h-full ${b.isOpen ? 'bg-green-500' : 'bg-slate-400'}"></div>
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div class="flex-1 w-full">
+                            <input type="text" value="${b.name}" onchange="storeBatches['${bId}'].name = this.value" class="border rounded-lg p-2.5 text-sm font-black text-slate-800 w-full md:w-2/3 outline-none focus:border-brand-primary bg-slate-50" placeholder="اسم الدفعة (مثال: حجز دورة 15-7)">
+                        </div>
+                        <div class="flex items-center gap-4 w-full md:w-auto justify-between">
+                            <label class="flex items-center gap-2 text-xs font-bold cursor-pointer"><input type="checkbox" ${b.isOpen ? 'checked' : ''} onchange="storeBatches['${bId}'].isOpen = this.checked; renderBatchesUI();" class="accent-green-600 w-5 h-5"> مفتوحة للحجز</label>
+                            <button onclick="deleteBatchUI('${bId}')" class="bg-red-50 text-red-500 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition-colors"><i class="fa-solid fa-trash mr-1"></i> حذف</button>
+                        </div>
+                    </div>
+                    ${stockHtml}
+                </div>`;
+            });
+        };
+
+        window.addNewBatchUI = () => {
+            const bId = 'batch_' + Date.now();
+            storeBatches[bId] = { name: "", isOpen: true, stock: {}, booked: {} };
+            renderBatchesUI();
+        };
+
+        window.updateBatchStock = (bId, pId, val) => {
+            if(!storeBatches[bId].stock) storeBatches[bId].stock = {};
+            storeBatches[bId].stock[pId] = parseInt(val) || 0;
+            renderBatchesUI();
+        };
+
+        window.deleteBatchUI = (bId) => {
+            if(confirm("هل أنت متأكد من حذف هذه الدفعة نهائياً؟")) { delete storeBatches[bId]; renderBatchesUI(); }
         };
 
     </script>
