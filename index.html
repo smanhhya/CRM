@@ -228,6 +228,45 @@
                         <div id="drivers-list-container" class="space-y-2"></div>
                     </div>
                 </div>
+            <!-- ======================= شاشة: جدول الطلبات وإكسيل ======================= -->
+            <div id="view-orders-table" class="page-view h-full flex flex-col space-y-4">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+                    <div>
+                        <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-table text-green-600 mr-2"></i> جدول الطلبات الشامل</h3>
+                        <p class="text-xs text-slate-500 font-bold mt-1">عرض كلاسيكي للطلبات مع إمكانية التصدير</p>
+                    </div>
+                    <button onclick="exportOrdersToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-green-700 flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> تحميل إكسيل (CSV)</button>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
+                    <div class="overflow-x-auto custom-scroll flex-1">
+                        <table class="w-full text-right text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-500 sticky top-0 z-10 border-b border-slate-200">
+                                <tr>
+                                    <th class="py-3 px-4 font-bold">التاريخ</th>
+                                    <th class="py-3 px-4 font-bold">العميل</th>
+                                    <th class="py-3 px-4 font-bold text-center">الرقم</th>
+                                    <th class="py-3 px-4 font-bold text-center">العنوان</th>
+                                    <th class="py-3 px-4 font-bold text-center">الأصناف</th>
+                                    <th class="py-3 px-4 font-bold text-center">الإجمالي</th>
+                                    <th class="py-3 px-4 font-bold text-center">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================= شاشة: واجهة الموقع والمربعات ======================= -->
+            <div id="view-visuals" class="page-view space-y-6">
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-l-4 border-l-brand-primary">
+                    <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-shield-halved text-brand-primary mr-2"></i> المربعات الأربعة (عناصر الثقة)</h3>
+                    <p class="text-xs text-slate-500 font-bold mb-4">النصوص التي تظهر أسفل السلايدر في المتجر للزباين.</p>
+                    <div id="trust-badges-container" class="space-y-3">
+                        <!-- سيتم توليد المربعات هنا بالجافاسكريبت -->
+                    </div>
+                </div>
+            </div>
 
                 <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm mt-6 border-l-4 border-l-brand-cyan">
                     <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-language text-brand-cyan mr-2"></i> قوالب رسائل النظام والهاشتاج</h3>
