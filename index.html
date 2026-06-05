@@ -28,8 +28,8 @@
         body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; overflow: hidden; }
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-        .page-view { display: none; animation: fadeIn 0.4s ease; }
-        .page-view.active { display: flex; flex-direction: column; }
+        .page-view { display: none !important; animation: fadeIn 0.4s ease; }
+        .page-view.active { display: flex !important; flex-direction: column; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (max-width: 768px) { #sidebar { transform: translateX(100%); } #sidebar.open { transform: translateX(0); } }
