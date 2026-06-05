@@ -900,36 +900,114 @@
             btn.innerHTML = origHtml; btn.disabled = false;
         };
 
-        // === 8. المناديب (واتساب) ===
+        // === 8. المناديب (واتساب) والتوجيه الذكي ===
         window.openDispatchModal = () => {
             const sel = document.getElementById('dispatch-driver-select'); sel.innerHTML = '<option value="">-- اختر المندوب --</option>';
             (storeSettings.drivers || []).forEach(d => sel.innerHTML += `<option value="${d.phone}">${d.name} (${d.phone})</option>`);
+            
             const cont = document.getElementById('dispatch-orders-list');
-            if(dispatchOrdersRaw.length === 0) { cont.innerHTML = '<p class="text-xs font-bold text-slate-400 text-center py-4">لا توجد طلبات لإرسالها.</p>'; }
-            else { cont.innerHTML = dispatchOrdersRaw.map(o => `<div class="bg-white p-3 rounded-lg border border-slate-200 flex items-start gap-3 shadow-sm"><input type="checkbox" class="disp-cb mt-1 accent-brand-primary w-4 h-4" value="${o.id}"><div class="flex-1"><h5 class="font-bold text-sm text-slate-800">${o.customerName} - ${o.zone}</h5><p class="text-[10px] text-slate-500 font-bold">${o.items ? o.items.map(i=>`${i.quantity}x ${i.name}`).join('، ') : ''}</p></div></div>`).join(''); }
+            if(dispatchOrdersRaw.length === 0) { 
+                cont.innerHTML = '<p class="text-xs font-bold text-slate-400 text-center py-4">لا توجد طلبات لإرسالها.</p>'; 
+            } else { 
+                // التوجيه الذكي: تجميع الأوردرات حسب المنطقة (خط السير)
+                let zonesMap = {};
+                dispatchOrdersRaw.forEach(o => {
+                    let zName = o.zone || 'مناطق غير محددة';
+                    if(!zonesMap[zName]) zonesMap[zName] = [];
+                    zonesMap[zName].push(o);
+                });
+
+                let html = '';
+                Object.keys(zonesMap).forEach((zone, index) => {
+                    let ordersInZone = zonesMap[zone];
+                    html += `
+                    <div class="border border-brand-primary/20 rounded-xl overflow-hidden mb-4 shadow-sm">
+                        <div class="bg-brand-primary/10 p-2.5 flex justify-between items-center border-b border-brand-primary/20">
+                            <h4 class="font-black text-sm text-brand-primary flex items-center gap-2"><i class="fa-solid fa-map-location-dot"></i> خط تسليم: ${zone} <span class="bg-white text-brand-primary text-[10px] px-2 py-0.5 rounded-full border border-brand-primary/20 shadow-sm">${ordersInZone.length} أوردر</span></h4>
+                            <button onclick="toggleZoneCheckboxes('zone-cb-${index}')" class="text-[10px] bg-white border border-brand-primary/30 px-3 py-1.5 rounded font-bold text-brand-primary hover:bg-brand-primary hover:text-white transition-colors shadow-sm">تحديد خط ${zone}</button>
+                        </div>
+                        <div class="p-2 space-y-2 bg-slate-50">
+                            ${ordersInZone.map(o => `
+                                <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-start gap-3 hover:border-brand-primary/50 transition-colors">
+                                    <input type="checkbox" class="disp-cb zone-cb-${index} mt-1 accent-brand-primary w-4 h-4" value="${o.id}">
+                                    <div class="flex-1">
+                                        <div class="flex justify-between items-start mb-1">
+                                            <h5 class="font-bold text-sm text-slate-800">${o.customerName}</h5>
+                                            <span class="text-brand-primary font-black text-xs">${o.total} ج</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500 font-bold mb-1"><i class="fa-solid fa-location-arrow text-slate-400 mr-1"></i> ${o.customerAddress ? o.customerAddress : 'بدون عنوان تفصيلي'}</p>
+                                        <p class="text-[10px] text-slate-600 font-bold bg-slate-100 p-1.5 rounded inline-block"><i class="fa-solid fa-box-open text-brand-accent mr-1"></i> ${o.items ? o.items.map(i=>`${i.quantity}x ${i.name}`).join('، ') : ''}</p>
+                                        ${o.adminNote ? `<p class="text-[10px] font-bold text-red-600 mt-1 bg-red-50 p-1.5 rounded"><i class="fa-solid fa-pen-to-square"></i> ${o.adminNote}</p>` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                });
+                cont.innerHTML = html; 
+            }
             openModal('dispatch-modal');
         };
+
         window.toggleAllDispatchCheckboxes = () => { let cbs = document.querySelectorAll('.disp-cb'); let allChecked = Array.from(cbs).every(cb => cb.checked); cbs.forEach(cb => cb.checked = !allChecked); };
+        
+        // دالة تحديد الأوردرات الخاصة بمنطقة معينة فقط
+        window.toggleZoneCheckboxes = (className) => { 
+            let cbs = document.querySelectorAll('.' + className); 
+            let allChecked = Array.from(cbs).every(cb => cb.checked); 
+            cbs.forEach(cb => cb.checked = !allChecked); 
+        };
+
         window.sendOrdersToDriver = async () => {
             const selectElement = document.getElementById('dispatch-driver-select');
             const phone = selectElement.value;
             if(!phone) return alert("اختر المندوب أولاً!");
             
-            // استخراج اسم المندوب عشان نحفظه في الأوردر
             const driverName = selectElement.options[selectElement.selectedIndex].text;
 
             let selectedIds = Array.from(document.querySelectorAll('.disp-cb:checked')).map(cb => cb.value); 
             if(selectedIds.length === 0) return alert("حدد طلبات!");
             
-            let msg = `طلبيات للتوصيل 🚚:\n\n`;
+            // تجميع الأوردرات المحددة حسب المنطقة عشان رسالة الواتساب تكون منظمة كخريطة
+            let selectedOrders = dispatchOrdersRaw.filter(o => selectedIds.includes(o.id));
+            let zonesMap = {};
+            let totalMoneyToCollect = 0;
+            let totalOrders = 0;
+
+            selectedOrders.forEach(o => {
+                let zName = o.zone || 'مناطق غير محددة';
+                if(!zonesMap[zName]) zonesMap[zName] = [];
+                zonesMap[zName].push(o);
+                totalMoneyToCollect += Number(o.total) || 0;
+                totalOrders++;
+            });
+
+            let msg = `*🗺️ خريطة تسليمات المندوب: ${driverName}*\n`;
+            msg += `📦 إجمالي الأوردرات: ${totalOrders}\n`;
+            msg += `💰 إجمالي التحصيل: ${totalMoneyToCollect} ج\n`;
+            msg += `---------------------\n\n`;
+            
+            Object.keys(zonesMap).forEach(zone => {
+                msg += `*📍 خط سير: ${zone}*\n`;
+                zonesMap[zone].forEach((o, i) => {
+                    msg += `\n${i+1}- 👤 ${o.customerName}\n`;
+                    msg += `📞 ${o.customerPhone}\n`;
+                    if (o.customerAddress) msg += `🏠 ${o.customerAddress}\n`;
+                    msg += `🛍️ ${o.items.map(i=>`${i.quantity} ${i.name}`).join(' + ')}\n`;
+                    msg += `💵 الحساب: *${o.total} ج*\n`;
+                    if (o.adminNote) msg += `📝 ملاحظة: ${o.adminNote}\n`;
+                });
+                msg += `\n➖➖➖➖➖➖➖➖\n\n`;
+            });
             
             // تحديث الطلبات في فايربيس
+            const btn = document.querySelector('button[onclick="sendOrdersToDriver()"]');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التوجيه...';
+            
             for (let id of selectedIds) {
-                let o = dispatchOrdersRaw.find(x => x.id === id);
+                let o = selectedOrders.find(x => x.id === id);
                 if(o) {
-                    msg += `👤 ${o.customerName}\n📞 ${o.customerPhone}\n📍 ${o.zone} ${o.customerAddress ? '- ' + o.customerAddress : ''}\n📦 ${o.items.map(i=>`${i.quantity} ${i.name}`).join(' + ')}\n💰 التحصيل: ${o.total} ج\n${o.adminNote ? `📝 ملاحظة: ${o.adminNote}\n` : ''}----------\n`;
-                    
-                    // حفظ اسم المندوب وتحويل حالة الطلب لـ "قيد التجهيز" تلقائياً
                     try {
                         await db.collection('orders').doc(id).update({ 
                             driverName: driverName,
@@ -939,9 +1017,11 @@
                 }
             }
             
+            btn.innerHTML = origHtml;
             window.open(`https://wa.me/${phone.startsWith('0') ? '2' + phone : phone}?text=${encodeURIComponent(msg)}`, '_blank');
             closeModal('dispatch-modal');
         };
+
 
         // دالة لفتح وإغلاق تفاصيل الطلب في أرشيف العميل
         window.toggleOrderDetails = (detailsId, iconId) => {
