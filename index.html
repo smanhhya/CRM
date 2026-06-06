@@ -619,7 +619,7 @@
                     
                     if (orderDateObj.toLocaleDateString('en-US') === nowStr && stat !== 'canceled') dSales += Number(o.total) || 0;
                     if (orderDateObj.getMonth() === currentMonth && stat !== 'canceled') mSales += Number(o.total) || 0;
-                    if (['new', 'processing'].includes(stat)) dispatchOrdersRaw.push({id, ...o}); 
+                    if (stat === 'processing') dispatchOrdersRaw.push({id, ...o}); 
                     if(counts[stat] !== undefined) counts[stat]++;
                 });
                 document.getElementById('dash-orders-total').innerText = snap.size;
@@ -725,13 +725,17 @@
                     <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-2">
                         <p class="text-sm font-bold text-slate-700">${itemsStr}</p>
                     </div>
-                    ${o.adminNote ? `<div class="text-[11px] font-bold text-blue-700 bg-blue-50 p-2 rounded-lg mb-2 border border-blue-100 shadow-sm"><i class="fa-solid fa-pen-to-square mr-1"></i> ${o.adminNote}</div>` : ''}
+                    
+                    <div class="bg-blue-50 p-2 rounded-lg mb-2 border border-blue-100 shadow-sm flex items-start gap-2">
+                        <textarea id="note-input-${o.id}" class="flex-1 bg-white border border-blue-200 rounded p-1.5 text-[11px] font-bold text-blue-700 outline-none resize-none" rows="1" placeholder="ملاحظة للإدارة أو المندوب...">${o.adminNote || ''}</textarea>
+                        <button onclick="saveInlineNote('${o.id}', this)" class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-3 py-1.5 rounded font-bold shadow-sm transition-colors shrink-0">حفظ</button>
+                    </div>
                     
                     <div class="flex flex-col sm:flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100 gap-3">
                         <div class="flex gap-2 w-full sm:w-auto">
                             <button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-brands fa-whatsapp"></i> رسالة</button>
                             ${o.status === 'completed' ? `<button onclick="sendRatingRequest('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-star"></i> تقييم</button>` : ''}
-                            <button onclick="addOrderNote('${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm border border-slate-200" title="إضافة ملاحظة"><i class="fa-solid fa-comment-dots"></i></button>
+                            <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-brand-accent hover:bg-yellow-600 text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm" title="تعديل الطلب"><i class="fa-solid fa-pen"></i> تعديل</button>
                         </div>
                         <div class="flex items-center justify-between w-full sm:w-auto gap-4">
                             <span class="font-black text-brand-primary text-xl">${o.total || 0} ج</span>
@@ -747,17 +751,22 @@
             }).join('');
         };
 
-
         window.updateOrderStatus = async (id, s) => { 
             if(s === 'canceled' && !confirm('إلغاء هذا الطلب؟ (سيتم خصمه من المبيعات)')) return;
             try { await db.collection('orders').doc(id).update({ status: s }); } catch(e) { alert("حدث خطأ!"); }
         };
 
-        window.addOrderNote = async (id) => {
-            let o = allOrdersRaw.find(x => x.id === id); if(!o) return;
-            let note = prompt("اكتب ملاحظتك:", o.adminNote || "");
-            if (note !== null) { try { await db.collection('orders').doc(id).update({ adminNote: note.trim() }); } catch(e) { alert("خطأ!"); } }
+        window.saveInlineNote = async (id, btn) => {
+            let note = document.getElementById(`note-input-${id}`).value;
+            let origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            try { 
+                await db.collection('orders').doc(id).update({ adminNote: note.trim() }); 
+                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                setTimeout(() => btn.innerHTML = origHtml, 2000);
+            } catch(e) { alert("خطأ!"); btn.innerHTML = origHtml; }
         };
+
 
         // === 5. أرشيف العملاء ===
         window.filterCustomers = () => { let filter = document.getElementById('search-customer').value.toLowerCase(); document.querySelectorAll('.customer-row').forEach(row => { row.style.display = row.getAttribute('data-search').toLowerCase().includes(filter) ? '' : 'none'; }); };
