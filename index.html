@@ -116,6 +116,12 @@
             </div>
 
             <div id="view-orders" class="page-view h-full flex flex-col">
+                
+                <div id="batch-summary-panel" class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-4 flex flex-wrap gap-2">
+                    <p class="text-[10px] font-bold text-slate-400 w-full mb-1">ملخص الدفعات الحالية:</p>
+                    <div class="text-xs text-slate-500 font-bold">جاري التحميل...</div>
+                </div>
+
                 <div class="flex justify-between items-center mb-4 gap-3">
                     <div class="relative flex-1 md:max-w-md">
                         <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
@@ -123,6 +129,7 @@
                     </div>
                     <button onclick="openDispatchModal()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 flex items-center gap-2 shrink-0"><i class="fa-solid fa-motorcycle"></i> إرسال للمناديب</button>
                 </div>
+
                 
                 <div class="flex gap-2 overflow-x-auto custom-scroll pb-2 mb-2 shrink-0">
                     <button onclick="setOrderTab('all')" id="tab-all" class="order-tab active whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-slate-800 text-white transition-colors">الكل</button>
@@ -680,6 +687,7 @@
                 
                 renderOrdersList();
                 renderOrdersTable();
+                updateBatchSummary();
             });
 
             // سحب العملاء
@@ -2043,6 +2051,23 @@
             }
             btn.innerHTML = origHtml;
             btn.disabled = false;
+        };
+        window.updateBatchSummary = () => {
+            const panel = document.getElementById('batch-summary-panel'); if(!panel) return;
+            let summary = {};
+            allOrdersRaw.forEach(o => {
+                if(o.status !== 'trash' && o.status !== 'canceled') {
+                    let bName = o.batchName || "أوردر عادي";
+                    summary[bName] = (summary[bName] || 0) + 1;
+                }
+            });
+            panel.innerHTML = `<p class="text-[10px] font-bold text-slate-400 w-full mb-1">ملخص الدفعات الحالية:</p>` + 
+                Object.keys(summary).map(bName => `
+                <div class="bg-brand-primary/10 px-3 py-1.5 rounded-xl border border-brand-primary/20 flex items-center gap-1">
+                    <span class="text-xs font-black text-brand-primary">${bName}: </span>
+                    <span class="text-sm font-black text-slate-800">${summary[bName]} طلب</span>
+                </div>
+            `).join('');
         };
 
     </script>
