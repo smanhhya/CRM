@@ -83,8 +83,6 @@
             <button onclick="switchTab('advanced', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gear w-6 text-center text-orange-500"></i> متقدم</button>
                  <button onclick="switchTab('trash', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-trash-can w-6 text-center text-red-500"></i> سلة المحذوفات</button>
             
-            <button onclick="switchTab('advanced', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gear w-6 text-center text-orange-500"></i> متقدم</button>
-
         </nav>
         <div class="p-4 border-t border-slate-800 bg-slate-900 shrink-0">
             <button onclick="logoutApp()" class="text-brand-cyan hover:text-red-400 transition-colors flex items-center gap-2 text-sm font-bold w-full justify-center py-2 bg-red-900/20 rounded-xl"><i class="fa-solid fa-right-from-bracket"></i> خروج آمن</button>
@@ -750,7 +748,6 @@
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
             
             let filtered = allOrdersRaw.filter(o => {
-                // إخفاء الطلبات المحذوفة من القائمة العادية
                 let matchTab = (currentOrderTab === 'all' && o.status !== 'trash') || (o.status === currentOrderTab);
                 let searchStr = `${o.customerName || ''} ${o.customerPhone || ''}`.toLowerCase();
                 let matchSearch = searchStr.includes(filterText);
@@ -769,7 +766,11 @@
                     <div class="absolute top-0 right-0 w-1.5 h-full ${sColor}"></div>
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <h5 class="font-black text-slate-800 text-base cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${o.customerPhone}')">${o.customerName || 'بدون اسم'} <span class="text-xs text-slate-400 font-bold ml-2" dir="ltr">${o.customerPhone}</span></h5>
+                            <h5 class="font-black text-slate-800 text-base cursor-pointer hover:text-brand-primary flex items-center gap-2">
+                                <span onclick="openCustomerCard('${o.customerPhone}')">${o.customerName || 'بدون اسم'}</span>
+                                <a href="tel:${o.customerPhone}" class="text-green-600 hover:text-green-800 p-1 bg-green-50 rounded-full" title="اتصال مباشر"><i class="fa-solid fa-phone-volume text-[12px]"></i></a>
+                                <span class="text-xs text-slate-400 font-bold" dir="ltr">${o.customerPhone}</span>
+                            </h5>
                             <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot text-brand-primary mr-1"></i> ${o.zone || 'غير مسجل'} ${o.customerAddress ? '- '+o.customerAddress : ''}</p>
                         </div>
                         <span class="text-[10px] text-slate-500 font-bold bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">${d}</span>
@@ -778,14 +779,14 @@
                         <p class="text-sm font-bold text-slate-700">${itemsStr}</p>
                     </div>
                     
-                    <div class="bg-blue-50 p-2 rounded-lg mb-2 border border-blue-100 shadow-sm flex items-start gap-2">
-                        <textarea id="note-input-${o.id}" class="flex-1 bg-white border border-blue-200 rounded p-1.5 text-[11px] font-bold text-blue-700 outline-none resize-none" rows="1" placeholder="ملاحظة للإدارة أو المندوب...">${o.adminNote || ''}</textarea>
-                        <button onclick="saveInlineNote('${o.id}', this)" class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-3 py-1.5 rounded font-bold shadow-sm transition-colors shrink-0">حفظ</button>
+                    <div class="relative bg-blue-50 p-2 rounded-lg mb-2 border border-blue-100 shadow-sm">
+                        <textarea id="note-input-${o.id}" onblur="autoSaveNote('${o.id}')" class="w-full bg-white border border-blue-200 rounded p-1.5 text-[11px] font-bold text-blue-700 outline-none resize-none" rows="1" placeholder="ملاحظة للإدارة أو المندوب...">${o.adminNote || ''}</textarea>
+                        <div id="save-status-${o.id}" class="absolute top-2 left-2 text-[8px] font-black text-green-500 opacity-0 transition-opacity"><i class="fa-solid fa-check"></i> تم الحفظ</div>
                     </div>
                     
                     <div class="flex flex-col sm:flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100 gap-3">
                         <div class="flex gap-2 w-full sm:w-auto">
-                            <button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-brands fa-whatsapp"></i> رسالة</button>
+                            <button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-brands fa-whatsapp"></i> واتساب</button>
                             <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-brand-accent hover:bg-yellow-600 text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm" title="تعديل الطلب"><i class="fa-solid fa-pen"></i> تعديل</button>
                         </div>
                         <div class="flex items-center justify-between w-full sm:w-auto gap-4">
@@ -805,28 +806,24 @@
 
         window.updateOrderStatus = async (id, s) => { 
             if(s === 'canceled' && !confirm('إلغاء هذا الطلب؟')) { renderOrdersList(); return; }
-            if(s === 'trash' && !confirm('نقل الطلب لسلة المحذوفات؟ (سيتم حذفه نهائياً بعد 15 يوم تلقائياً)')) { renderOrdersList(); return; }
-            
+            if(s === 'trash' && !confirm('نقل الطلب لسلة المحذوفات؟')) { renderOrdersList(); return; }
             try { 
-                let updateData = { status: s };
-                if (s === 'trash') {
-                    updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
-                }
-                await db.collection('orders').doc(id).update(updateData); 
-                if(s === 'trash') alert("تم النقل لسلة المحذوفات!");
+                let data = { status: s };
+                if (s === 'trash') data.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
+                await db.collection('orders').doc(id).update(data); 
             } catch(e) { alert("حدث خطأ!"); }
         };
 
-        window.saveInlineNote = async (id, btn) => {
+        window.autoSaveNote = async (id) => {
             let note = document.getElementById(`note-input-${id}`).value;
-            let origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            let status = document.getElementById(`save-status-${id}`);
             try { 
                 await db.collection('orders').doc(id).update({ adminNote: note.trim() }); 
-                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
-                setTimeout(() => btn.innerHTML = origHtml, 2000);
-            } catch(e) { alert("خطأ!"); btn.innerHTML = origHtml; }
+                status.style.opacity = '1';
+                setTimeout(() => status.style.opacity = '0', 1500);
+            } catch(e) { console.error("خطأ في الحفظ"); }
         };
+
 
         // ==========================================
         // دوال سلة المحذوفات (والحذف التلقائي)
