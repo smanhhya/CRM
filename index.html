@@ -440,6 +440,12 @@
                 </div>
 
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <label class="text-sm font-black text-slate-800 block mb-2"><i class="fa-solid fa-layer-group text-green-600 mr-1"></i> تغيير الدفعة (اختياري)</label>
+                    <select id="edit-batch" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-slate-700 outline-none focus:border-brand-primary bg-white"></select>
+                </div>
+
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <div class="grid grid-cols-3 gap-4">
                         <div><label class="text-[10px] font-bold text-slate-500 block mb-1">قيمة المنتجات</label><input type="number" id="edit-price" class="w-full border border-slate-200 rounded-lg p-2 font-black bg-slate-50 text-center text-slate-700" disabled></div>
                         <div><label class="text-[10px] font-bold text-slate-500 block mb-1">مصاريف التوصيل</label><input type="number" id="edit-delivery" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-center outline-none focus:border-brand-accent" oninput="calcEditTotal()"></div>
@@ -777,8 +783,13 @@
                     <div class="absolute top-0 right-0 w-1.5 h-full ${sColor}"></div>
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <h5 class="font-black text-slate-800 text-base cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${o.customerPhone}')">${o.customerName || 'بدون اسم'} <span class="text-xs text-slate-400 font-bold ml-2" dir="ltr">${o.customerPhone}</span></h5>
+                            <h5 class="font-black text-slate-800 text-base flex items-center gap-2">
+                                <span class="cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${o.customerPhone}')">${o.customerName || 'بدون اسم'}</span>
+                                <a href="tel:${o.customerPhone}" class="text-green-600 hover:text-green-800 p-1 bg-green-50 rounded-full" title="اتصال مباشر"><i class="fa-solid fa-phone-volume text-[12px]"></i></a>
+                                <span class="text-xs text-slate-400 font-bold" dir="ltr">${o.customerPhone}</span>
+                            </h5>
                             <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot text-brand-primary mr-1"></i> ${o.zone || 'غير مسجل'} ${o.customerAddress ? '- '+o.customerAddress : ''}</p>
+                            <span class="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-black mt-1 inline-block">الدفعة: ${o.batchName || 'عادي'}</span>
                         </div>
                         <span class="text-[10px] text-slate-500 font-bold bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">${d}</span>
                     </div>
@@ -786,9 +797,12 @@
                         <p class="text-sm font-bold text-slate-700">${itemsStr}</p>
                     </div>
                     
-                    <div class="bg-blue-50 p-2 rounded-lg mb-2 border border-blue-100 shadow-sm flex items-start gap-2">
-                        <textarea id="note-input-${o.id}" class="flex-1 bg-white border border-blue-200 rounded p-1.5 text-[11px] font-bold text-blue-700 outline-none resize-none" rows="1" placeholder="ملاحظة للإدارة أو المندوب...">${o.adminNote || ''}</textarea>
-                        <button onclick="saveInlineNote('${o.id}', this)" class="bg-blue-500 hover:bg-blue-600 text-white text-[10px] px-3 py-1.5 rounded font-bold shadow-sm transition-colors shrink-0">حفظ</button>
+                    <div class="bg-blue-50/50 p-2 rounded-lg mb-2 border border-blue-100 shadow-sm">
+                        <div class="text-[10px] text-blue-800 font-bold whitespace-pre-wrap mb-2 max-h-16 overflow-y-auto custom-scroll leading-relaxed">${o.adminNote || 'لا توجد ملاحظات...'}</div>
+                        <div class="flex gap-1 items-center">
+                            <input type="text" id="new-note-${o.id}" class="flex-1 border border-blue-200 rounded p-1.5 text-[10px] outline-none focus:border-blue-400 font-bold text-blue-900" placeholder="اكتب ملاحظة جديدة...">
+                            <button onclick="appendOrderNote('${o.id}')" class="bg-blue-500 text-white w-7 h-7 rounded flex items-center justify-center hover:bg-blue-600 shadow-sm"><i class="fa-solid fa-plus"></i></button>
+                        </div>
                     </div>
                     
                     <div class="flex flex-col sm:flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100 gap-3">
@@ -811,6 +825,7 @@
             }).join('');
         };
 
+
         window.updateOrderStatus = async (id, s) => { 
             if(s === 'canceled' && !confirm('إلغاء هذا الطلب؟')) { renderOrdersList(); return; }
             if(s === 'trash' && !confirm('نقل الطلب لسلة المحذوفات؟ (سيتم حذفه نهائياً بعد 15 يوم تلقائياً)')) { renderOrdersList(); return; }
@@ -824,6 +839,28 @@
                 if(s === 'trash') alert("تم النقل لسلة المحذوفات!");
             } catch(e) { alert("حدث خطأ!"); }
         };
+        window.appendOrderNote = async (id) => {
+            let input = document.getElementById(`new-note-${id}`);
+            let text = input.value.trim();
+            if(!text) return;
+            
+            let o = allOrdersRaw.find(x => x.id === id);
+            // تجهيز التاريخ والوقت
+            let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+            let newNoteLine = `[${dateStr}] ${text}`;
+            
+            // دمج الملاحظة القديمة مع الجديدة
+            let updatedNotes = o.adminNote ? o.adminNote + '\n' + newNoteLine : newNoteLine;
+            
+            let origPlaceholder = input.placeholder;
+            input.value = ''; input.placeholder = 'جاري الحفظ...';
+            try { 
+                await db.collection('orders').doc(id).update({ adminNote: updatedNotes }); 
+                input.placeholder = origPlaceholder;
+            } 
+            catch(e) { alert("خطأ في الحفظ"); input.placeholder = origPlaceholder; }
+        };
+        
 
         window.saveInlineNote = async (id, btn) => {
             let note = document.getElementById(`note-input-${id}`).value;
@@ -1958,6 +1995,12 @@
                     </div>
                 </div>`;
             });
+            // ملء قائمة الدفعات المتاحة
+            let bSel = document.getElementById('edit-batch');
+            bSel.innerHTML = '<option value="">-- بدون دفعة (أوردر عادي) --</option>';
+            Object.keys(storeBatches).forEach(bId => {
+                bSel.innerHTML += `<option value="${bId}" ${editingOrderData.batchId === bId ? 'selected' : ''}>${storeBatches[bId].name}</option>`;
+            });
 
             document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0;
             document.getElementById('edit-discount').value = editingOrderData.discount || 0;
@@ -2021,13 +2064,19 @@
             btn.disabled = true;
 
             try {
-                // 1. تحديث تفاصيل الطلب نفسه
+                // استخراج معرف واسم الدفعة الجديدة من قائمة الاختيار
+                let newBatchId = document.getElementById('edit-batch').value;
+                let newBatchName = newBatchId ? storeBatches[newBatchId].name : '';
+
+                // 1. تحديث تفاصيل طلب العميل بقاعدة البيانات (شاملة الدفعة المعدلة)
                 await db.collection('orders').doc(editingOrderData.id).update({
                     items: newItems,
                     subtotal: newSubtotal,
                     deliveryFee: newDelivery,
                     discount: newDiscount,
-                    total: newTotal
+                    total: newTotal,
+                    batchId: newBatchId,
+                    batchName: newBatchName
                 });
 
                 // 2. تحديث إجمالي ما أنفقه العميل (LTV) في الأرشيف
@@ -2039,7 +2088,7 @@
                 }
                 
                 // 3. تحديث الإحصائيات العامة للمتجر (المبيعات)
-                if(difference !== 0 && editingOrderData.status !== 'canceled') {
+                if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') {
                     await db.collection('inventory').doc('stats').update({
                         sales: firebase.firestore.FieldValue.increment(difference)
                     });
@@ -2052,6 +2101,7 @@
             btn.innerHTML = origHtml;
             btn.disabled = false;
         };
+
         window.updateBatchSummary = () => {
             const panel = document.getElementById('batch-summary-panel'); if(!panel) return;
             let summary = {};
