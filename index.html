@@ -403,6 +403,41 @@
         </div>
     </main>
 
+    <div id="edit-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[75] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] border-t-4 border-t-brand-accent">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-yellow-50 shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-pen-to-square text-brand-accent mr-2"></i> تعديل طلب العميل: <span id="edit-cust-name" class="text-brand-primary"></span></h3>
+                <button onclick="closeModal('edit-order-modal')" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scroll space-y-5 bg-slate-50">
+                
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <label class="text-sm font-black text-slate-800 block mb-3"><i class="fa-solid fa-boxes-stacked text-brand-primary mr-1"></i> الكميات المطلوبة</label>
+                    <div id="edit-dynamic-order-items" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">قيمة المنتجات</label><input type="number" id="edit-price" class="w-full border border-slate-200 rounded-lg p-2 font-black bg-slate-50 text-center text-slate-700" disabled></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">مصاريف التوصيل</label><input type="number" id="edit-delivery" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-center outline-none focus:border-brand-accent" oninput="calcEditTotal()"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">قيمة الخصم</label><input type="number" id="edit-discount" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-brand-cyan text-center outline-none focus:border-brand-accent" oninput="calcEditTotal()"></div>
+                    </div>
+                    <div class="mt-4 border-t border-slate-100 pt-4">
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1">الإجمالي النهائي الجديد</label>
+                        <div class="flex gap-2">
+                            <button onclick="calcEditTotal()" class="bg-slate-200 px-4 rounded-xl text-xs font-bold hover:bg-slate-300 shadow-sm transition-colors"><i class="fa-solid fa-calculator text-brand-primary"></i></button>
+                            <input type="number" id="edit-total" class="flex-1 border-2 border-brand-accent bg-yellow-50/50 rounded-xl p-2 outline-none font-black text-brand-accent text-xl" disabled>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="p-4 border-t border-slate-200 bg-white shrink-0">
+                <button onclick="saveEditedOrder()" id="btn-save-edit" class="w-full bg-brand-accent hover:bg-yellow-600 text-white font-black py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"><i class="fa-solid fa-floppy-disk"></i> حفظ وتحديث الحسابات</button>
+            </div>
+        </div>
+    </div>
 
     <div id="add-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
@@ -1789,6 +1824,128 @@
             link.href = URL.createObjectURL(blob);
             link.download = `Saman_Orders_${new Date().toLocaleDateString('en-GB')}.csv`;
             link.click();
+        };
+        // ==========================================
+        // دوال نافذة (تعديل الطلب) الذكية
+        // ==========================================
+        let editingOrderData = null;
+
+        window.openEditOrderModal = (id) => {
+            editingOrderData = allOrdersRaw.find(o => o.id === id);
+            if(!editingOrderData) return;
+
+            document.getElementById('edit-cust-name').innerText = editingOrderData.customerName || 'عميل';
+            const container = document.getElementById('edit-dynamic-order-items');
+            container.innerHTML = '';
+            
+            // توليد المنتجات وتعبئة الكميات الحالية
+            Object.keys(storeProducts).forEach(pId => {
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === storeProducts[pId].name) : null;
+                let q = existingItem ? existingItem.quantity : 0;
+                
+                container.innerHTML += `
+                <div class="bg-slate-50 border border-slate-100 p-2 rounded-xl shadow-sm flex flex-col justify-between">
+                    <span class="text-[10px] font-bold text-slate-700 block text-center truncate mb-2">${storeProducts[pId].name}</span>
+                    <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-1">
+                        <button onclick="changeEditQty('${pId}', -1)" class="w-7 h-7 bg-red-50 rounded text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                        <input type="number" id="edit-q-${pId}" min="0" value="${q}" class="w-10 border-none bg-transparent text-center font-black text-sm outline-none" oninput="calcEditTotal()">
+                        <button onclick="changeEditQty('${pId}', 1)" class="w-7 h-7 bg-green-50 rounded text-green-600 hover:bg-green-500 hover:text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                    </div>
+                </div>`;
+            });
+
+            document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0;
+            document.getElementById('edit-discount').value = editingOrderData.discount || 0;
+            
+            calcEditTotal();
+            openModal('edit-order-modal');
+        };
+
+        window.changeEditQty = (pId, amount) => {
+            let input = document.getElementById(`edit-q-${pId}`);
+            let val = parseInt(input.value) || 0;
+            val += amount;
+            if(val < 0) val = 0;
+            input.value = val;
+            calcEditTotal();
+        };
+
+        window.calcEditTotal = () => {
+            let itemsTotal = 0;
+            Object.keys(storeProducts).forEach(id => {
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0;
+                let price = storePrices[id] || storeProducts[id].basePrice || 0;
+                itemsTotal += (q * price);
+            });
+            document.getElementById('edit-price').value = itemsTotal;
+            
+            let d = Number(document.getElementById('edit-delivery').value) || 0;
+            let disc = Number(document.getElementById('edit-discount').value) || 0;
+            let finalTotal = itemsTotal + d - disc;
+            if(finalTotal < 0) finalTotal = 0;
+            document.getElementById('edit-total').value = finalTotal;
+        };
+
+        window.saveEditedOrder = async () => {
+            if(!editingOrderData) return;
+            
+            let newItems = [];
+            let newSubtotal = 0;
+            
+            Object.keys(storeProducts).forEach(id => {
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0;
+                if(q > 0) { 
+                    let price = (storePrices[id] || storeProducts[id].basePrice || 0);
+                    newItems.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); 
+                    newSubtotal += (q * price); 
+                }
+            });
+            
+            if(newItems.length === 0) return alert('لا يمكن حفظ طلب فارغ! (إذا أردت حذفه، قم بتغيير حالته إلى "إلغاء")');
+
+            let newDelivery = Number(document.getElementById('edit-delivery').value) || 0;
+            let newDiscount = Number(document.getElementById('edit-discount').value) || 0;
+            let newTotal = Number(document.getElementById('edit-total').value) || 0;
+            
+            let oldTotal = Number(editingOrderData.total) || 0;
+            let difference = newTotal - oldTotal; // حساب الفرق المادي بين الطلب القديم والجديد
+            
+            const btn = document.getElementById('btn-save-edit');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحديث السيستم...';
+            btn.disabled = true;
+
+            try {
+                // 1. تحديث تفاصيل الطلب نفسه
+                await db.collection('orders').doc(editingOrderData.id).update({
+                    items: newItems,
+                    subtotal: newSubtotal,
+                    deliveryFee: newDelivery,
+                    discount: newDiscount,
+                    total: newTotal
+                });
+
+                // 2. تحديث إجمالي ما أنفقه العميل (LTV) في الأرشيف
+                if(difference !== 0 && editingOrderData.customerPhone) {
+                    let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone;
+                    await db.collection('customers').doc(cleanPhone).update({
+                        totalSpent: firebase.firestore.FieldValue.increment(difference)
+                    });
+                }
+                
+                // 3. تحديث الإحصائيات العامة للمتجر (المبيعات)
+                if(difference !== 0 && editingOrderData.status !== 'canceled') {
+                    await db.collection('inventory').doc('stats').update({
+                        sales: firebase.firestore.FieldValue.increment(difference)
+                    });
+                }
+
+                closeModal('edit-order-modal');
+            } catch(e) {
+                alert("حدث خطأ أثناء حفظ التعديلات!");
+            }
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
         };
 
     </script>
