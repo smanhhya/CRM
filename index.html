@@ -81,7 +81,10 @@
             
             <!-- زرار متقدم ومنطقة الخطر -->
             <button onclick="switchTab('advanced', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gear w-6 text-center text-orange-500"></i> متقدم</button>
-     
+                 <button onclick="switchTab('trash', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-trash-can w-6 text-center text-red-500"></i> سلة المحذوفات</button>
+            
+            <button onclick="switchTab('advanced', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gear w-6 text-center text-orange-500"></i> متقدم</button>
+
         </nav>
         <div class="p-4 border-t border-slate-800 bg-slate-900 shrink-0">
             <button onclick="logoutApp()" class="text-brand-cyan hover:text-red-400 transition-colors flex items-center gap-2 text-sm font-bold w-full justify-center py-2 bg-red-900/20 rounded-xl"><i class="fa-solid fa-right-from-bracket"></i> خروج آمن</button>
@@ -346,6 +349,18 @@
                     </div>
                 </div>
             </div>
+            <div id="view-trash" class="page-view h-full flex flex-col space-y-4">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-red-200 shadow-sm shrink-0 border-r-4 border-r-red-500">
+                    <div>
+                        <h3 class="font-black text-red-600 text-xl"><i class="fa-solid fa-trash-can mr-2"></i> سلة المحذوفات</h3>
+                        <p class="text-xs text-slate-500 font-bold mt-1">الطلبات هنا تُحذف نهائياً تلقائياً بعد 15 يوم.</p>
+                    </div>
+                    <button onclick="renderTrashUI()" class="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-200 flex items-center gap-2"><i class="fa-solid fa-rotate-right"></i> تحديث السلة</button>
+                </div>
+                <div id="trash-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1">
+                    <p class="text-center text-slate-400 py-10 font-bold border-2 border-dashed border-slate-200 rounded-xl">السلة فارغة حالياً والحمد لله.</p>
+                </div>
+            </div>
 
             <!-- ======================= شاشة: متقدم (ومنطقة الخطر) ======================= -->
             <div id="view-advanced" class="page-view space-y-6">
@@ -603,6 +618,7 @@
             
             const saveBtn = document.getElementById('global-save-btn');
             if(['inventory', 'settings', 'marketing', 'batches', 'visuals', 'dictionary', 'advanced'].includes(tabId)) saveBtn.classList.remove('hidden'); else saveBtn.classList.add('hidden');
+            if(tabId === 'trash') renderTrashUI();            
             if(window.innerWidth < 768) toggleSidebar();
         }
 
@@ -734,7 +750,8 @@
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
             
             let filtered = allOrdersRaw.filter(o => {
-                let matchTab = (currentOrderTab === 'all') || (o.status === currentOrderTab);
+                // إخفاء الطلبات المحذوفة من القائمة العادية
+                let matchTab = (currentOrderTab === 'all' && o.status !== 'trash') || (o.status === currentOrderTab);
                 let searchStr = `${o.customerName || ''} ${o.customerPhone || ''}`.toLowerCase();
                 let matchSearch = searchStr.includes(filterText);
                 return matchTab && matchSearch;
@@ -769,7 +786,6 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100 gap-3">
                         <div class="flex gap-2 w-full sm:w-auto">
                             <button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-brands fa-whatsapp"></i> رسالة</button>
-                            ${o.status === 'completed' ? `<button onclick="sendRatingRequest('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-star"></i> تقييم</button>` : ''}
                             <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-[11px] bg-brand-accent hover:bg-yellow-600 text-white px-3 py-2 rounded-lg font-bold transition-colors shadow-sm" title="تعديل الطلب"><i class="fa-solid fa-pen"></i> تعديل</button>
                         </div>
                         <div class="flex items-center justify-between w-full sm:w-auto gap-4">
@@ -779,6 +795,7 @@
                                 <option value="processing" ${o.status==='processing'?'selected':''}>قيد التجهيز</option>
                                 <option value="completed" ${o.status==='completed'?'selected':''}>مكتمل</option>
                                 <option value="canceled" ${o.status==='canceled'?'selected':''}>إلغاء ❌</option>
+                                <option value="trash" class="text-red-600 font-black">حذف (للسلة) 🗑️</option>
                             </select>
                         </div>
                     </div>
@@ -787,8 +804,17 @@
         };
 
         window.updateOrderStatus = async (id, s) => { 
-            if(s === 'canceled' && !confirm('إلغاء هذا الطلب؟ (سيتم خصمه من المبيعات)')) return;
-            try { await db.collection('orders').doc(id).update({ status: s }); } catch(e) { alert("حدث خطأ!"); }
+            if(s === 'canceled' && !confirm('إلغاء هذا الطلب؟')) { renderOrdersList(); return; }
+            if(s === 'trash' && !confirm('نقل الطلب لسلة المحذوفات؟ (سيتم حذفه نهائياً بعد 15 يوم تلقائياً)')) { renderOrdersList(); return; }
+            
+            try { 
+                let updateData = { status: s };
+                if (s === 'trash') {
+                    updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
+                }
+                await db.collection('orders').doc(id).update(updateData); 
+                if(s === 'trash') alert("تم النقل لسلة المحذوفات!");
+            } catch(e) { alert("حدث خطأ!"); }
         };
 
         window.saveInlineNote = async (id, btn) => {
@@ -801,6 +827,77 @@
                 setTimeout(() => btn.innerHTML = origHtml, 2000);
             } catch(e) { alert("خطأ!"); btn.innerHTML = origHtml; }
         };
+
+        // ==========================================
+        // دوال سلة المحذوفات (والحذف التلقائي)
+        // ==========================================
+        window.renderTrashUI = async () => {
+            const container = document.getElementById('trash-list-container');
+            if(!container) return;
+            container.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-2xl text-red-500"></i></div>';
+            
+            let trashOrders = allOrdersRaw.filter(o => o.status === 'trash');
+            const now = new Date().getTime();
+            const fifteenDaysInMillis = 15 * 24 * 60 * 60 * 1000; // 15 يوم
+            
+            let html = '';
+            let ordersToDelete = [];
+
+            trashOrders.forEach(o => {
+                let deletedTime = o.deletedAt ? o.deletedAt.toMillis() : 0;
+                // فحص: هل عدى 15 يوم؟ لو أه نضيفه لقائمة الحذف النهائي
+                if(deletedTime > 0 && (now - deletedTime) > fifteenDaysInMillis) {
+                    ordersToDelete.push(o.id);
+                } else {
+                    let itemsStr = o.items ? o.items.map(i => `${i.quantity}x ${i.name}`).join('، ') : 'بدون تفاصيل';
+                    let daysLeft = 15 - Math.floor((now - deletedTime) / (1000 * 60 * 60 * 24));
+                    
+                    html += `
+                    <div class="bg-red-50 p-4 rounded-xl shadow-sm border border-red-200 mb-3 opacity-95">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h5 class="font-black text-slate-800 line-through">${o.customerName} <span class="text-xs font-bold" dir="ltr">${o.customerPhone}</span></h5>
+                                <span class="text-[10px] text-red-500 font-bold"><i class="fa-solid fa-clock"></i> يحذف نهائياً بعد ${daysLeft} يوم</span>
+                            </div>
+                            <span class="text-brand-primary font-black text-lg">${o.total} ج</span>
+                        </div>
+                        <p class="text-xs text-slate-600 mb-3 font-bold bg-white p-2 rounded">${itemsStr}</p>
+                        <div class="flex gap-2">
+                            <button onclick="restoreFromTrash('${o.id}')" class="flex-1 bg-green-500 text-white font-black py-2.5 rounded-xl hover:bg-green-600 transition-colors shadow-sm"><i class="fa-solid fa-rotate-left"></i> استعادة الطلب</button>
+                            <button onclick="forceDeleteOrder('${o.id}')" class="flex-1 bg-red-600 text-white font-black py-2.5 rounded-xl hover:bg-red-700 transition-colors shadow-sm"><i class="fa-solid fa-fire"></i> مسح نهائي الآن</button>
+                        </div>
+                    </div>`;
+                }
+            });
+
+            if(html === '') html = '<p class="text-center text-slate-400 py-10 font-bold border-2 border-dashed border-slate-200 rounded-xl">السلة فارغة حالياً والحمد لله.</p>';
+            container.innerHTML = html;
+
+            // تنفيذ الحذف الآلي للطلبات اللي عدت 15 يوم
+            if(ordersToDelete.length > 0) {
+                for(let id of ordersToDelete) {
+                    try { await db.collection('orders').doc(id).delete(); } catch(e){}
+                }
+                setTimeout(() => renderTrashUI(), 1000);
+            }
+        };
+
+        window.restoreFromTrash = async (id) => {
+            try {
+                await db.collection('orders').doc(id).update({ status: 'new', deletedAt: firebase.firestore.FieldValue.delete() });
+                alert("تمت استعادة الطلب بنجاح (موجود الآن في قسم جديد)!");
+                renderTrashUI();
+            } catch(e) { alert("خطأ في الاستعادة!"); }
+        };
+
+        window.forceDeleteOrder = async (id) => {
+            if(!confirm("تحذير نهائي: سيتم مسح الطلب من السيرفر بلا رجعة. هل أنت متأكد؟")) return;
+            try {
+                await db.collection('orders').doc(id).delete();
+                renderTrashUI();
+            } catch(e) { alert("خطأ في الحذف النهائي!"); }
+        };
+
 
 
         // === 5. أرشيف العملاء ===
