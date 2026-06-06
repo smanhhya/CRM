@@ -114,6 +114,12 @@
             </div>
 
             <div id="view-orders" class="page-view h-full flex flex-col">
+                
+                <div id="batch-summary-panel" class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-4 flex flex-wrap gap-2">
+                    <p class="text-[10px] font-bold text-slate-400 w-full mb-1">ملخص الدفعات الحالية:</p>
+                    <div class="text-xs text-slate-500 font-bold">جاري تحميل الملخص...</div>
+                </div>
+
                 <div class="flex justify-between items-center mb-4 gap-3">
                     <div class="relative flex-1 md:max-w-md">
                         <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
@@ -121,6 +127,18 @@
                     </div>
                     <button onclick="openDispatchModal()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 flex items-center gap-2 shrink-0"><i class="fa-solid fa-motorcycle"></i> إرسال للمناديب</button>
                 </div>
+                
+                <div class="flex gap-2 overflow-x-auto custom-scroll pb-2 mb-2 shrink-0">
+                    <button onclick="setOrderTab('all')" id="tab-all" class="order-tab active whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-slate-800 text-white transition-colors">الكل</button>
+                    <button onclick="setOrderTab('new')" id="tab-new" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">جديد <span id="badge-new" class="ml-1 bg-brand-cyan text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('processing')" id="tab-processing" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">قيد التجهيز <span id="badge-processing" class="ml-1 bg-brand-accent text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('completed')" id="tab-completed" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">مكتمل <span id="badge-completed" class="ml-1 bg-green-500 text-white px-1.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('canceled')" id="tab-canceled" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors">ملغي</button>
+                </div>
+
+                <div id="orders-list-vertical" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1 pb-4"></div>
+            </div>
+
                 
                 <div class="flex gap-2 overflow-x-auto custom-scroll pb-2 mb-2 shrink-0">
                     <button onclick="setOrderTab('all')" id="tab-all" class="order-tab active whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-bold bg-slate-800 text-white transition-colors">الكل</button>
@@ -415,7 +433,6 @@
 
         </div>
     </main>
-
     <div id="edit-order-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[75] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh] border-t-4 border-t-brand-accent">
             <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-yellow-50 shrink-0">
@@ -427,8 +444,16 @@
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <label class="text-sm font-black text-slate-800 block mb-3"><i class="fa-solid fa-boxes-stacked text-brand-primary mr-1"></i> الكميات المطلوبة</label>
                     <div id="edit-dynamic-order-items" class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        </div>
+                    </div>
                 </div>
+
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <label class="text-sm font-black text-slate-800 block mb-2"><i class="fa-solid fa-layer-group text-green-600 mr-1"></i> تغيير الدفعة (النوع)</label>
+                    <select id="edit-batch" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-slate-700 outline-none focus:border-brand-primary">
+                        <option value="">-- بدون دفعة (أوردر عادي) --</option>
+                    </select>
+                </div>
+
 
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <div class="grid grid-cols-3 gap-4">
@@ -1919,6 +1944,7 @@
             link.download = `Saman_Orders_${new Date().toLocaleDateString('en-GB')}.csv`;
             link.click();
         };
+
         // ==========================================
         // دوال نافذة (تعديل الطلب) الذكية
         // ==========================================
@@ -1948,12 +1974,20 @@
                 </div>`;
             });
 
+            // الجزء الجديد: ربط الدفعات
+            let bSel = document.getElementById('edit-batch');
+            bSel.innerHTML = '<option value="">-- بدون دفعة (أوردر عادي) --</option>';
+            Object.keys(storeBatches).forEach(bId => {
+                bSel.innerHTML += `<option value="${bId}" ${editingOrderData.batchId === bId ? 'selected' : ''}>${storeBatches[bId].name}</option>`;
+            });
+
             document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0;
             document.getElementById('edit-discount').value = editingOrderData.discount || 0;
             
             calcEditTotal();
             openModal('edit-order-modal');
         };
+
 
         window.changeEditQty = (pId, amount) => {
             let input = document.getElementById(`edit-q-${pId}`);
@@ -2041,6 +2075,28 @@
             btn.innerHTML = origHtml;
             btn.disabled = false;
         };
+function updateBatchSummary() {
+    const panel = document.getElementById('batch-summary-panel');
+    let summary = {};
+    
+    // بنحسب كل الأوردرات اللي مش ملغية
+    allOrdersRaw.forEach(o => {
+        if(o.status !== 'trash' && o.status !== 'canceled') {
+            let bName = o.batchName || "أوردر عادي";
+            summary[bName] = (summary[bName] || 0) + 1;
+        }
+    });
+
+    panel.innerHTML = Object.keys(summary).map(bName => `
+        <div class="bg-brand-primary/10 px-4 py-2 rounded-xl border border-brand-primary/20">
+            <span class="text-xs font-black text-brand-primary">${bName}: </span>
+            <span class="text-sm font-black text-slate-800">${summary[bName]} طلب</span>
+        </div>
+    `).join('');
+}
+
+// ضيف الدالة دي جوه الـ startCRM() عشان تتحدث مع أي تغيير:
+// updateBatchSummary(); 
 
     </script>
 </body>
