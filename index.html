@@ -1067,16 +1067,28 @@
             if(!phone || !name || total === 0) return alert('أكمل بيانات العميل والسعر!');
             if(!zone) return alert('برجاء اختيار المنطقة!');
             
-            let items = []; let subtotal = 0; let batchUpdates = {}; let ticktickItemsStr = '';
+            let items = []; let subtotal = 0; let batchUpdates = {}; 
+            
+            // متغيرات لتجهيز شكل تيك تيك
+            let ticktickItemsStr = ''; 
+            let ticktickItemsTitleArr = []; // عشان نحط الأصناف في عنوان المهمة
+            let autoHashtags = []; // عشان نولد الهاشتاجات أوتوماتيك
 
             Object.keys(storeProducts).forEach(id => {
                 let q = Number(document.getElementById(`no-q-${id}`)?.value) || 0;
                 if(q > 0) { 
                     let price = storePrices[id] || storeProducts[id].basePrice;
-                    items.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); 
+                    let pName = storeProducts[id].name;
+                    items.push({ id: id, name: pName, quantity: q, price: price }); 
                     subtotal += (q * price); 
                     if(batchId) batchUpdates[id] = q;
-                    ticktickItemsStr += `▪️ ${q}x ${storeProducts[id].name}\n`; 
+                    
+                    // 1. تفاصيل الأصناف لجسم الرسالة
+                    ticktickItemsStr += `▪️ ${q}x ${pName}\n`; 
+                    // 2. تجميع الأصناف لعنوان المهمة (Task Title)
+                    ticktickItemsTitleArr.push(`${q} ${pName}`);
+                    // 3. توليد هاشتاج لكل صنف (استبدال المسافات بشرطة سفلية)
+                    autoHashtags.push('#' + pName.replace(/\s+/g, '_'));
                 }
             });
             if(items.length === 0) return alert('أضف صنف واحد على الأقل!');
@@ -1101,14 +1113,24 @@
                     await db.collection("inventory").doc("batches").set(storeBatches);
                 }
 
-                // الإرسال لـ تيك تيك بنفس نظام الموقع (Template Engine)
-                let template = storeSettings.ticktickTemplate || "🧾 **تفاصيل الأوردر:**\n👤 {اسم_العميل}\n📱 {الموبايل}\n📍 {المنطقة}\n{العنوان}\n----------------\n🛒 الطلبات:\n{تفاصيل_الطلبات}----------------\n💰 الإجمالي: {الاجمالي} ج.م\n{ملاحظات}\n{الهاشتاجات}";
+                // ==========================================
+                // الإرسال لـ تيك تيك بالمللي زي الموقع
+                // ==========================================
+                
+                // توليد هاشتاج لاسم الدفعة لو موجودة
+                if (batchName) autoHashtags.push('#' + batchName.replace(/\s+/g, '_'));
+                // إضافة الهاشتاج الثابت من الإعدادات لو موجود
+                if (storeSettings.batchHashtag) autoHashtags.push(storeSettings.batchHashtag);
+                
+                // تجميع كل الهاشتاجات بدون تكرار
+                let finalHashtagsStr = [...new Set(autoHashtags)].join(' ');
+
+                let template = storeSettings.ticktickTemplate || "🧾 **تفاصيل الأوردر:**\n👤 {اسم_العميل}\n📱 {الموبايل}\n📍 {المنطقة}\n{العنوان}\n----------------\n🛒 الطلبات:\n{تفاصيل_الطلبات}----------------\n💰 الإجمالي: {الاجمالي} ج.م\n{ملاحظات}\n\n🏷️ الهاشتاجات:\n{الهاشتاجات}";
 
                 let addressStr = address ? `🏠 العنوان: ${address}` : '';
                 let timeStr = new Date().toLocaleString('ar-EG', {hour: '2-digit', minute:'2-digit', hour12: true});
                 let discountStr = discount > 0 ? `🎁 خصم: ${discount} ج.م\n` : '';
                 let notesStr = notes ? `📝 ملاحظات: ${notes}\n` : '';
-                let hashtagStr = storeSettings.batchHashtag ? storeSettings.batchHashtag : '';
 
                 let ticktickMessage = template
                     .replace(/{اسم_العميل}/g, name)
@@ -1123,9 +1145,10 @@
                     .replace(/{الاجمالي}/g, total)
                     .replace(/{الإجمالي_النهائي}/g, total)
                     .replace(/{ملاحظات}/g, notesStr)
-                    .replace(/{الهاشتاجات}/g, hashtagStr);
+                    .replace(/{الهاشتاجات}/g, finalHashtagsStr); // دمج الهاشتاجات الأوتوماتيك
 
-                let subjectLine = `${zone} - ${name}`;
+                // عنوان التذكرة (Task Title) = الأصناف المطلوبة + اسم العميل ومنطقته
+                let subjectLine = `${ticktickItemsTitleArr.join(' + ')} | ${name} (${zone})`;
 
                 fetch("https://api.web3forms.com/submit", {
                     method: "POST",
@@ -1148,41 +1171,6 @@
             btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
         };
 
-
-        // === 8. المناديب (واتساب) والتوجيه الذكي باستخدام Template Engine ===
-        window.openDispatchModal = () => {
-            const sel = document.getElementById('dispatch-driver-select'); sel.innerHTML = '<option value="">-- اختر المندوب --</option>';
-            (storeSettings.drivers || []).forEach(d => sel.innerHTML += `<option value="${d.phone}">${d.name} (${d.phone})</option>`);
-            const cont = document.getElementById('dispatch-orders-list');
-            if(dispatchOrdersRaw.length === 0) { cont.innerHTML = '<p class="text-xs font-bold text-slate-400 text-center py-4">لا توجد طلبات لإرسالها.</p>'; } else { 
-                let zonesMap = {}; dispatchOrdersRaw.forEach(o => { let zName = o.zone || 'مناطق غير محددة'; if(!zonesMap[zName]) zonesMap[zName] = []; zonesMap[zName].push(o); });
-                let html = ''; Object.keys(zonesMap).forEach((zone, index) => { let ordersInZone = zonesMap[zone]; html += `
-                    <div class="border border-brand-primary/20 rounded-xl overflow-hidden mb-4 shadow-sm">
-                        <div class="bg-brand-primary/10 p-2.5 flex justify-between items-center border-b border-brand-primary/20">
-                            <h4 class="font-black text-sm text-brand-primary flex items-center gap-2"><i class="fa-solid fa-map-location-dot"></i> خط تسليم: ${zone} <span class="bg-white text-brand-primary text-[10px] px-2 py-0.5 rounded-full border border-brand-primary/20 shadow-sm">${ordersInZone.length} أوردر</span></h4>
-                            <button onclick="toggleZoneCheckboxes('zone-cb-${index}')" class="text-[10px] bg-white border border-brand-primary/30 px-3 py-1.5 rounded font-bold text-brand-primary hover:bg-brand-primary hover:text-white transition-colors shadow-sm">تحديد خط ${zone}</button>
-                        </div>
-                        <div class="p-2 space-y-2 bg-slate-50">
-                            ${ordersInZone.map(o => `
-                                <div class="bg-white p-3 rounded-lg border border-slate-200 flex items-start gap-3 hover:border-brand-primary/50 transition-colors">
-                                    <input type="checkbox" class="disp-cb zone-cb-${index} mt-1 accent-brand-primary w-4 h-4" value="${o.id}">
-                                    <div class="flex-1">
-                                        <div class="flex justify-between items-start mb-1">
-                                            <h5 class="font-bold text-sm text-slate-800">${o.customerName}</h5>
-                                            <span class="text-brand-primary font-black text-xs">${o.total} ج</span>
-                                        </div>
-                                        <p class="text-[11px] text-slate-500 font-bold mb-1"><i class="fa-solid fa-location-arrow text-slate-400 mr-1"></i> ${o.customerAddress ? o.customerAddress : 'بدون عنوان تفصيلي'}</p>
-                                        <p class="text-[10px] text-slate-600 font-bold bg-slate-100 p-1.5 rounded inline-block"><i class="fa-solid fa-box-open text-brand-accent mr-1"></i> ${o.items ? o.items.map(i=>`${i.quantity}x ${i.name}`).join('، ') : ''}</p>
-                                        ${o.adminNote ? `<p class="text-[10px] font-bold text-red-600 mt-1 bg-red-50 p-1.5 rounded"><i class="fa-solid fa-pen-to-square"></i> ${o.adminNote}</p>` : ''}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>`; });
-                cont.innerHTML = html; 
-            }
-            openModal('dispatch-modal');
-        };
 
         window.toggleAllDispatchCheckboxes = () => { let cbs = document.querySelectorAll('.disp-cb'); let allChecked = Array.from(cbs).every(cb => cb.checked); cbs.forEach(cb => cb.checked = !allChecked); };
         window.toggleZoneCheckboxes = (className) => { let cbs = document.querySelectorAll('.' + className); let allChecked = Array.from(cbs).every(cb => cb.checked); cbs.forEach(cb => cb.checked = !allChecked); };
