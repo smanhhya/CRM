@@ -1173,35 +1173,46 @@
         window.submitNewOrder = async () => {
             let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, ''), name = document.getElementById('no-name').value.trim();
             let zone = document.getElementById('no-zone').value, address = document.getElementById('no-address').value.trim();
-            let total = Number(document.getElementById('no-total').value) || 0, notes = document.getElementById('no-notes').value.trim();
+            
+            // سحب الحسابات عشان نظبط بيها رسالة تيك تيك
+            let total = Number(document.getElementById('no-total').value) || 0;
+            let delivery = Number(document.getElementById('no-delivery').value) || 0;
+            let discount = Number(document.getElementById('no-discount').value) || 0;
+            let notes = document.getElementById('no-notes').value.trim();
             let batchId = document.getElementById('no-batch') ? document.getElementById('no-batch').value : '';
             
             if(!phone || !name || total === 0) return alert('أكمل بيانات العميل والسعر!');
             if(!zone) return alert('برجاء اختيار المنطقة!');
             
             let items = []; let subtotal = 0; let batchUpdates = {};
+            let ticktickItemsStr = '';
+
             Object.keys(storeProducts).forEach(id => {
                 let q = Number(document.getElementById(`no-q-${id}`)?.value) || 0;
                 if(q > 0) { 
-                    items.push({ id: id, name: storeProducts[id].name, quantity: q, price: (storePrices[id] || storeProducts[id].basePrice) }); 
-                    subtotal += (q * (storePrices[id] || storeProducts[id].basePrice)); 
-                    if(batchId) batchUpdates[id] = q; // تجميع الأصناف اللي هتتخصم من الدفعة
+                    let price = storePrices[id] || storeProducts[id].basePrice;
+                    items.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); 
+                    subtotal += (q * price); 
+                    if(batchId) batchUpdates[id] = q;
+                    // تجميع الطلبات لرسالة تيك تيك
+                    ticktickItemsStr += `▪️ ${q}x ${storeProducts[id].name}\n`; 
                 }
             });
             if(items.length === 0) return alert('أضف صنف واحد على الأقل!');
             
-            let btn = document.getElementById('btn-save-order'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true;
+            let btn = document.getElementById('btn-save-order'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ والإرسال...'; btn.disabled = true;
+            
             try {
                 let batchName = batchId ? storeBatches[batchId].name : '';
-                const orderData = { customerName: name, customerPhone: phone, zone: zone, customerAddress: address, batchId: batchId, batchName: batchName, total: total, subtotal: subtotal, adminNote: notes, items: items, status: 'new', orderDate: new Date().toLocaleDateString('en-US'), createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+                const orderData = { customerName: name, customerPhone: phone, zone: zone, customerAddress: address, batchId: batchId, batchName: batchName, total: total, subtotal: subtotal, deliveryFee: delivery, discount: discount, adminNote: notes, items: items, status: 'new', orderDate: new Date().toLocaleDateString('en-US'), createdAt: firebase.firestore.FieldValue.serverTimestamp() };
                 
+                // 1. الحفظ في فايربيس (لوحة التحكم)
                 await db.collection('orders').add(orderData);
                 await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(total), orders: firebase.firestore.FieldValue.increment(1) });
                 
                 let cleanPhoneForDB = phone.startsWith('0') ? phone : '0'+phone;
                 await db.collection('customers').doc(cleanPhoneForDB).set({ name: name, phone: cleanPhoneForDB, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 
-                // هنا السحر: لو الأوردر مربوط بدفعة، السيستم هيحدث المحجوز فوراً
                 if(batchId) {
                     if(!storeBatches[batchId].booked) storeBatches[batchId].booked = {};
                     Object.keys(batchUpdates).forEach(pId => {
@@ -1210,10 +1221,57 @@
                     await db.collection("inventory").doc("batches").set(storeBatches);
                 }
 
-                closeModal('add-order-modal'); document.querySelectorAll('#add-order-modal input, #add-order-modal textarea').forEach(i => i.value = '');
+                // ==========================================
+                // 2. الإرسال لـ TickTick بنفس اسطمبة الموقع الأصلي
+                // ==========================================
+                
+                // لو مش كاتب اسطمبة في الإعدادات، هياخد دي كاحتياطي
+                let template = storeSettings.ticktickTemplate || "🧾 **تفاصيل الأوردر كاملة:**\n👤 الاسم: {اسم_العميل}\n📱 الموبايل: {الموبايل}\n📍 المنطقة: {المنطقة}\n{العنوان}\n🕒 الوقت: {الوقت}\n--------------------------------\n🛒 الطلبات:\n{تفاصيل_الطلبات}\n--------------------------------\n📦 قيمة الطلبات: {قيمة_الطلبات} ج.م\n{الخصم}🚚 رسوم التوصيل: {التوصيل}\n💰 الإجمالي النهائي: {الاجمالي} ج.م\n{ملاحظات}\n{الهاشتاجات}";
+
+                // تجهيز المتغيرات الذكية
+                let addressStr = address ? `🏠 العنوان: ${address}` : '';
+                let timeStr = new Date().toLocaleString('ar-EG', {hour: '2-digit', minute:'2-digit', hour12: true});
+                let discountStr = discount > 0 ? `🎁 قيمة الخصم: ${discount} ج.م\n` : '';
+                let notesStr = notes ? `📝 ملاحظات: ${notes}\n` : '';
+                let hashtagStr = storeSettings.batchHashtag ? storeSettings.batchHashtag : '';
+
+                // تعويض المتغيرات جوه الاسطمبة (Replace)
+                let ticktickMessage = template
+                    .replace('{اسم_العميل}', name)
+                    .replace('{الموبايل}', phone)
+                    .replace('{المنطقة}', zone)
+                    .replace('{العنوان}', addressStr)
+                    .replace('{الوقت}', timeStr)
+                    .replace('{تفاصيل_الطلبات}', ticktickItemsStr.trim())
+                    .replace('{قيمة_الطلبات}', subtotal)
+                    .replace('{الخصم}', discountStr)
+                    .replace('{التوصيل}', delivery)
+                    .replace('{الاجمالي}', total)
+                    .replace('{ملاحظات}', notesStr)
+                    .replace('{الهاشتاجات}', hashtagStr);
+
+                // عنوان التذكرة (Task) في تيك تيك عشان تبقى منظمة
+                let subjectLine = `${zone} - ${name}`;
+
+                fetch("https://api.web3forms.com/submit", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                    body: JSON.stringify({
+                        access_key: "29c14342-5ab0-4c2a-a57d-16f2e2bac1d8",
+                        subject: subjectLine,
+                        message: ticktickMessage,
+                        from_name: "أوردر من الخزنة"
+                    })
+                }).catch(err => console.log("خطأ في إرسال TickTick", err));
+                // ==========================================
+
+                closeModal('add-order-modal'); 
+                document.querySelectorAll('#add-order-modal input, #add-order-modal textarea').forEach(i => i.value = '');
                 document.getElementById('no-zone').selectedIndex = 0;
                 if(document.getElementById('no-batch')) document.getElementById('no-batch').selectedIndex = 0;
-            } catch(e) { alert('خطأ في الحفظ'); }
+                
+            } catch(e) { alert('خطأ في الحفظ!'); }
+            
             btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
         };
 
