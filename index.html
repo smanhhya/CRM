@@ -14,11 +14,11 @@
                 extend: {
                     colors: { 
                         brand: { 
-                            dark: '#064e3b',
-                            primary: '#166534',
+                            dark: '#064e3b', /* أخضر داكن جداً وأنيق للقائمة الجانبية */
+                            primary: '#166534', /* أخضر مريح للعين */
                             accent: '#f59e0b', 
                             bg: '#f8fafc', 
-                            cyan: '#ef4444'
+                            cyan: '#ef4444' /* تم التعديل لأحمر هادي */
                         } 
                     },
                     fontFamily: { cairo: ['Cairo', 'sans-serif'] },
@@ -52,6 +52,7 @@
         #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         @media (max-width: 768px) { #sidebar { transform: translateX(100%); } #sidebar.open { transform: translateX(0); } }
 
+        /* تنسيقات ناعمة للمدخلات */
         input[type="text"], input[type="number"], input[type="email"], input[type="password"], input[type="tel"], textarea, select {
             transition: all 0.2s ease;
         }
@@ -103,7 +104,6 @@
             <div class="pt-6 pb-2 px-2 text-[10px] uppercase font-black text-emerald-300/50 tracking-wider">التحكم والتجهيز</div>
             <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-boxes-packing w-7 text-center text-indigo-400"></i> الأصناف والأسعار</button>
             <button onclick="switchTab('batches', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-layer-group w-7 text-center text-teal-400"></i> إدارة الدفعات</button>
-            <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-gears w-7 text-center text-slate-300"></i> الإعدادات الأساسية</button>
             
             <div class="my-2 border-t border-slate-700/50"></div>
             <button onclick="switchTab('trash', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-500/20 hover:text-red-300 text-emerald-100/70 transition-all"><i class="fa-solid fa-trash-can w-7 text-center text-red-400"></i> سلة المحذوفات</button>
@@ -164,6 +164,7 @@
             </div>
 
             <div id="view-orders" class="page-view h-full flex flex-col max-w-7xl mx-auto">
+                
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white p-2 md:p-3 rounded-2xl shadow-soft border border-slate-100">
                     <div class="relative w-full md:flex-1">
                         <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
@@ -207,7 +208,7 @@
                                     <th class="py-4 px-6 font-bold text-xs uppercase tracking-wider text-center">الموقع والملاحظات</th>
                                     <th class="py-4 px-6 font-bold text-xs uppercase tracking-wider text-center">الطلبات</th>
                                     <th class="py-4 px-6 font-bold text-xs uppercase tracking-wider text-center">حجم الإنفاق</th>
-                                    <th class="py-4 px-6 font-bold text-xs uppercase tracking-wider text-center">الإجراءات</th>
+                                    <th class="py-4 px-6 font-bold text-xs uppercase tracking-wider text-center">الملف</th>
                                 </tr>
                             </thead>
                             <tbody id="customers-tbody" class="divide-y divide-slate-50"></tbody>
@@ -239,13 +240,12 @@
             </div>
 
             <div id="view-settings" class="page-view space-y-6 max-w-5xl mx-auto">
-                
                 <div class="bg-white rounded-[1.5rem] p-6 border border-slate-100 shadow-soft">
                     <h3 class="font-black text-slate-800 text-xl mb-6 pb-4 border-b border-slate-100"><i class="fa-solid fa-shop text-slate-400 mr-2"></i> بيانات المتجر الأساسية</h3>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div><label class="text-xs font-bold text-slate-500 block mb-2">اسم المتجر / العلامة التجارية</label><input type="text" id="st-name" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-brand-primary/20 bg-slate-50 focus:bg-white transition-colors"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-2">رقم الواتساب للاستقبال</label><input type="text" id="st-phone" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-brand-primary/20 bg-slate-50 focus:bg-white transition-colors text-left" dir="ltr"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-2">الحد الأدنى لقيمة الطلب (ج.م)</label><input type="number" id="st-min-order" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-brand-primary/20 bg-slate-50 focus:bg-white transition-colors text-center"></div>
+                        <div><label class="text-xs font-bold text-slate-500 block mb-2">اسم المتجر / العلامة التجارية</label><input type="text" id="st-name" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-slate-200 bg-slate-50 focus:bg-white transition-colors"></div>
+                        <div><label class="text-xs font-bold text-slate-500 block mb-2">رقم الواتساب للاستقبال</label><input type="text" id="st-phone" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-slate-200 bg-slate-50 focus:bg-white transition-colors text-left" dir="ltr"></div>
+                        <div><label class="text-xs font-bold text-slate-500 block mb-2">الحد الأدنى لقيمة الطلب (ج.م)</label><input type="number" id="st-min-order" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-slate-200 bg-slate-50 focus:bg-white transition-colors text-center"></div>
                     </div>
                     <div class="mt-6 flex flex-wrap items-center gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
                         <label class="flex items-center gap-2 cursor-pointer font-black text-sm text-emerald-700"><input type="checkbox" id="st-is-open" class="w-5 h-5 text-emerald-600 rounded"> المتجر مفتوح ويستقبل طلبات</label>
@@ -270,22 +270,6 @@
                         </div>
                         <div id="drivers-list-container" class="space-y-3"></div>
                     </div>
-                </div>
-
-                <div class="bg-white rounded-[1.5rem] p-6 border border-slate-100 shadow-soft">
-                    <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-palette text-pink-500 mr-2"></i> ألوان المتجر الأساسية</h3>
-                    <p class="text-[10px] font-bold text-slate-500 mb-5">اختر الألوان التي ستظهر للعملاء في واجهة المتجر (الموقع الخارجي).</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                            <label class="text-xs font-bold text-slate-700">اللون الأساسي (Primary)</label>
-                            <input type="color" id="theme-color-main" class="w-12 h-10 border-0 rounded-lg cursor-pointer bg-transparent shadow-sm">
-                        </div>
-                        <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-100">
-                            <label class="text-xs font-bold text-slate-700">لون الأزرار والتمييز (Accent)</label>
-                            <input type="color" id="theme-color-accent" class="w-12 h-10 border-0 rounded-lg cursor-pointer bg-transparent shadow-sm">
-                        </div>
-                    </div>
-                    <button onclick="resetThemeColors()" class="w-full mt-5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition-colors">استعادة ألوان سمان ههيا الأصلية</button>
                 </div>
 
                 <div class="bg-white rounded-[1.5rem] p-6 border border-slate-100 shadow-soft">
@@ -582,7 +566,7 @@
             document.getElementById('header-title').innerText = btnElement.innerText.trim();
             
             const saveBtn = document.getElementById('global-save-btn');
-            if(['inventory', 'settings'].includes(tabId)) {
+            if(['inventory', 'settings', 'marketing', 'batches'].includes(tabId)) {
                 saveBtn.classList.remove('hidden'); 
             } else { 
                 saveBtn.classList.add('hidden'); 
@@ -1321,7 +1305,6 @@
             btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
         };
 
-
         // === 8. المناديب (واتساب) والتوجيه الذكي ===
         window.openDispatchModal = () => {
             const sel = document.getElementById('dispatch-driver-select'); 
@@ -1723,11 +1706,6 @@
                 document.getElementById('admin-ticktick-template').value = storeSettings.ticktickTemplate || ''; 
                 document.getElementById('admin-batch-hashtag').value = storeSettings.batchHashtag || ''; 
             } 
-
-            if(document.getElementById('theme-color-main')) {
-                document.getElementById('theme-color-main').value = storeSettings.themeColorMain || '#166534';
-                document.getElementById('theme-color-accent').value = storeSettings.themeColorAccent || '#f59e0b';
-            }
         }
 
         window.addNewZoneUI = () => { if(!storeSettings.deliveryZones) storeSettings.deliveryZones = []; storeSettings.deliveryZones.push({name:'', price:0}); renderSettingsUI(); }; 
@@ -1746,11 +1724,6 @@
                     storeSettings.whatsappTemplate = document.getElementById('admin-whatsapp-template').value; storeSettings.dispatchTemplate = document.getElementById('admin-dispatch-template').value; storeSettings.ticktickTemplate = document.getElementById('admin-ticktick-template').value; storeSettings.batchHashtag = document.getElementById('admin-batch-hashtag').value; 
                 }
 
-                if(document.getElementById('theme-color-main')) {
-                    storeSettings.themeColorMain = document.getElementById('theme-color-main').value;
-                    storeSettings.themeColorAccent = document.getElementById('theme-color-accent').value;
-                }
-
                 storeSettings.deliveryZones = (storeSettings.deliveryZones || []).filter(z => z && z.name && z.name.trim() !== ''); 
                 storeSettings.drivers = (storeSettings.drivers || []).filter(d => d && (d.name || d.phone)); 
                 storeSettings.productsData = storeProducts;
@@ -1761,12 +1734,6 @@
                 alert('تم الحفظ بنجاح! 🚀');
             } catch(e) { alert('خطأ في الحفظ!'); }
             btn.innerHTML = origHtml; btn.disabled = false;
-        };
-
-        window.resetThemeColors = () => { 
-            document.getElementById('theme-color-main').value = '#166534'; 
-            document.getElementById('theme-color-accent').value = '#f59e0b'; 
-            alert('تم استعادة الألوان الافتراضية. لا تنسى ضغط "حفظ التعديلات".'); 
         };
 
         // === 12. دوال نافذة (تعديل الطلب) ===
