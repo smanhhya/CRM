@@ -1637,4 +1637,139 @@
                 ]);
                 alert('تم الحفظ بنجاح! 🚀');
             } catch(e) { 
-                console.error(e);
+                console.error(e); 
+                alert('خطأ في الحفظ!'); 
+            }
+            btn.innerHTML = origHtml; 
+            btn.disabled = false;
+        };
+
+        // === 12. دوال نافذة (تعديل الطلب) الذكية المتطورة ===
+        let editingOrderData = null;
+
+        window.openEditOrderModal = (id) => {
+            editingOrderData = allOrdersRaw.find(o => o.id === id); 
+            if(!editingOrderData) return;
+            
+            document.getElementById('edit-cust-name').innerText = editingOrderData.customerName || 'عميل';
+            const container = document.getElementById('edit-dynamic-order-items'); 
+            container.innerHTML = '';
+            
+            Object.keys(storeProducts).forEach(pId => {
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === storeProducts[pId].name) : null;
+                let q = existingItem ? existingItem.quantity : 0;
+                container.innerHTML += `
+                <div class="bg-slate-50 border border-slate-100 p-2 rounded-xl shadow-sm flex flex-col justify-between">
+                    <span class="text-[10px] font-bold text-slate-700 block text-center truncate mb-2">${storeProducts[pId].name}</span>
+                    <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-1">
+                        <button onclick="changeEditQty('${pId}', -1)" class="w-7 h-7 bg-red-50 rounded text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                        <input type="number" id="edit-q-${pId}" min="0" value="${q}" class="w-10 border-none bg-transparent text-center font-black text-sm outline-none" oninput="calcEditTotal()">
+                        <button onclick="changeEditQty('${pId}', 1)" class="w-7 h-7 bg-green-50 rounded text-green-600 hover:bg-green-500 hover:text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                    </div>
+                </div>`;
+            });
+
+            let bSel = document.getElementById('edit-batch'); 
+            bSel.innerHTML = '<option value="">-- بدون دفعة (أوردر عادي) --</option>';
+            Object.keys(storeBatches).forEach(bId => { 
+                bSel.innerHTML += `<option value="${bId}" ${editingOrderData.batchId === bId ? 'selected' : ''}>${storeBatches[bId].name}</option>`; 
+            });
+            
+            if(document.getElementById('edit-custom-tag')) {
+                document.getElementById('edit-custom-tag').value = editingOrderData.customTag || '';
+            }
+
+            document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0; 
+            document.getElementById('edit-discount').value = editingOrderData.discount || 0; 
+            calcEditTotal(); 
+            openModal('edit-order-modal');
+        };
+
+        window.changeEditQty = (pId, amount) => { 
+            let input = document.getElementById(`edit-q-${pId}`); 
+            let val = parseInt(input.value) || 0; 
+            val += amount; 
+            if(val < 0) val = 0; 
+            input.value = val; 
+            calcEditTotal(); 
+        };
+
+        window.calcEditTotal = () => { 
+            let itemsTotal = 0; 
+            Object.keys(storeProducts).forEach(id => { 
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                let price = storePrices[id] || storeProducts[id].basePrice || 0; 
+                itemsTotal += (q * price); 
+            }); 
+            document.getElementById('edit-price').value = itemsTotal; 
+            
+            let d = Number(document.getElementById('edit-delivery').value) || 0; 
+            let disc = Number(document.getElementById('edit-discount').value) || 0; 
+            
+            let finalTotal = itemsTotal + d - disc; 
+            if(finalTotal < 0) finalTotal = 0; 
+            document.getElementById('edit-total').value = finalTotal; 
+        };
+
+        window.saveEditedOrder = async () => {
+            if(!editingOrderData) return;
+            let newItems = []; 
+            let newSubtotal = 0;
+            
+            Object.keys(storeProducts).forEach(id => { 
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                if(q > 0) { 
+                    let price = (storePrices[id] || storeProducts[id].basePrice || 0); 
+                    newItems.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); 
+                    newSubtotal += (q * price); 
+                } 
+            });
+            
+            if(newItems.length === 0) return alert('لا يمكن حفظ طلب فارغ!');
+
+            let newDelivery = Number(document.getElementById('edit-delivery').value) || 0; 
+            let newDiscount = Number(document.getElementById('edit-discount').value) || 0; 
+            let newTotal = Number(document.getElementById('edit-total').value) || 0;
+            let newBatchId = document.getElementById('edit-batch').value; 
+            let newBatchName = newBatchId ? storeBatches[newBatchId].name : '';
+            let newCustomTag = document.getElementById('edit-custom-tag') ? document.getElementById('edit-custom-tag').value.trim() : '';
+            
+            let oldTotal = Number(editingOrderData.total) || 0; 
+            let difference = newTotal - oldTotal;
+            
+            const btn = document.getElementById('btn-save-edit'); 
+            const origHtml = btn.innerHTML; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحديث السيستم...'; 
+            btn.disabled = true;
+
+            try {
+                await db.collection('orders').doc(editingOrderData.id).update({ 
+                    items: newItems, 
+                    subtotal: newSubtotal, 
+                    deliveryFee: newDelivery, 
+                    discount: newDiscount, 
+                    total: newTotal, 
+                    batchId: newBatchId, 
+                    batchName: newBatchName,
+                    customTag: newCustomTag
+                });
+                
+                if(difference !== 0 && editingOrderData.customerPhone) { 
+                    let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; 
+                    await db.collection('customers').doc(cleanPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(difference) }); 
+                }
+                
+                if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { 
+                    await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(difference) }); 
+                }
+                closeModal('edit-order-modal');
+            } catch(e) { 
+                alert("حدث خطأ أثناء حفظ التعديلات!"); 
+            }
+            btn.innerHTML = origHtml; 
+            btn.disabled = false;
+        };
+
+    </script>
+</body>
+</html>
