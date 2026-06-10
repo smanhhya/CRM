@@ -1507,55 +1507,124 @@
         };
 
         // === 10. أداة الاستيراد من تيك تيك والكشوفات ===
+        // === 10. أداة الاستيراد الذكية من تيك تيك (النسخة المطورة) ===
         window.processTickTickCSV = (event) => {
-            const file = event.target.files[0]; if(!file) return;
-            const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]'); 
-            const originalHtml = btn.innerHTML; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الاستخراج...'; 
-            btn.disabled = true;
+            const file = event.target.files[0];
+            if(!file) return;
             
-            const reader = new FileReader(); 
-            reader.onload = (e) => { 
-                let text = e.target.result; 
-                const headerIndex = text.indexOf('"Folder Name"'); 
+            const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري القراءة والفلترة...';
+            btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                let text = e.target.result;
+                // تخطي المقدمة اللي بيكتبها تيك تيك والوصول للداتا مباشرة
+                const headerIndex = text.indexOf('"Folder Name"');
                 if(headerIndex !== -1) text = text.substring(headerIndex);
                 
-                Papa.parse(text, { 
-                    header: true, skipEmptyLines: true, 
-                    complete: function(results) { 
-                        let parsedCustomers = []; 
-                        results.data.forEach(row => { 
-                            let title = row['Title'] || ''; 
-                            let content = row['Content'] || ''; 
-                            let zone = (row['Column Name'] && row['Column Name'] !== 'nan') ? row['Column Name'] : (row['List Name'] || ''); 
+                Papa.parse(text, {
+                    header: true, skipEmptyLines: true,
+                    complete: function(results) {
+                        let parsedCustomers = [];
+                        // تحويل الأرقام العربية لإنجليزية عشان الريجيكس يشتغل صح
+                        const arabicToEnglish = str => str.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660);
+
+                        results.data.forEach(row => {
+                            let title = row['Title'] || '';
+                            let content = row['Content'] || '';
+                            let zone = (row['Column Name'] && row['Column Name'] !== 'nan') ? row['Column Name'] : (row['List Name'] || '');
                             if(!title) return;
                             
-                            let phoneMatch = content.match(/(01[0125][0-9]{8})/); 
-                            let phone = phoneMatch ? phoneMatch[1] : ''; 
-                            if(!phone) { let tMatch = title.match(/(01[0125][0-9]{8})/); if(tMatch) phone = tMatch[1]; }
+                            // دمج العنوان والمحتوى للبحث عن الرقم
+                            let rawText = arabicToEnglish(title + " " + content);
+                            let cleanTextForPhone = rawText.replace(/\D/g, ''); // مسح أي مسافات أو حروف
                             
-                            let address = ''; 
-                            let addrMatch = content.match(/العنوان\s*[:：]\s*(.*?)(?=\n|$)/); 
-                            if(addrMatch) address = addrMatch[1].trim(); 
+                            // اصطياد الرقم بذكاء (يبدأ بـ 201 أو 01 أو 1)
+                            let phone = '';
+                            let phoneMatch = cleanTextForPhone.match(/(201|01|1)[0125][0-9]{8}/);
+                            if (phoneMatch) {
+                                phone = phoneMatch[0];
+                                if (phone.startsWith('20')) phone = '0' + phone.substring(2);
+                                if (phone.length === 10 && phone.startsWith('1')) phone = '0' + phone;
+                            }
                             
-                            let notes = content.replace(/\n/g, ' | ');
-                            if(phone || title.length > 2) { 
-                                parsedCustomers.push({ name: title.replace(/(01[0125][0-9]{8})/, '').trim(), phone: phone, zone: zone, address: address, adminNotes: notes }); 
-                            } 
+                            // اصطياد العنوان إن وُجد
+                            let address = '';
+                            let addrMatch = content.match(/العنوان\s*[:：]\s*(.*?)(?=\n|$)/);
+                            if(addrMatch) address = addrMatch[1].trim();
+                            
+                            // ضغط الملاحظات في سطر واحد
+                            let notes = content.replace(/\n/g, ' | ').trim();
+                            
+                            // لو فيه رقم سليم، احفظ العميل
+                            if(phone && phone.length === 11) {
+                                parsedCustomers.push({ 
+                                    name: title.replace(/01[0-9]{9}/g, '').replace(/[٠-٩]/g, '').replace(/\d+/g, '').trim() || 'عميل مستورد', 
+                                    phone: phone, 
+                                    zone: zone, 
+                                    address: address, 
+                                    adminNotes: notes 
+                                });
+                            }
                         });
                         
-                        btn.innerHTML = originalHtml; 
-                        btn.disabled = false; 
-                        document.getElementById('ticktick-file').value = '';
+                        btn.innerHTML = originalHtml; btn.disabled = false;
+                        document.getElementById('ticktick-file').value = ''; // تصفير الملف
                         
-                        if(confirm(`تم استخراج [ ${parsedCustomers.length} ] عميل بنجاح!\nهل تريد رفعهم للأرشيف السحابي الآن؟`)) { 
-                            uploadTickTickToFirebase(parsedCustomers); 
-                        } 
-                    } 
-                }); 
-            }; 
+                        if(parsedCustomers.length === 0) {
+                            alert("لم يتم العثور على أرقام هواتف صالحة في الملف!");
+                            return;
+                        }
+                        
+                        if(confirm(`تم استخراج وفلترة [ ${parsedCustomers.length} ] عميل برقم موبايل سليم من الملف بنجاح!\n\nهل تريد حفظهم في أرشيف الموقع على فايربيس الآن؟`)) {
+                            uploadTickTickToFirebase(parsedCustomers);
+                        }
+                    }
+                });
+            };
             reader.readAsText(file);
         };
+
+        window.uploadTickTickToFirebase = async (customers) => {
+            const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-green-400"></i> جاري الرفع لفايربيس...';
+            
+            const batches = [];
+            let currentBatch = db.batch();
+            let count = 0;
+            
+            customers.forEach(c => {
+                let docRef = db.collection('customers').doc(c.phone);
+                
+                currentBatch.set(docRef, { 
+                    name: c.name, 
+                    phone: c.phone, 
+                    zone: c.zone, 
+                    address: c.address, 
+                    adminNotes: c.adminNotes, 
+                    imported: true, // علامة مميزة إن العميل ده جاي من تيك تيك القديم
+                    ordersCount: firebase.firestore.FieldValue.increment(0), 
+                    totalSpent: firebase.firestore.FieldValue.increment(0) 
+                }, { merge: true }); 
+                
+                count++;
+                // فايربيس بيقبل 500 عملية في الدفعة الواحدة، قسمناهم لـ 400 للأمان
+                if(count === 400) { batches.push(currentBatch.commit()); currentBatch = db.batch(); count = 0; }
+            });
+            
+            if(count > 0) batches.push(currentBatch.commit());
+            
+            try {
+                await Promise.all(batches);
+                alert(`تم استيراد وحفظ ${customers.length} عميل في أرشيف المتجر بنجاح! 🎉\nكل أرقامهم وعناوينهم وتفاصيلهم معاك دلوقتي.`);
+            } catch(e) {
+                alert('حدث خطأ أثناء الرفع لقاعدة البيانات!');
+            }
+            btn.innerHTML = '<i class="fa-solid fa-file-import text-green-400"></i> <span class="hidden md:inline">استيراد تيك تيك</span>';
+        };
+
 
         window.viewBatchBookings = async (bId) => {
             const b = storeBatches[bId]; if(!b) return;
@@ -1599,32 +1668,7 @@
             printWindow.document.close(); 
         };
 
-        window.uploadTickTickToFirebase = async (customers) => { 
-            const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]'); 
-            const origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-emerald-400"></i> جاري الرفع...'; 
-            
-            let batches = []; 
-            let currentBatch = db.batch(); 
-            let count = 0; 
-            let validUploads = 0; 
-            
-            customers.forEach(c => { 
-                if(!c.phone) return; 
-                let cleanPhone = c.phone.startsWith('0') ? c.phone : '0'+c.phone; 
-                let docRef = db.collection('customers').doc(cleanPhone); 
-                currentBatch.set(docRef, { name: c.name, phone: cleanPhone, zone: c.zone, address: c.address, adminNotes: c.adminNotes, ordersCount: firebase.firestore.FieldValue.increment(0), totalSpent: firebase.firestore.FieldValue.increment(0) }, { merge: true }); 
-                count++; validUploads++; 
-                if(count === 400) { batches.push(currentBatch.commit()); currentBatch = db.batch(); count = 0; } 
-            }); 
-            if(count > 0) batches.push(currentBatch.commit());
-            
-            try { 
-                await Promise.all(batches); 
-                alert(`تم استيراد وحفظ ${validUploads} عميل في الأرشيف بنجاح! 🎉`); 
-            } catch(e) { alert('حدث خطأ أثناء الرفع!'); } 
-            btn.innerHTML = origHtml; 
-        };
+        
 
         // === 11. دوال الإعدادات والمخزون ===
         function renderInventoryUI() { 
