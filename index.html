@@ -74,8 +74,6 @@
             <div class="pt-4 pb-1 px-4 text-[10px] uppercase font-black text-slate-500">التحكم في المتجر</div>
             <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-boxes-packing w-6 text-center text-blue-400"></i> المخزون والمنتجات</button>
             <button onclick="switchTab('batches', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-layer-group w-6 text-center text-green-400"></i> نظام الدفعات والحجوزات</button>
-            <button onclick="switchTab('marketing', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-bullhorn w-6 text-center text-purple-400"></i> التسويق والأكواد</button>
-            <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gears w-6 text-center text-slate-400"></i> الإعدادات والتوصيل</button>
             
             <div class="my-2 border-t border-slate-700/50"></div>
             <button onclick="switchTab('trash', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-trash-can w-6 text-center text-red-500"></i> سلة المحذوفات</button>
@@ -110,17 +108,20 @@
             </div>
 
             <div id="view-orders" class="page-view h-full flex flex-col">
-                <div id="batch-summary-panel" class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-4 flex flex-wrap gap-2">
-                    <p class="text-[10px] font-bold text-slate-400 w-full mb-1">التحليل التفصيلي للطلبات:</p>
-                    <div class="text-xs text-slate-500 font-bold">جاري التحميل...</div>
-                </div>
-
-                <div class="flex justify-between items-center mb-4 gap-3">
-                    <div class="relative flex-1 md:max-w-md">
+                
+                <div class="flex flex-wrap sm:flex-nowrap justify-between items-center mb-4 gap-3">
+                    <div class="relative flex-1 w-full sm:max-w-md">
                         <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
-                        <input type="text" id="search-order" onkeyup="renderOrdersList()" placeholder="بحث برقم الطلب أو الموبايل أو الهاشتاج..." class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm font-bold bg-white shadow-sm focus:border-brand-primary">
+                        <input type="text" id="search-order" onkeyup="renderOrdersList()" placeholder="بحث برقم الطلب، الموبايل أو الهاشتاج..." class="w-full pl-4 pr-10 py-2.5 rounded-xl border border-slate-200 outline-none text-sm font-bold bg-white shadow-sm focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all">
                     </div>
-                    <button onclick="openDispatchModal()" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 flex items-center gap-2 shrink-0"><i class="fa-solid fa-motorcycle"></i> إرسال للمناديب</button>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button onclick="openModal('summary-modal')" class="flex-1 sm:flex-none bg-brand-dark text-brand-accent px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-slate-800 flex items-center justify-center gap-2 shrink-0 transition-colors border border-transparent">
+                            <i class="fa-solid fa-chart-pie"></i> <span class="hidden md:inline">التحليل التفصيلي</span>
+                        </button>
+                        <button onclick="openDispatchModal()" class="flex-1 sm:flex-none bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-blue-700 flex items-center justify-center gap-2 shrink-0 transition-colors border border-transparent">
+                            <i class="fa-solid fa-motorcycle"></i> <span class="hidden md:inline">إرسال للمناديب</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex gap-2 overflow-x-auto custom-scroll pb-2 mb-2 shrink-0">
@@ -185,105 +186,6 @@
                 <div id="products-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1"></div>
             </div>
 
-            <div id="view-marketing" class="page-view space-y-6">
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-t-4 border-t-blue-500">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <h3 class="font-black text-slate-800 text-base mb-3"><i class="fa-solid fa-bell text-blue-500 mr-2"></i> الإشعارات الحية الوهمية</h3>
-                            <label class="flex items-center gap-2 mb-2 font-bold text-sm"><input type="checkbox" id="mkt-noti-active" class="accent-blue-500 w-4 h-4"> تفعيل إشعارات الشراء</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="mkt-noti-names" class="flex-1 border rounded-lg p-2 text-xs font-bold outline-none" placeholder="أسماء (أحمد، محمد...)">
-                                <input type="text" id="mkt-noti-places" class="flex-1 border rounded-lg p-2 text-xs font-bold outline-none" placeholder="مناطق (ههيا، الزقازيق...)">
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="font-black text-slate-800 text-base mb-3"><i class="fa-solid fa-bullhorn text-yellow-500 mr-2"></i> شريط الأخبار المتحرك</h3>
-                            <label class="flex items-center gap-2 mb-2 font-bold text-sm"><input type="checkbox" id="mkt-banner-active" class="accent-yellow-500 w-4 h-4"> تفعيل شريط الأخبار</label>
-                            <textarea id="mkt-banner-texts" rows="2" class="w-full border rounded-lg p-2 text-xs font-bold outline-none bg-slate-50" placeholder="اكتب كل رسالة في سطر..."></textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="space-y-6">
-                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-green-500">
-                            <h3 class="font-black text-slate-800 text-lg mb-3"><i class="fa-solid fa-gift text-green-500 mr-2"></i> نظام الولاء الذكي (كود تلقائي)</h3>
-                            <label class="flex items-center gap-2 mb-4 font-bold text-xs"><input type="checkbox" id="mkt-reward-active" class="accent-green-500 w-4 h-4"> إرسال كود خصم للعميل تلقائياً بعد الشراء</label>
-                            <div class="grid grid-cols-2 gap-3 bg-green-50 p-3 rounded-xl border border-green-100">
-                                <div><label class="text-[10px] font-bold text-slate-500 block mb-1">نوع الخصم</label><select id="mkt-reward-type" class="w-full border rounded-lg p-2 font-bold text-slate-800 outline-none"><option value="fixed">مبلغ ثابت</option><option value="percent">نسبة %</option><option value="free_delivery">توصيل مجاني</option></select></div>
-                                <div><label class="text-[10px] font-bold text-slate-500 block mb-1">القيمة</label><input type="number" id="mkt-reward-value" class="w-full border rounded-lg p-2 font-bold text-slate-800 outline-none text-center"></div>
-                                <div class="col-span-2"><label class="text-[10px] font-bold text-slate-500 block mb-1">رسالة العميل (التي تظهر مع الكود)</label><textarea id="mkt-loyalty-msg" rows="1" class="w-full border rounded-lg p-2 text-xs font-bold text-slate-800 outline-none">تم إصدار كود خصم خاص بك لطلبك القادم 🎁</textarea></div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-purple-500">
-                            <h3 class="font-black text-slate-800 text-lg mb-3"><i class="fa-solid fa-users text-purple-500 mr-2"></i> إرسال أكواد لعملاء سابقين</h3>
-                            <textarea id="mkt-bulk-numbers" rows="2" class="w-full border rounded-xl p-3 font-bold text-slate-800 bg-slate-50 outline-none mb-2" dir="ltr" placeholder="ضع الأرقام هنا (كل رقم في سطر)..."></textarea>
-                            <textarea id="mkt-bulk-msg" rows="2" class="w-full border rounded-xl p-2 font-bold text-slate-800 outline-none text-xs">شكراً لثقتك! كود الخصم للأوردر الجاي: {الكود}</textarea>
-                            <div class="grid grid-cols-2 gap-2 mt-3">
-                                <select id="mkt-bulk-type" class="w-full border rounded-lg p-2 text-xs font-bold text-slate-800 outline-none"><option value="fixed">مبلغ ثابت</option><option value="percent">نسبة %</option><option value="free_delivery">توصيل مجاني</option></select>
-                                <input type="number" id="mkt-bulk-val" placeholder="قيمة الخصم" class="w-full border rounded-lg p-2 text-xs font-bold text-center outline-none">
-                            </div>
-                            <button onclick="generateBulkWhatsAppLinks()" class="w-full mt-3 bg-purple-600 hover:bg-purple-700 text-white font-black py-2.5 rounded-xl shadow-md transition-colors">توليد وتجهيز الواتساب</button>
-                            <div id="bulk-whatsapp-links" class="mt-3 space-y-2 hidden max-h-40 overflow-y-auto bg-slate-50 p-2 rounded-xl border border-slate-200 custom-scroll"></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col h-full border-r-4 border-r-brand-cyan">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-black text-slate-800 text-lg"><i class="fa-solid fa-ticket text-brand-cyan mr-2"></i> رادار الأكواد الثابتة</h3>
-                            <button onclick="addNewPromoCode()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3 py-1.5 rounded-lg shadow font-bold transition-colors">+ كود جديد</button>
-                        </div>
-                        <label class="flex items-center gap-2 mb-4 font-bold text-xs bg-slate-50 p-2 rounded-lg border border-slate-100"><input type="checkbox" id="mkt-show-promo" class="accent-brand-primary w-4 h-4"> إظهار خانة "عندك كود خصم؟" للعميل في المتجر</label>
-                        <div id="promos-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1 max-h-[500px]"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="view-settings" class="page-view space-y-6">
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-shop text-purple-500 mr-2"></i> إعدادات المتجر الأساسية</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">اسم المتجر</label><input type="text" id="st-name" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">رقم الموبايل / الواتساب</label><input type="text" id="st-phone" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50" dir="ltr"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">الحد الأدنى للطلب (ج.م)</label><input type="number" id="st-min-order" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50"></div>
-                    </div>
-                    <div class="mt-4 flex items-center gap-6 border-t border-slate-100 pt-4">
-                        <label class="flex items-center gap-2 cursor-pointer font-bold text-sm text-green-700"><input type="checkbox" id="st-is-open" class="w-5 h-5 accent-green-600"> استقبال الطلبات (مفتوح)</label>
-                        <label class="flex items-center gap-2 cursor-pointer font-bold text-sm text-blue-700"><input type="checkbox" id="st-free-del" class="w-5 h-5 accent-blue-600" onchange="document.getElementById('st-free-th').disabled = !this.checked"> توصيل مجاني فوق <input type="number" id="st-free-th" class="w-16 border rounded p-1 text-center bg-white" placeholder="0"> ج.م</label>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-black text-slate-800 text-lg"><i class="fa-solid fa-map-location-dot text-brand-primary mr-2"></i> مناطق التوصيل</h3>
-                            <button onclick="addNewZoneUI()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                        <div id="zones-list-container" class="space-y-2"></div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-black text-slate-800 text-lg"><i class="fa-solid fa-motorcycle text-brand-accent mr-2"></i> المناديب</h3>
-                            <button onclick="addNewDriverUI()" class="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-200"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                        <div id="drivers-list-container" class="space-y-2"></div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm mt-6 border-l-4 border-l-brand-cyan">
-                    <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-language text-brand-cyan mr-2"></i> قوالب رسائل النظام والهاشتاج</h3>
-                    <p class="text-[10px] font-bold text-slate-500 mb-3">استخدم المتغيرات التالية: {اسم_العميل}، {رقم_العميل}، {المنطقة}، {العنوان}، {تفاصيل_الطلبات}، {إجمالي_الطلب}، {التوصيل}، {الخصم}، {الإجمالي_النهائي}</p>
-                    <div class="space-y-4">
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">رسالة الواتساب للعميل</label><textarea id="admin-whatsapp-template" rows="3" class="w-full border rounded-lg p-2 text-xs font-bold bg-slate-50 outline-none focus:border-brand-primary" placeholder="مرحباً {اسم_العميل}..."></textarea></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">رسالة إرسال الأوردر للمندوب</label><textarea id="admin-dispatch-template" rows="3" class="w-full border rounded-lg p-2 text-xs font-bold bg-slate-50 outline-none focus:border-brand-primary" placeholder="طلب جديد من {اسم_العميل}..."></textarea></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">شكل أوردر تيك تيك (TickTick)</label><textarea id="admin-ticktick-template" rows="3" class="w-full border rounded-lg p-2 text-xs font-bold bg-slate-50 outline-none focus:border-brand-primary"></textarea></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">هاشتاج الدفعة (يكتب هكذا: #دفعة_الخميس)</label><input type="text" id="admin-batch-hashtag" class="w-full border rounded-lg p-2 text-xs font-bold bg-slate-50 outline-none focus:border-brand-primary"></div>
-                    </div>
-                </div>
-            </div>
-
             <div id="view-trash" class="page-view h-full flex flex-col space-y-4">
                 <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-red-200 shadow-sm shrink-0 border-r-4 border-r-red-500">
                     <div>
@@ -313,15 +215,15 @@
 
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <label class="text-sm font-black text-slate-800 block mb-2"><i class="fa-solid fa-layer-group text-green-600 mr-1"></i> تغيير الدفعة (اختياري)</label>
-                    <select id="edit-batch" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-slate-700 outline-none focus:border-brand-primary bg-white"></select>
-                    <input type="text" id="edit-custom-tag" class="w-full mt-2 border-2 border-purple-200 rounded-lg p-2 outline-none focus:border-purple-500 font-bold text-xs bg-purple-50 text-purple-800" placeholder="هاشتاج مخصص حر (مثال: دفعة_العيد) - اختياري">
+                    <select id="edit-batch" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-slate-700 outline-none focus:border-brand-primary bg-white focus:ring-2 focus:ring-brand-primary/20 transition-all"></select>
+                    <input type="text" id="edit-custom-tag" class="w-full mt-2 border-2 border-purple-200 rounded-lg p-2 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 font-bold text-xs bg-purple-50 text-purple-800 transition-all" placeholder="هاشتاج مخصص حر (مثال: دفعة_العيد) - اختياري">
                 </div>
 
                 <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
                     <div class="grid grid-cols-3 gap-4">
                         <div><label class="text-[10px] font-bold text-slate-500 block mb-1">قيمة المنتجات</label><input type="number" id="edit-price" class="w-full border border-slate-200 rounded-lg p-2 font-black bg-slate-50 text-center text-slate-700" disabled></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">مصاريف التوصيل</label><input type="number" id="edit-delivery" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-center outline-none focus:border-brand-accent" oninput="calcEditTotal()"></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">قيمة الخصم</label><input type="number" id="edit-discount" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-brand-cyan text-center outline-none focus:border-brand-accent" oninput="calcEditTotal()"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">مصاريف التوصيل</label><input type="number" id="edit-delivery" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-center outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all" oninput="calcEditTotal()"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1">قيمة الخصم</label><input type="number" id="edit-discount" class="w-full border-2 border-slate-200 rounded-lg p-2 font-black text-brand-cyan text-center outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 transition-all" oninput="calcEditTotal()"></div>
                     </div>
                     <div class="mt-4 border-t border-slate-100 pt-4">
                         <label class="text-[10px] font-bold text-slate-500 block mb-1">الإجمالي النهائي الجديد</label>
@@ -347,18 +249,18 @@
             </div>
             <div class="p-5 overflow-y-auto custom-scroll space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="text-xs font-bold text-slate-500 block mb-1">الموبايل (هيبحث في الأرشيف فوراً)</label><input type="tel" id="no-phone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold" dir="ltr" oninput="checkCustomerExists()"></div>
-                    <div><label class="text-xs font-bold text-slate-500 block mb-1">اسم العميل</label><input type="text" id="no-name" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">الموبايل (هيبحث في الأرشيف فوراً)</label><input type="tel" id="no-phone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all font-bold" dir="ltr" oninput="checkCustomerExists()"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">اسم العميل</label><input type="text" id="no-name" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all font-bold"></div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label class="text-xs font-bold text-slate-500 block mb-1">المنطقة (من الإعدادات)</label><select id="no-zone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold bg-white" onchange="autoSetDeliveryPrice()"></select></div>
-                    <div><label class="text-xs font-bold text-slate-500 block mb-1">العنوان التفصيلي (الشارع/العمارة)</label><input type="text" id="no-address" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary font-bold"></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">المنطقة (من الإعدادات)</label><select id="no-zone" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all font-bold bg-white" onchange="autoSetDeliveryPrice()"></select></div>
+                    <div><label class="text-xs font-bold text-slate-500 block mb-1">العنوان التفصيلي (الشارع/العمارة)</label><input type="text" id="no-address" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all font-bold"></div>
                 </div>
                 
                 <div class="mt-3 bg-green-50 p-3 rounded-xl border border-green-200">
                     <label class="text-xs font-black text-green-800 block mb-1"><i class="fa-solid fa-layer-group text-green-600 mr-1"></i> ربط الأوردر بدفعة (حجز مسبق)</label>
-                    <select id="no-batch" class="w-full border-2 border-green-200 rounded-lg p-2 outline-none focus:border-green-500 font-bold bg-white text-slate-700"></select>
-                    <input type="text" id="no-custom-tag" class="w-full mt-2 border-2 border-purple-200 rounded-lg p-2 outline-none focus:border-purple-500 font-bold text-xs bg-purple-50 text-purple-800" placeholder="هاشتاج مخصص حر (مثال: دفعة_العيد) - اختياري">
+                    <select id="no-batch" class="w-full border-2 border-green-200 rounded-lg p-2 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all font-bold bg-white text-slate-700"></select>
+                    <input type="text" id="no-custom-tag" class="w-full mt-2 border-2 border-purple-200 rounded-lg p-2 outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all font-bold text-xs bg-purple-50 text-purple-800" placeholder="هاشتاج مخصص حر (مثال: دفعة_العيد) - اختياري">
                 </div>
 
                 <div class="border-t border-slate-100 pt-3">
@@ -371,7 +273,7 @@
                     <div><label class="text-xs font-bold text-slate-500 block mb-1">التوصيل</label><input type="number" id="no-delivery" class="w-full border rounded-lg p-2 font-bold text-center" placeholder="0" oninput="calcTotal('no')"></div>
                     <div><label class="text-xs font-bold text-slate-500 block mb-1">خصم</label><input type="number" id="no-discount" class="w-full border rounded-lg p-2 font-bold text-brand-cyan text-center" placeholder="0" oninput="calcTotal('no')"></div>
                 </div>
-                <div><label class="text-xs font-bold text-slate-500 block mb-1">ملاحظات للأوردر</label><textarea id="no-notes" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary text-sm font-bold text-blue-700 bg-blue-50" rows="2"></textarea></div>
+                <div><label class="text-xs font-bold text-slate-500 block mb-1">ملاحظات للأوردر</label><textarea id="no-notes" class="w-full border-2 border-slate-200 rounded-xl p-2 outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 transition-all text-sm font-bold text-blue-700 bg-blue-50" rows="2"></textarea></div>
                 <div>
                     <label class="text-xs font-bold text-slate-500 block mb-1">الإجمالي النهائي</label>
                     <div class="flex gap-2">
@@ -472,6 +374,20 @@
                 </div>
             </div>
             <div class="p-5 overflow-y-auto custom-scroll flex-1 bg-white" id="bb-content"></div>
+        </div>
+    </div>
+
+    <div id="summary-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-chart-pie text-brand-primary mr-2"></i> التحليل التفصيلي للطلبات</h3>
+                <button onclick="closeModal('summary-modal')" class="text-slate-400 hover:text-brand-cyan transition-colors"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-5 overflow-y-auto custom-scroll flex-1 bg-white" id="batch-summary-panel">
+                </div>
+            <div class="p-4 border-t border-slate-200 bg-slate-50 shrink-0">
+                <button onclick="closeModal('summary-modal')" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 font-black py-3 rounded-xl transition-all shadow-sm border border-transparent">إغلاق</button>
+            </div>
         </div>
     </div>
 
@@ -673,51 +589,46 @@
             window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, '_blank');
         };
 
-        // دالة الملخص التحليلي (بتعد الأوردرات والأطباق لكل دفعة أو هاشتاج)
+        // دالة الملخص التحليلي للشبكة الجديدة في الـ Modal
         window.updateBatchSummary = () => {
             const panel = document.getElementById('batch-summary-panel'); if(!panel) return;
             let summary = {};
             
             allOrdersRaw.forEach(o => {
                 if(o.status !== 'trash' && o.status !== 'canceled') {
-                    // تحديد اسم المجموعة (لو مربوط بدفعة أو ليه هاشتاج مخصص)
                     let bName = o.batchName ? o.batchName : (o.customTag ? `تاج: ${o.customTag}` : "أوردرات عادية");
-                    
                     if(!summary[bName]) summary[bName] = { count: 0, items: {} };
                     summary[bName].count++;
-
-                    // حصر الأطباق المطلوبة
                     if(o.items && Array.isArray(o.items)){
-                        o.items.forEach(i => {
-                            summary[bName].items[i.name] = (summary[bName].items[i.name] || 0) + i.quantity;
-                        });
+                        o.items.forEach(i => { summary[bName].items[i.name] = (summary[bName].items[i.name] || 0) + i.quantity; });
                     }
                 }
             });
 
             if(Object.keys(summary).length === 0) {
-                panel.innerHTML = `<p class="text-[10px] font-bold text-slate-400 w-full mb-1">التحليل التفصيلي للطلبات:</p><div class="text-xs font-bold text-slate-500">لا توجد طلبات...</div>`;
+                panel.innerHTML = `<div class="text-center py-10"><p class="text-sm font-bold text-slate-500"><i class="fa-solid fa-folder-open text-3xl mb-3 text-slate-300 block"></i>لا توجد طلبات حية للتحليل حالياً.</p></div>`;
                 return;
             }
 
-            panel.innerHTML = `<p class="text-[10px] font-bold text-slate-400 w-full mb-1">التحليل التفصيلي للطلبات (أطباق وحجوزات):</p>` + 
-                Object.keys(summary).map(bName => {
-                    // طباعة الأطباق جوه المربع
-                    let itemsHtml = Object.keys(summary[bName].items).map(itemName => 
-                        `<span class="bg-white text-slate-700 border border-slate-200 px-1.5 py-0.5 rounded inline-block whitespace-nowrap"><span class="text-brand-primary">${summary[bName].items[itemName]}x</span> ${itemName}</span>`
-                    ).join(' ');
+            let html = `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">`;
+            html += Object.keys(summary).map(bName => {
+                let itemsHtml = Object.keys(summary[bName].items).map(itemName => 
+                    `<span class="bg-white text-slate-700 border border-slate-200 px-2 py-1 rounded-lg inline-block whitespace-nowrap shadow-sm"><span class="text-brand-primary font-black">${summary[bName].items[itemName]}x</span> ${itemName}</span>`
+                ).join(' ');
 
-                    return `
-                    <div class="bg-brand-primary/5 p-2 rounded-xl border border-brand-primary/20 flex flex-col gap-1.5 w-full md:w-auto flex-1 min-w-[200px] shadow-sm">
-                        <div class="flex justify-between items-center border-b border-brand-primary/10 pb-1 mb-1">
-                            <span class="text-xs font-black text-brand-primary"><i class="fa-solid fa-chart-pie mr-1"></i> ${bName}</span>
-                            <span class="text-[10px] font-bold bg-brand-primary text-white px-2 py-0.5 rounded-full">${summary[bName].count} أوردر</span>
-                        </div>
-                        <div class="flex flex-wrap gap-1 text-[10px] font-bold leading-relaxed">
-                            ${itemsHtml || '<span class="text-slate-400">لا توجد أصناف</span>'}
-                        </div>
-                    </div>`;
-                }).join('');
+                return `
+                <div class="bg-brand-primary/5 p-4 rounded-2xl border border-brand-primary/20 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-center border-b border-brand-primary/10 pb-2">
+                        <span class="text-sm font-black text-brand-primary"><i class="fa-solid fa-layer-group mr-1"></i> ${bName}</span>
+                        <span class="text-xs font-bold bg-brand-primary text-brand-accent px-2.5 py-1 rounded-full shadow-sm">${summary[bName].count} أوردر</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2 text-[11px] font-bold">
+                        ${itemsHtml || '<span class="text-slate-400">لا توجد أصناف</span>'}
+                    </div>
+                </div>`;
+            }).join('');
+            html += `</div>`;
+            panel.innerHTML = html;
         };
 
         window.renderOrdersList = () => {
@@ -766,7 +677,7 @@
                     <div class="bg-blue-50/50 p-2 rounded-lg mb-2 border border-blue-100 shadow-sm">
                         <div class="text-[10px] text-blue-800 font-bold whitespace-pre-wrap mb-2 max-h-16 overflow-y-auto custom-scroll leading-relaxed">${o.adminNote || 'لا توجد ملاحظات...'}</div>
                         <div class="flex gap-1 items-center">
-                            <input type="text" id="new-note-${o.id}" class="flex-1 border border-blue-200 rounded p-1.5 text-[10px] outline-none focus:border-blue-400 font-bold text-blue-900" placeholder="اكتب ملاحظة جديدة...">
+                            <input type="text" id="new-note-${o.id}" class="flex-1 border border-blue-200 rounded p-1.5 text-[10px] outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-200 transition-all font-bold text-blue-900" placeholder="اكتب ملاحظة جديدة...">
                             <button onclick="appendOrderNote('${o.id}')" class="bg-blue-500 text-white w-7 h-7 rounded flex items-center justify-center hover:bg-blue-600 shadow-sm"><i class="fa-solid fa-plus"></i></button>
                         </div>
                     </div>
@@ -1039,7 +950,7 @@
                 container.innerHTML += `
                 <div>
                     <span class="text-[10px] font-bold text-slate-500 block text-center truncate">${storeProducts[id].name}</span>
-                    <input type="number" id="no-q-${id}" min="0" class="w-full border rounded-lg p-2 text-center font-black dynamic-q-input" placeholder="0" oninput="calcTotal('no')">
+                    <input type="number" id="no-q-${id}" min="0" class="w-full border rounded-lg p-2 text-center font-black dynamic-q-input focus:ring-2 focus:ring-brand-primary/20 transition-all outline-none" placeholder="0" oninput="calcTotal('no')">
                 </div>`;
             });
             const zSel = document.getElementById('no-zone');
@@ -1511,7 +1422,7 @@
             let content = document.getElementById('bb-content').innerHTML; 
             let title = document.getElementById('bb-title').innerText; 
             let printWindow = window.open('', '', 'width=900,height=700'); 
-            printWindow.document.write(`<html lang="ar" dir="rtl"><head><title>كشف حجوزات - ${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>body { font-family: 'Cairo', sans-serif; padding: 20px; color: #333; } .header-print { text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #333; } h2 { margin: 0; font-size: 24px; font-weight: 900; } table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #94a3b8; padding: 10px; font-size: 14px; text-align: right; } th { background-color: #f1f5f9; font-weight: bold; } .text-center { text-align: center; } .bg-green-50 { background-color: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; display: flex; justify-content: space-around; font-weight: bold; margin-bottom: 20px;} .text-red-600 { color: #dc2626; } i, .bg-brand-bg, .rounded, .border, .shadow-sm { border: none !important; background: transparent !important; box-shadow: none !important; } </style></head><body><div class="header-print"><h2>سمان ههيا - كشف تسليمات</h2><p>اسم الدفعة: <strong>${title}</strong></p></div>${content}<div style="text-align: center; margin-top: 30px; font-size: 12px; color: #666;">تمت الطباعة بواسطة النظام المركزي (CRM)</div><script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); }<\/script></body></html>`); 
+            printWindow.document.write(`<html lang="ar" dir="rtl"><head><title>كشف حجوزات - ${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>body { font-family: 'Cairo', sans-serif; padding: 20px; color: #333; } .header-print { text-align: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #333; } h2 { margin: 0; font-size: 24px; font-weight: 900; } table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #94a3b8; padding: 10px; font-size: 14px; text-align: right; } th { background-color: #f1f5f9; font-weight: bold; } .text-center { text-align: center; } .bg-green-50 { background-color: #f0fdf4; padding: 15px; border-radius: 8px; border: 1px solid #bbf7d0; display: flex; justify-content: space-around; font-weight: margin-bottom: 20px;} .text-red-600 { color: #dc2626; } i, .bg-brand-bg, .rounded, .border, .shadow-sm { border: none !important; background: transparent !important; box-shadow: none !important; } </style></head><body><div class="header-print"><h2>سمان ههيا - كشف تسليمات</h2><p>اسم الدفعة: <strong>${title}</strong></p></div>${content}<div style="text-align: center; margin-top: 30px; font-size: 12px; color: #666;">تمت الطباعة بواسطة النظام المركزي (CRM)</div><script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); }<\/script></body></html>`); 
             printWindow.document.close(); 
         };
 
@@ -1559,11 +1470,11 @@
                 <div class="bg-white p-3 rounded-xl border border-slate-200 mb-3 shadow-sm">
                     <div class="flex justify-between items-start gap-2 mb-2">
                         <div class="flex-1 grid grid-cols-2 md:grid-cols-5 gap-2">
-                            <div><label class="text-[9px] font-bold text-slate-500 block">اسم المنتج</label><input type="text" value="${p.name}" onchange="storeProducts['${id}'].name = this.value" class="w-full border rounded p-1.5 text-xs font-bold text-slate-800"></div>
-                            <div><label class="text-[9px] font-bold text-slate-500 block">الوزن / الوصف</label><input type="text" value="${p.weight||''}" onchange="storeProducts['${id}'].weight = this.value" class="w-full border rounded p-1.5 text-xs font-bold text-slate-800"></div>
-                            <div><label class="text-[9px] font-bold text-slate-500 block">السعر (ج)</label><input type="number" value="${price}" onchange="storePrices['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-1.5 text-xs font-bold text-brand-primary"></div>
-                            <div><label class="text-[9px] font-bold text-slate-500 block">المتاح</label><input type="number" value="${stock}" onchange="storeStock['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-1.5 text-xs font-black text-brand-cyan"></div>
-                            <div><label class="text-[9px] font-bold text-slate-500 block">رابط الصورة</label><input type="text" value="${imgSrc}" onchange="storeProducts['${id}'].images = [this.value]" class="w-full border rounded p-1.5 text-[10px] font-bold text-slate-500" dir="ltr" placeholder="https://..."></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">اسم المنتج</label><input type="text" value="${p.name}" onchange="storeProducts['${id}'].name = this.value" class="w-full border rounded p-1.5 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-primary/20"></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">الوزن / الوصف</label><input type="text" value="${p.weight||''}" onchange="storeProducts['${id}'].weight = this.value" class="w-full border rounded p-1.5 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-primary/20"></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">السعر (ج)</label><input type="number" value="${price}" onchange="storePrices['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-1.5 text-xs font-bold text-brand-primary outline-none focus:ring-2 focus:ring-brand-primary/20"></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">المتاح</label><input type="number" value="${stock}" onchange="storeStock['${id}'] = parseInt(this.value) || 0" class="w-full border rounded p-1.5 text-xs font-black text-brand-cyan outline-none focus:ring-2 focus:ring-brand-primary/20"></div>
+                            <div><label class="text-[9px] font-bold text-slate-500 block">رابط الصورة</label><input type="text" value="${imgSrc}" onchange="storeProducts['${id}'].images = [this.value]" class="w-full border rounded p-1.5 text-[10px] font-bold text-slate-500 outline-none focus:ring-2 focus:ring-brand-primary/20" dir="ltr" placeholder="https://..."></div>
                         </div>
                         <button onclick="deleteProductUI('${id}')" class="w-8 h-8 bg-red-50 text-red-500 rounded flex justify-center items-center hover:bg-red-500 hover:text-white mt-4 shrink-0 transition-colors"><i class="fa-solid fa-trash text-xs"></i></button>
                     </div>
@@ -1572,7 +1483,7 @@
                         <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-orange-600"><input type="checkbox" ${p.isBest?'checked':''} onchange="storeProducts['${id}'].isBest = this.checked" class="accent-orange-500"> الأكثر طلباً 🔥</label>
                         <div class="flex items-center gap-2">
                             <label class="flex items-center gap-1 text-[10px] font-bold cursor-pointer text-red-600"><input type="checkbox" ${p.isDisc?'checked':''} onchange="storeProducts['${id}'].isDisc = this.checked; renderInventoryUI();" class="accent-red-500"> تفعيل سعر مشطوب (خصم)</label>
-                            ${p.isDisc ? `<input type="number" value="${oldPrice}" onchange="storeProducts['${id}'].oldPrice = parseInt(this.value) || 0" class="w-16 border rounded p-1 text-[10px] font-bold text-red-500 text-center line-through" placeholder="السعر">` : ''}
+                            ${p.isDisc ? `<input type="number" value="${oldPrice}" onchange="storeProducts['${id}'].oldPrice = parseInt(this.value) || 0" class="w-16 border rounded p-1 text-[10px] font-bold text-red-500 text-center line-through outline-none focus:ring-2 focus:ring-brand-primary/20" placeholder="السعر">` : ''}
                         </div>
                     </div>
                 </div>`; 
@@ -1611,7 +1522,7 @@
             if(zCont) { 
                 zCont.innerHTML = ''; 
                 (storeSettings.deliveryZones || []).forEach((z, i) => { 
-                    zCont.innerHTML += `<div class="flex gap-2"><input type="text" value="${z.name}" onchange="storeSettings.deliveryZones[${i}].name=this.value" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800" placeholder="المنطقة"><input type="number" value="${z.price}" onchange="storeSettings.deliveryZones[${i}].price=parseInt(this.value)||0" class="w-20 border rounded p-2 text-xs font-bold text-brand-primary" placeholder="السعر"><button onclick="storeSettings.deliveryZones.splice(${i}, 1); renderSettingsUI();" class="w-8 bg-red-50 text-red-500 rounded"><i class="fa-solid fa-trash"></i></button></div>`; 
+                    zCont.innerHTML += `<div class="flex gap-2"><input type="text" value="${z.name}" onchange="storeSettings.deliveryZones[${i}].name=this.value" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-primary/20" placeholder="المنطقة"><input type="number" value="${z.price}" onchange="storeSettings.deliveryZones[${i}].price=parseInt(this.value)||0" class="w-20 border rounded p-2 text-xs font-bold text-brand-primary outline-none focus:ring-2 focus:ring-brand-primary/20" placeholder="السعر"><button onclick="storeSettings.deliveryZones.splice(${i}, 1); renderSettingsUI();" class="w-8 bg-red-50 text-red-500 rounded"><i class="fa-solid fa-trash"></i></button></div>`; 
                 }); 
             } 
             
@@ -1619,7 +1530,7 @@
             if(dCont) { 
                 dCont.innerHTML = ''; 
                 (storeSettings.drivers || []).forEach((d, i) => { 
-                    dCont.innerHTML += `<div class="flex gap-2"><input type="text" value="${d.name}" onchange="storeSettings.drivers[${i}].name=this.value" placeholder="اسم المندوب" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800"><input type="text" value="${d.phone}" onchange="storeSettings.drivers[${i}].phone=this.value" placeholder="رقم الواتساب" class="w-28 border rounded p-2 text-xs font-bold text-slate-800" dir="ltr"><button onclick="storeSettings.drivers.splice(${i}, 1); renderSettingsUI();" class="w-8 bg-red-50 text-red-500 rounded"><i class="fa-solid fa-trash"></i></button></div>`; 
+                    dCont.innerHTML += `<div class="flex gap-2"><input type="text" value="${d.name}" onchange="storeSettings.drivers[${i}].name=this.value" placeholder="اسم المندوب" class="flex-1 border rounded p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-primary/20"><input type="text" value="${d.phone}" onchange="storeSettings.drivers[${i}].phone=this.value" placeholder="رقم الواتساب" class="w-28 border rounded p-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-primary/20" dir="ltr"><button onclick="storeSettings.drivers.splice(${i}, 1); renderSettingsUI();" class="w-8 bg-red-50 text-red-500 rounded"><i class="fa-solid fa-trash"></i></button></div>`; 
                 }); 
             } 
             
@@ -1656,9 +1567,9 @@
             (storeSettings.promoCodes || []).forEach((p, i) => { 
                 pCont.innerHTML += `
                 <div class="flex gap-2 items-center bg-slate-50 p-2 rounded border border-slate-100">
-                    <input type="text" value="${p.code}" onchange="storeSettings.promoCodes[${i}].code=this.value.toUpperCase()" class="w-20 border rounded p-1.5 text-xs text-center font-black uppercase" placeholder="الكود">
-                    <input type="number" value="${p.discount}" onchange="storeSettings.promoCodes[${i}].discount=parseInt(this.value)||0" class="w-16 border rounded p-1.5 text-xs text-center font-bold text-brand-primary" placeholder="قيمة">
-                    <select onchange="storeSettings.promoCodes[${i}].type=this.value" class="flex-1 border rounded p-1.5 text-xs font-bold outline-none">
+                    <input type="text" value="${p.code}" onchange="storeSettings.promoCodes[${i}].code=this.value.toUpperCase()" class="w-20 border rounded p-1.5 text-xs text-center font-black uppercase outline-none focus:ring-2 focus:ring-brand-primary/20" placeholder="الكود">
+                    <input type="number" value="${p.discount}" onchange="storeSettings.promoCodes[${i}].discount=parseInt(this.value)||0" class="w-16 border rounded p-1.5 text-xs text-center font-bold text-brand-primary outline-none focus:ring-2 focus:ring-brand-primary/20" placeholder="قيمة">
+                    <select onchange="storeSettings.promoCodes[${i}].type=this.value" class="flex-1 border rounded p-1.5 text-xs font-bold outline-none focus:ring-2 focus:ring-brand-primary/20">
                         <option value="fixed" ${p.type==='fixed'?'selected':''}>خصم مبلغ</option>
                         <option value="percent" ${p.type==='percent'?'selected':''}>نسبة %</option>
                         <option value="free_delivery" ${p.type==='free_delivery'?'selected':''}>توصيل مجاني</option>
@@ -1726,139 +1637,4 @@
                 ]);
                 alert('تم الحفظ بنجاح! 🚀');
             } catch(e) { 
-                console.error(e); 
-                alert('خطأ في الحفظ!'); 
-            }
-            btn.innerHTML = origHtml; 
-            btn.disabled = false;
-        };
-
-        // === 12. دوال نافذة (تعديل الطلب) الذكية المتطورة ===
-        let editingOrderData = null;
-
-        window.openEditOrderModal = (id) => {
-            editingOrderData = allOrdersRaw.find(o => o.id === id); 
-            if(!editingOrderData) return;
-            
-            document.getElementById('edit-cust-name').innerText = editingOrderData.customerName || 'عميل';
-            const container = document.getElementById('edit-dynamic-order-items'); 
-            container.innerHTML = '';
-            
-            Object.keys(storeProducts).forEach(pId => {
-                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === storeProducts[pId].name) : null;
-                let q = existingItem ? existingItem.quantity : 0;
-                container.innerHTML += `
-                <div class="bg-slate-50 border border-slate-100 p-2 rounded-xl shadow-sm flex flex-col justify-between">
-                    <span class="text-[10px] font-bold text-slate-700 block text-center truncate mb-2">${storeProducts[pId].name}</span>
-                    <div class="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-1">
-                        <button onclick="changeEditQty('${pId}', -1)" class="w-7 h-7 bg-red-50 rounded text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-minus text-[10px]"></i></button>
-                        <input type="number" id="edit-q-${pId}" min="0" value="${q}" class="w-10 border-none bg-transparent text-center font-black text-sm outline-none" oninput="calcEditTotal()">
-                        <button onclick="changeEditQty('${pId}', 1)" class="w-7 h-7 bg-green-50 rounded text-green-600 hover:bg-green-500 hover:text-white transition-colors flex items-center justify-center"><i class="fa-solid fa-plus text-[10px]"></i></button>
-                    </div>
-                </div>`;
-            });
-
-            let bSel = document.getElementById('edit-batch'); 
-            bSel.innerHTML = '<option value="">-- بدون دفعة (أوردر عادي) --</option>';
-            Object.keys(storeBatches).forEach(bId => { 
-                bSel.innerHTML += `<option value="${bId}" ${editingOrderData.batchId === bId ? 'selected' : ''}>${storeBatches[bId].name}</option>`; 
-            });
-            
-            if(document.getElementById('edit-custom-tag')) {
-                document.getElementById('edit-custom-tag').value = editingOrderData.customTag || '';
-            }
-
-            document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0; 
-            document.getElementById('edit-discount').value = editingOrderData.discount || 0; 
-            calcEditTotal(); 
-            openModal('edit-order-modal');
-        };
-
-        window.changeEditQty = (pId, amount) => { 
-            let input = document.getElementById(`edit-q-${pId}`); 
-            let val = parseInt(input.value) || 0; 
-            val += amount; 
-            if(val < 0) val = 0; 
-            input.value = val; 
-            calcEditTotal(); 
-        };
-
-        window.calcEditTotal = () => { 
-            let itemsTotal = 0; 
-            Object.keys(storeProducts).forEach(id => { 
-                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
-                let price = storePrices[id] || storeProducts[id].basePrice || 0; 
-                itemsTotal += (q * price); 
-            }); 
-            document.getElementById('edit-price').value = itemsTotal; 
-            
-            let d = Number(document.getElementById('edit-delivery').value) || 0; 
-            let disc = Number(document.getElementById('edit-discount').value) || 0; 
-            
-            let finalTotal = itemsTotal + d - disc; 
-            if(finalTotal < 0) finalTotal = 0; 
-            document.getElementById('edit-total').value = finalTotal; 
-        };
-
-        window.saveEditedOrder = async () => {
-            if(!editingOrderData) return;
-            let newItems = []; 
-            let newSubtotal = 0;
-            
-            Object.keys(storeProducts).forEach(id => { 
-                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
-                if(q > 0) { 
-                    let price = (storePrices[id] || storeProducts[id].basePrice || 0); 
-                    newItems.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); 
-                    newSubtotal += (q * price); 
-                } 
-            });
-            
-            if(newItems.length === 0) return alert('لا يمكن حفظ طلب فارغ!');
-
-            let newDelivery = Number(document.getElementById('edit-delivery').value) || 0; 
-            let newDiscount = Number(document.getElementById('edit-discount').value) || 0; 
-            let newTotal = Number(document.getElementById('edit-total').value) || 0;
-            let newBatchId = document.getElementById('edit-batch').value; 
-            let newBatchName = newBatchId ? storeBatches[newBatchId].name : '';
-            let newCustomTag = document.getElementById('edit-custom-tag') ? document.getElementById('edit-custom-tag').value.trim() : '';
-            
-            let oldTotal = Number(editingOrderData.total) || 0; 
-            let difference = newTotal - oldTotal;
-            
-            const btn = document.getElementById('btn-save-edit'); 
-            const origHtml = btn.innerHTML; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحديث السيستم...'; 
-            btn.disabled = true;
-
-            try {
-                await db.collection('orders').doc(editingOrderData.id).update({ 
-                    items: newItems, 
-                    subtotal: newSubtotal, 
-                    deliveryFee: newDelivery, 
-                    discount: newDiscount, 
-                    total: newTotal, 
-                    batchId: newBatchId, 
-                    batchName: newBatchName,
-                    customTag: newCustomTag
-                });
-                
-                if(difference !== 0 && editingOrderData.customerPhone) { 
-                    let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; 
-                    await db.collection('customers').doc(cleanPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(difference) }); 
-                }
-                
-                if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { 
-                    await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(difference) }); 
-                }
-                closeModal('edit-order-modal');
-            } catch(e) { 
-                alert("حدث خطأ أثناء حفظ التعديلات!"); 
-            }
-            btn.innerHTML = origHtml; 
-            btn.disabled = false;
-        };
-
-    </script>
-</body>
-</html>
+                console.error(e);
