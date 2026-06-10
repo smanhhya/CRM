@@ -76,12 +76,8 @@
             <button onclick="switchTab('batches', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-layer-group w-6 text-center text-green-400"></i> نظام الدفعات والحجوزات</button>
             <button onclick="switchTab('marketing', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-bullhorn w-6 text-center text-purple-400"></i> التسويق والأكواد</button>
             <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gears w-6 text-center text-slate-400"></i> الإعدادات والتوصيل</button>
-            <button onclick="switchTab('orders-table', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-file-excel w-6 text-center text-green-500"></i> شيت الطلبات (إكسيل)</button>
-            <button onclick="switchTab('visuals', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-palette w-6 text-center text-pink-400"></i> واجهة الموقع والمربعات</button>
-            <button onclick="switchTab('dictionary', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-language w-6 text-center text-red-500"></i> القاموس</button>
             
             <div class="my-2 border-t border-slate-700/50"></div>
-            <button onclick="switchTab('advanced', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-gear w-6 text-center text-orange-500"></i> متقدم</button>
             <button onclick="switchTab('trash', this)" class="nav-btn w-full text-right flex items-center px-4 py-2 rounded-xl text-sm font-bold hover:bg-slate-800 hover:text-white text-slate-400"><i class="fa-solid fa-trash-can w-6 text-center text-red-500"></i> سلة المحذوفات</button>
         </nav>
         <div class="p-4 border-t border-slate-800 bg-slate-900 shrink-0">
@@ -114,7 +110,6 @@
             </div>
 
             <div id="view-orders" class="page-view h-full flex flex-col">
-                
                 <div id="batch-summary-panel" class="bg-white p-3 rounded-2xl shadow-sm border border-slate-200 mb-4 flex flex-wrap gap-2">
                     <p class="text-[10px] font-bold text-slate-400 w-full mb-1">التحليل التفصيلي للطلبات:</p>
                     <div class="text-xs text-slate-500 font-bold">جاري التحميل...</div>
@@ -242,7 +237,6 @@
                         <label class="flex items-center gap-2 mb-4 font-bold text-xs bg-slate-50 p-2 rounded-lg border border-slate-100"><input type="checkbox" id="mkt-show-promo" class="accent-brand-primary w-4 h-4"> إظهار خانة "عندك كود خصم؟" للعميل في المتجر</label>
                         <div id="promos-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1 max-h-[500px]"></div>
                     </div>
-
                 </div>
             </div>
 
@@ -290,58 +284,6 @@
                 </div>
             </div>
 
-            <div id="view-orders-table" class="page-view h-full flex flex-col space-y-4">
-                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-sm shrink-0">
-                    <div>
-                        <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-table text-green-600 mr-2"></i> جدول الطلبات الشامل</h3>
-                        <p class="text-xs text-slate-500 font-bold mt-1">عرض كلاسيكي للطلبات مع إمكانية التصدير</p>
-                    </div>
-                    <button onclick="exportOrdersToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-green-700 flex items-center gap-2"><i class="fa-solid fa-file-csv"></i> تحميل إكسيل (CSV)</button>
-                </div>
-                <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col">
-                    <div class="overflow-x-auto custom-scroll flex-1">
-                        <table class="w-full text-right text-sm whitespace-nowrap">
-                            <thead class="bg-slate-50 text-slate-500 sticky top-0 z-10 border-b border-slate-200">
-                                <tr>
-                                    <th class="py-3 px-4 font-bold">التاريخ</th>
-                                    <th class="py-3 px-4 font-bold">العميل</th>
-                                    <th class="py-3 px-4 font-bold text-center">الرقم</th>
-                                    <th class="py-3 px-4 font-bold text-center">العنوان</th>
-                                    <th class="py-3 px-4 font-bold text-center">الأصناف</th>
-                                    <th class="py-3 px-4 font-bold text-center">الإجمالي</th>
-                                    <th class="py-3 px-4 font-bold text-center">الحالة</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orders-table-tbody" class="divide-y divide-slate-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div id="view-visuals" class="page-view space-y-6">
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-l-4 border-l-brand-primary">
-                    <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-shield-halved text-brand-primary mr-2"></i> المربعات الأربعة (عناصر الثقة)</h3>
-                    <p class="text-xs text-slate-500 font-bold mb-4">النصوص التي تظهر أسفل السلايدر في المتجر للزباين.</p>
-                    <div id="trust-badges-container" class="space-y-3"></div>
-                </div>
-            </div>
-
-            <div id="view-dictionary" class="page-view space-y-6">
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-t-4 border-t-red-600">
-                    <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-book text-red-600 mr-2"></i> قاموس نصوص الواجهة</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">إجمالي السلة (الشريط السفلي)</label><input type="text" id="dict-cart-total" placeholder="الإجمالي (بدون التوصيل)" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-red-500 text-center"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">زر عرض السلة</label><input type="text" id="dict-cart-btn" placeholder="عرض السلة" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-red-500 text-center"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">عنوان إتمام الحجز</label><input type="text" id="dict-checkout-title" placeholder="سلة المشتريات" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-red-500 text-center"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">زر تفعيل الخصم</label><input type="text" id="dict-promo-btn" placeholder="تفعيل" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-red-500 text-center"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">قيمة الطلبات</label><input type="text" id="dict-orders-value" placeholder="قيمة الطلبات:" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-red-500 text-center"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">مصاريف التوصيل</label><input type="text" id="dict-delivery-fee" placeholder="مصاريف التوصيل:" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-red-500 text-center"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">الإجمالي المطلوب</label><input type="text" id="dict-final-total" placeholder="الإجمالي النهائي:" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-red-500 text-center"></div>
-                        <div><label class="text-xs font-bold text-slate-500 block mb-1">رسالة السلة الفارغة</label><input type="text" id="dict-empty-cart" placeholder="سلة مشترياتك فارغة!" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-red-500 text-center"></div>
-                    </div>
-                </div>
-            </div>
-
             <div id="view-trash" class="page-view h-full flex flex-col space-y-4">
                 <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-red-200 shadow-sm shrink-0 border-r-4 border-r-red-500">
                     <div>
@@ -351,55 +293,6 @@
                     <button onclick="renderTrashUI()" class="bg-slate-100 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-slate-200 flex items-center gap-2"><i class="fa-solid fa-rotate-right"></i> تحديث السلة</button>
                 </div>
                 <div id="trash-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1"></div>
-            </div>
-
-            <div id="view-advanced" class="page-view space-y-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-orange-500">
-                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-gear text-orange-500 mr-2"></i> إعدادات متقدمة</h3>
-                        <div class="space-y-4">
-                            <div><label class="text-xs font-bold text-slate-500 block mb-1">رسالة حجز الـ VIP</label><textarea id="adv-vip-msg" rows="2" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-orange-500"></textarea></div>
-                            <div><label class="text-xs font-bold text-slate-500 block mb-1">هاشتاج الدفعة (يكتب هكذا: #دفعة_الخميس)</label><input type="text" id="adv-batch-hashtag" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-orange-500"></div>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-brand-cyan">
-                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-lightbulb text-brand-cyan mr-2"></i> الاقتراح الذكي (Cross-sell)</h3>
-                        <p class="text-[10px] font-bold text-slate-400 mb-3">اقترح منتج معين للعميل قبل إتمام الشراء لزيادة المبيعات.</p>
-                        <label class="flex items-center gap-2 mb-3 font-bold text-xs"><input type="checkbox" id="adv-crosssell-active" class="accent-brand-primary w-4 h-4"> تفعيل نافذة الاقتراح للعميل</label>
-                        <label class="text-xs font-bold text-slate-500 block mb-1">اختر المنتج المقترح:</label>
-                        <select id="adv-crosssell-product" class="w-full border rounded-lg p-2.5 font-bold outline-none bg-slate-50 focus:border-brand-primary"></select>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-yellow-500">
-                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-images text-yellow-500 mr-2"></i> صور الكتالوج (السلايدر)</h3>
-                        <div id="gallery-list-container" class="space-y-2 mb-3"></div>
-                        <button onclick="addNewGalleryImage()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-lg transition-colors shadow-sm"><i class="fa-solid fa-plus"></i> إضافة صورة جديدة</button>
-                    </div>
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm border-r-4 border-r-purple-500">
-                        <h3 class="font-black text-slate-800 text-lg mb-4"><i class="fa-solid fa-palette text-purple-500 mr-2"></i> ألوان المتجر</h3>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                <label class="text-xs font-bold text-slate-700">اللون الأساسي (أخضر)</label>
-                                <input type="color" id="theme-color-main" class="w-10 h-8 border-0 rounded cursor-pointer bg-transparent">
-                            </div>
-                            <div class="flex items-center justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                <label class="text-xs font-bold text-slate-700">لون الأزرار / التميز (أحمر)</label>
-                                <input type="color" id="theme-color-accent" class="w-10 h-8 border-0 rounded cursor-pointer bg-transparent">
-                            </div>
-                            <button onclick="resetThemeColors()" class="w-full mt-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 rounded-lg shadow-sm transition-colors">استعادة ألوان سمان ههيا الأصلية</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-red-50 rounded-2xl p-5 border border-red-200 shadow-sm">
-                    <h3 class="font-black text-red-700 text-lg mb-4 text-center"><i class="fa-solid fa-triangle-exclamation mr-2"></i> منطقة الخطر</h3>
-                    <div class="space-y-3">
-                        <button onclick="resetStatsDanger()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black py-3 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-chart-line"></i> تصفير الإحصائيات</button>
-                        <button onclick="deleteAllOrdersDanger()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"><i class="fa-solid fa-trash-can"></i> مسح جميع سجلات الطلبات</button>
-                    </div>
-                </div>
             </div>
 
         </div>
@@ -585,8 +478,13 @@
     <script>
         // === 1. متغيرات النظام ===
         let storeSettings = { deliveryZones: [], drivers: [], promoCodes: [], storeOpen: true };
-        let storeProducts = {}; let storePrices = {}; let storeStock = {}; let storeBatches = {};
-        let customersData = []; let allOrdersRaw = []; let dispatchOrdersRaw = [];
+        let storeProducts = {}; 
+        let storePrices = {}; 
+        let storeStock = {}; 
+        let storeBatches = {};
+        let customersData = []; 
+        let allOrdersRaw = []; 
+        let dispatchOrdersRaw = [];
         let currentOrderTab = 'all';
 
         const firebaseConfig = { 
@@ -623,7 +521,7 @@
             document.getElementById('header-title').innerText = btnElement.innerText.trim();
             
             const saveBtn = document.getElementById('global-save-btn');
-            if(['inventory', 'settings', 'marketing', 'batches', 'visuals', 'dictionary', 'advanced'].includes(tabId)) {
+            if(['inventory', 'settings', 'marketing', 'batches'].includes(tabId)) {
                 saveBtn.classList.remove('hidden'); 
             } else { 
                 saveBtn.classList.add('hidden'); 
@@ -677,9 +575,6 @@
                 renderMarketingUI(); 
                 generateDynamicOrderInputs(); 
                 renderBatchesUI();
-                renderTrustBadges(); 
-                renderDictionaryUI(); 
-                renderAdvancedUI();   
             });
 
             db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
@@ -703,7 +598,6 @@
                 ['new', 'processing', 'completed'].forEach(s => { let b = document.getElementById(`badge-${s}`); if(b) b.innerText = counts[s]; });
                 
                 renderOrdersList();
-                renderOrdersTable();
                 updateBatchSummary();
             });
 
@@ -1650,7 +1544,7 @@
             btn.innerHTML = '<i class="fa-solid fa-file-import text-green-400"></i> <span class="hidden md:inline">استيراد تيك تيك</span>'; 
         };
 
-        // === 11. دوال واجهات التحكم والخصائص الإضافية المتقدمة ===
+        // === 11. دوال الإعدادات والمخزون ===
         function renderInventoryUI() { 
             const cont = document.getElementById('products-list-container'); if(!cont) return; 
             cont.innerHTML = ''; 
@@ -1816,33 +1710,7 @@
                     storeSettings.whatsappTemplate = document.getElementById('admin-whatsapp-template').value; 
                     storeSettings.dispatchTemplate = document.getElementById('admin-dispatch-template').value; 
                     storeSettings.ticktickTemplate = document.getElementById('admin-ticktick-template').value; 
-                }
-                
-                if(document.getElementById('trust-badges-container') && storeSettings.trustBadges) { 
-                    storeSettings.trustBadges = storeSettings.trustBadges.map(b => ({ icon: b.icon || '', title: b.title || '', desc: b.desc || '' })); 
-                }
-                
-                if(document.getElementById('dict-cart-total')) { 
-                    storeSettings.dictionary = { 
-                        cartTotal: document.getElementById('dict-cart-total').value.trim(), 
-                        cartBtn: document.getElementById('dict-cart-btn').value.trim(), 
-                        checkoutTitle: document.getElementById('dict-checkout-title').value.trim(), 
-                        promoBtn: document.getElementById('dict-promo-btn').value.trim(), 
-                        ordersValue: document.getElementById('dict-orders-value').value.trim(), 
-                        deliveryFee: document.getElementById('dict-delivery-fee').value.trim(), 
-                        finalTotal: document.getElementById('dict-final-total').value.trim(), 
-                        emptyCart: document.getElementById('dict-empty-cart').value.trim() 
-                    }; 
-                }
-                
-                if(document.getElementById('adv-vip-msg')) { 
-                    storeSettings.vipMessage = document.getElementById('adv-vip-msg').value.trim(); 
-                    storeSettings.batchHashtag = document.getElementById('adv-batch-hashtag') ? document.getElementById('adv-batch-hashtag').value.trim() : ''; 
-                    storeSettings.crossSellActive = document.getElementById('adv-crosssell-active').checked; 
-                    storeSettings.crossSellProductId = document.getElementById('adv-crosssell-product').value; 
-                    storeSettings.galleryImages = (storeSettings.galleryImages || []).filter(img => img.trim() !== ''); 
-                    storeSettings.themeColorMain = document.getElementById('theme-color-main').value; 
-                    storeSettings.themeColorAccent = document.getElementById('theme-color-accent').value; 
+                    storeSettings.batchHashtag = document.getElementById('admin-batch-hashtag').value; 
                 }
 
                 storeSettings.deliveryZones = (storeSettings.deliveryZones || []).filter(z => z && z.name && z.name.trim() !== ''); 
@@ -1865,96 +1733,7 @@
             btn.disabled = false;
         };
 
-        function renderDictionaryUI() { 
-            if(!document.getElementById('dict-cart-total')) return; 
-            const d = storeSettings.dictionary || {}; 
-            document.getElementById('dict-cart-total').value = d.cartTotal || ''; 
-            document.getElementById('dict-cart-btn').value = d.cartBtn || ''; 
-            document.getElementById('dict-checkout-title').value = d.checkoutTitle || ''; 
-            document.getElementById('dict-promo-btn').value = d.promoBtn || ''; 
-            document.getElementById('dict-orders-value').value = d.ordersValue || ''; 
-            document.getElementById('dict-delivery-fee').value = d.deliveryFee || ''; 
-            document.getElementById('dict-final-total').value = d.finalTotal || ''; 
-            document.getElementById('dict-empty-cart').value = d.emptyCart || ''; 
-        }
-
-        function renderAdvancedUI() { 
-            if(!document.getElementById('adv-vip-msg')) return; 
-            document.getElementById('adv-vip-msg').value = storeSettings.vipMessage || 'السلام عليكم، أريد الانضمام لقائمة الـ VIP وحجز ({اسم_المنتج}) من الدفعة القادمة قبل نزولها المتجر. 👑'; 
-            document.getElementById('adv-batch-hashtag').value = storeSettings.batchHashtag || '';
-            
-            document.getElementById('adv-crosssell-active').checked = storeSettings.crossSellActive || false; 
-            const csSelect = document.getElementById('adv-crosssell-product'); 
-            csSelect.innerHTML = '<option value="">-- بدون اقتراح --</option>'; 
-            Object.keys(storeProducts).forEach(id => { 
-                csSelect.innerHTML += `<option value="${id}" ${storeSettings.crossSellProductId === id ? 'selected' : ''}>${storeProducts[id].name}</option>`; 
-            });
-            
-            const gCont = document.getElementById('gallery-list-container'); 
-            if(!storeSettings.galleryImages) storeSettings.galleryImages = ["all-sizes.jpg"]; 
-            gCont.innerHTML = storeSettings.galleryImages.map((img, i) => `
-                <div class="flex gap-2 items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
-                    <span class="font-black text-slate-400 text-[10px] w-4">${i+1}</span>
-                    <input type="text" value="${img}" onchange="storeSettings.galleryImages[${i}]=this.value.trim()" class="flex-1 border rounded p-1.5 text-[10px] font-bold outline-none" dir="ltr" placeholder="رابط الصورة">
-                    <button onclick="storeSettings.galleryImages.splice(${i}, 1); renderAdvancedUI();" class="text-red-500 hover:bg-red-100 w-6 h-6 flex items-center justify-center rounded transition-colors"><i class="fa-solid fa-trash text-xs"></i></button>
-                </div>
-            `).join('');
-            
-            document.getElementById('theme-color-main').value = storeSettings.themeColorMain || '#1b4332'; 
-            document.getElementById('theme-color-accent').value = storeSettings.themeColorAccent || '#b91c1c'; 
-        }
-
-        window.addNewGalleryImage = () => { 
-            if(!storeSettings.galleryImages) storeSettings.galleryImages = []; 
-            storeSettings.galleryImages.push(""); 
-            renderAdvancedUI(); 
-        };
-
-        window.resetThemeColors = () => { 
-            document.getElementById('theme-color-main').value = '#1b4332'; 
-            document.getElementById('theme-color-accent').value = '#b91c1c'; 
-            alert('تم استعادة الألوان. لا تنسى ضغط "حفظ التعديلات".'); 
-        };
-
-        window.resetStatsDanger = async () => { 
-            const confirmText = prompt('تحذير: سيتم تصفير أرقام (المبيعات) و (الطلبات) في لوحة التحكم الرئيسية.\nللتأكيد، اكتب كلمة: تصفير'); 
-            if(confirmText !== 'تصفير') return alert('تم إلغاء العملية.'); 
-            try { 
-                await db.collection('inventory').doc('stats').set({ sales: 0, orders: 0 }); 
-                alert('تم تصفير الإحصائيات بنجاح!'); 
-            } catch(e) { 
-                alert('حدث خطأ!'); 
-            } 
-        };
-
-        window.deleteAllOrdersDanger = async () => { 
-            const confirmText = prompt('🚨 تحذير خطير 🚨\nسيتم مسح جميع سجلات الطلبات نهائياً من قاعدة البيانات!\nللتأكيد، اكتب: مسح نهائي'); 
-            if(confirmText !== 'مسح نهائي') return alert('تم إلغاء العملية بأمان.'); 
-            
-            const btn = document.querySelector('button[onclick="deleteAllOrdersDanger()"]'); 
-            const origHtml = btn.innerHTML; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المسح...'; 
-            
-            try { 
-                const snap = await db.collection('orders').get(); 
-                const batches = []; 
-                let currentBatch = db.batch(); 
-                let count = 0; 
-                snap.forEach(doc => { 
-                    currentBatch.delete(doc.ref); 
-                    count++; 
-                    if(count === 400) { batches.push(currentBatch.commit()); currentBatch = db.batch(); count = 0; } 
-                }); 
-                if(count > 0) batches.push(currentBatch.commit()); 
-                await Promise.all(batches); 
-                alert('تم مسح جميع الطلبات بنجاح وموقعك الآن صفحة بيضاء!'); 
-            } catch(e) { 
-                alert('حدث خطأ أثناء المسح!'); 
-            } 
-            btn.innerHTML = origHtml; 
-        };
-
-        // === 12. دوال نافذة (تعديل الطلب) الذكية المتطورة مع الدفعات الحية ===
+        // === 12. دوال نافذة (تعديل الطلب) الذكية المتطورة ===
         let editingOrderData = null;
 
         window.openEditOrderModal = (id) => {
@@ -2080,57 +1859,6 @@
             btn.disabled = false;
         };
 
-        function renderTrustBadges() { 
-            const cont = document.getElementById('trust-badges-container'); 
-            if(!cont) return; 
-            if(!storeSettings.trustBadges) { 
-                storeSettings.trustBadges = [ 
-                    {icon: 'fa-regular fa-circle-check', title: 'أوزان دقيقة', desc: 'زي ما طلبت'}, 
-                    {icon: 'fa-regular fa-star', title: 'طلبك باسمك', desc: 'استيكر مخصص'}, 
-                    {icon: 'fa-regular fa-clock', title: 'تجهيز يومي', desc: 'طازج'}, 
-                    {icon: 'fa-solid fa-shield-halved', title: 'تغليف آمن', desc: 'أطباق صحية'} 
-                ]; 
-            } 
-            cont.innerHTML = storeSettings.trustBadges.map((b, i) => `
-                <div class="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100"> 
-                    <span class="font-black text-slate-400 text-xs w-6 text-center">${i+1}</span> 
-                    <input type="text" value="${b.icon}" onchange="storeSettings.trustBadges[${i}].icon=this.value" class="w-1/4 border rounded p-2 text-[10px] font-bold" placeholder="أيقونة" dir="ltr"> 
-                    <input type="text" value="${b.title}" onchange="storeSettings.trustBadges[${i}].title=this.value" class="flex-1 border rounded p-2 text-xs font-bold" placeholder="العنوان"> 
-                    <input type="text" value="${b.desc}" onchange="storeSettings.trustBadges[${i}].desc=this.value" class="flex-1 border rounded p-2 text-xs font-bold" placeholder="الوصف"> 
-                </div> 
-            `).join(''); 
-        }
-
-        function renderOrdersTable() { 
-            const tbody = document.getElementById('orders-table-tbody'); 
-            if(!tbody) return; 
-            tbody.innerHTML = allOrdersRaw.map(o => `
-                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50"> 
-                    <td class="py-2 px-4 text-xs text-slate-500 font-bold">${o.orderDate || ''}</td> 
-                    <td class="py-2 px-4 text-sm font-black text-slate-800">${o.customerName || ''}</td> 
-                    <td class="py-2 px-4 text-center text-xs font-bold text-slate-600" dir="ltr">${o.customerPhone || ''}</td> 
-                    <td class="py-2 px-4 text-center text-[10px] font-bold text-slate-500">${o.zone || ''} ${o.customerAddress ? '- ' + o.customerAddress : ''}</td> 
-                    <td class="py-2 px-4 text-center text-xs font-bold text-brand-primary">${o.items ? o.items.map(i => i.quantity + 'x ' + i.name).join('، ') : ''}</td> 
-                    <td class="py-2 px-4 text-center text-sm font-black text-slate-800">${o.total || 0} ج</td> 
-                    <td class="py-2 px-4 text-center text-[10px] font-bold">${o.status === 'new' ? 'جديد' : (o.status === 'processing' ? 'قيد التجهيز' : (o.status === 'completed' ? 'مكتمل' : 'ملغي'))}</td> 
-                </tr> 
-            `).join(''); 
-        }
-
-        window.exportOrdersToExcel = () => { 
-            if(allOrdersRaw.length === 0) return alert("لا توجد طلبات للتصدير!"); 
-            let csv = "التاريخ,العميل,الرقم,المنطقة,العنوان,الأصناف,الإجمالي,الحالة\n"; 
-            allOrdersRaw.forEach(o => { 
-                let itemsStr = o.items ? o.items.map(i => `${i.quantity}x ${i.name}`).join(' - ') : ''; 
-                let statusAr = o.status === 'new' ? 'جديد' : (o.status === 'processing' ? 'قيد التجهيز' : (o.status === 'completed' ? 'مكتمل' : 'ملغي')); 
-                csv += `${o.orderDate},${o.customerName},${o.customerPhone},${o.zone || ''},${o.customerAddress || ''},"${itemsStr}",${o.total},${statusAr}\n`; 
-            }); 
-            const blob = new Blob(["\ufeff", csv], { type: 'text/csv;charset=utf-8;' }); 
-            const link = document.createElement("a"); 
-            link.href = URL.createObjectURL(blob); 
-            link.download = `Saman_Orders_${new Date().toLocaleDateString('en-GB')}.csv`; 
-            link.click(); 
-        };
     </script>
 </body>
 </html>
