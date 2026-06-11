@@ -37,8 +37,10 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
+
         body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; overflow: hidden; -webkit-font-smoothing: antialiased; }
         .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -492,16 +494,36 @@
     </div>
 
     <div id="analysis-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[80] hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh]">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-6xl overflow-hidden flex flex-col max-h-[95vh]">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h3 class="text-xl font-black text-indigo-700"><i class="fa-solid fa-chart-pie text-indigo-500 mr-2"></i> التحليل التفصيلي للطلبات الحية</h3>
-                <button onclick="closeModal('analysis-modal')" class="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <div class="flex items-center gap-3">
+                    <h3 id="analysis-title" class="text-xl font-black text-indigo-700"><i class="fa-solid fa-chart-pie text-indigo-500 mr-2"></i> التحليل التفصيلي للطلبات الحية</h3>
+                    <button id="btn-back-analysis" onclick="renderAnalysisModal()" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm flex items-center gap-2"><i class="fa-solid fa-arrow-right"></i> عرض كل الطلبات</button>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="printPrepList()" class="bg-indigo-50 text-indigo-600 px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2 active:scale-95"><i class="fa-solid fa-clipboard-list"></i> طباعة أمر تجهيز</button>
+                    <button onclick="closeModal('analysis-modal')" class="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
             </div>
             <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/80">
-                <div id="batch-summary-panel" class="flex flex-wrap gap-4"></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="analysis-kpis"></div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 flex flex-col gap-3" id="analysis-batches-list"></div>
+                    <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col">
+                            <h4 class="text-xs font-black text-slate-500 mb-4 text-center bg-slate-50 p-2 rounded-lg">توزيع الأصناف المطلوبة</h4>
+                            <div class="flex-1 relative min-h-[250px]"><canvas id="itemsChart"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col">
+                            <h4 class="text-xs font-black text-slate-500 mb-4 text-center bg-slate-50 p-2 rounded-lg">الكثافة الجغرافية (المناطق)</h4>
+                            <div class="flex-1 relative min-h-[250px]"><canvas id="zonesChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
 
 
     <script>
@@ -726,47 +748,181 @@
             window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, '_blank');
         };
 
+        let currentAnalysisBatch = null;
+        let itemsChartInstance = null;
+        let zonesChartInstance = null;
+
         window.updateBatchSummary = () => {
-            const panel = document.getElementById('batch-summary-panel'); if(!panel) return;
-            let summary = {};
+            if(!document.getElementById('analysis-modal').classList.contains('hidden')) {
+                renderAnalysisModal(currentAnalysisBatch);
+            }
+        };
+
+        window.openAnalysisModal = () => {
+            currentAnalysisBatch = null;
+            openModal('analysis-modal');
+            renderAnalysisModal();
+        };
+
+        window.renderAnalysisModal = (filterBatchName = null) => {
+            currentAnalysisBatch = filterBatchName;
             
+            const backBtn = document.getElementById('btn-back-analysis');
+            const titleEl = document.getElementById('analysis-title');
+            if(filterBatchName) {
+                backBtn.classList.remove('hidden');
+                titleEl.innerHTML = `<i class="fa-solid fa-filter text-indigo-500 mr-2"></i> تحليل: ${filterBatchName}`;
+            } else {
+                backBtn.classList.add('hidden');
+                titleEl.innerHTML = `<i class="fa-solid fa-chart-pie text-indigo-500 mr-2"></i> التحليل التفصيلي للطلبات الحية`;
+            }
+
+            let ordersToAnalyze = [];
+            let batchesList = {}; 
+
             allOrdersRaw.forEach(o => {
                 if(o.status !== 'trash' && o.status !== 'canceled') {
-                    let bName = o.batchName ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
+                    let bName = o.batchName ? o.batchName : (o.customTag ? `تاج: ${o.customTag}` : "أوردرات عادية");
                     
-                    if(!summary[bName]) summary[bName] = { count: 0, items: {} };
-                    summary[bName].count++;
+                    if(!batchesList[bName]) batchesList[bName] = { count: 0, totalMoney: 0, batchId: o.batchId };
+                    batchesList[bName].count++;
+                    batchesList[bName].totalMoney += (Number(o.total) || 0);
 
-                    if(o.items && Array.isArray(o.items)){
-                        o.items.forEach(i => {
-                            summary[bName].items[i.name] = (summary[bName].items[i.name] || 0) + i.quantity;
-                        });
+                    if(!filterBatchName || bName === filterBatchName) {
+                        ordersToAnalyze.push(o);
                     }
                 }
             });
 
-            if(Object.keys(summary).length === 0) {
-                panel.innerHTML = `<div class="w-full text-center py-12 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-2xl">لا توجد طلبات حية للتحليل حالياً.</div>`;
-                return;
+            let totalMoney = 0;
+            let totalUnits = 0;
+            let itemsCount = {};
+            let zonesCount = {};
+
+            ordersToAnalyze.forEach(o => {
+                totalMoney += (Number(o.total) || 0);
+                let zName = o.zone || 'غير محدد';
+                zonesCount[zName] = (zonesCount[zName] || 0) + 1;
+
+                if(o.items && Array.isArray(o.items)){
+                    o.items.forEach(i => {
+                        itemsCount[i.name] = (itemsCount[i.name] || 0) + i.quantity;
+                        totalUnits += i.quantity;
+                    });
+                }
+            });
+
+            let avgOrder = ordersToAnalyze.length > 0 ? Math.round(totalMoney / ordersToAnalyze.length) : 0;
+            let bestSellerName = "لا يوجد";
+            let bestSellerQty = 0;
+            Object.keys(itemsCount).forEach(k => {
+                if(itemsCount[k] > bestSellerQty) { bestSellerQty = itemsCount[k]; bestSellerName = k; }
+            });
+
+            document.getElementById('analysis-kpis').innerHTML = `
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-soft flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-xl"><i class="fa-solid fa-boxes-stacked"></i></div>
+                    <div><p class="text-[10px] font-bold text-slate-400">إجمالي الوحدات المطلوبة</p><h4 class="text-xl font-black text-slate-800">${totalUnits} <span class="text-xs">وحدة</span></h4></div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-soft flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center text-xl"><i class="fa-solid fa-sack-dollar"></i></div>
+                    <div><p class="text-[10px] font-bold text-slate-400">حجم التحصيل المتوقع</p><h4 class="text-xl font-black text-slate-800">${totalMoney.toLocaleString()} <span class="text-xs">ج</span></h4></div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-soft flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center text-xl"><i class="fa-solid fa-chart-line"></i></div>
+                    <div><p class="text-[10px] font-bold text-slate-400">متوسط قيمة الأوردر</p><h4 class="text-xl font-black text-slate-800">${avgOrder} <span class="text-xs">ج</span></h4></div>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-soft flex items-center gap-4 overflow-hidden">
+                    <div class="w-12 h-12 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-crown"></i></div>
+                    <div class="min-w-0"><p class="text-[10px] font-bold text-slate-400">الأكثر طلباً (Best Seller)</p><h4 class="text-sm font-black text-slate-800 truncate" title="${bestSellerName}">${bestSellerName}</h4><p class="text-[10px] font-bold text-purple-600">${bestSellerQty} طلب</p></div>
+                </div>
+            `;
+
+            let sidebarHtml = '';
+            if(Object.keys(batchesList).length === 0) {
+                sidebarHtml = `<div class="bg-white p-5 rounded-2xl border border-slate-100 text-center text-slate-400 font-bold text-sm">لا توجد طلبات حية حالياً.</div>`;
+            } else {
+                sidebarHtml = Object.keys(batchesList).map(bName => {
+                    let b = batchesList[bName];
+                    let isActive = currentAnalysisBatch === bName;
+                    let bgClass = isActive ? 'bg-indigo-50 border-indigo-200 shadow-md scale-[1.02]' : 'bg-white border-slate-100 hover:bg-slate-50 hover:border-indigo-100';
+                    let editBtn = '';
+                    if(isActive && b.batchId) {
+                        editBtn = `<div class="mt-3 pt-3 border-t border-indigo-100"><button onclick="closeModal('analysis-modal'); switchTab('batches', document.querySelector('[onclick=\\'switchTab(\\'batches\\', this)\\']'));" class="w-full bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-indigo-700 transition-colors"><i class="fa-solid fa-sliders mr-1"></i> إدارة إعدادات الدفعة</button></div>`;
+                    }
+                    
+                    return `
+                    <div class="p-4 rounded-2xl border cursor-pointer transition-all ${bgClass}" onclick="renderAnalysisModal('${bName}')">
+                        <div class="flex justify-between items-center mb-1">
+                            <h5 class="font-black text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid ${isActive ? 'fa-folder-open text-indigo-500' : 'fa-folder text-slate-400'}"></i> ${bName}</h5>
+                            <span class="text-[10px] font-black bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">${b.count} أوردر</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-500">التحصيل: ${b.totalMoney.toLocaleString()} ج</p>
+                        ${editBtn}
+                    </div>`;
+                }).join('');
+            }
+            document.getElementById('analysis-batches-list').innerHTML = `<h4 class="text-xs font-black text-slate-500 uppercase tracking-wide bg-slate-200/50 p-2 rounded-xl text-center mb-1">فلترة بالدفعة والتاج</h4>` + sidebarHtml;
+
+            if(itemsChartInstance) itemsChartInstance.destroy();
+            if(zonesChartInstance) zonesChartInstance.destroy();
+
+            const ctxItems = document.getElementById('itemsChart').getContext('2d');
+            const ctxZones = document.getElementById('zonesChart').getContext('2d');
+
+            itemsChartInstance = new Chart(ctxItems, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(itemsCount),
+                    datasets: [{
+                        data: Object.values(itemsCount),
+                        backgroundColor: ['#166534', '#f59e0b', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#f43f5e'],
+                        borderWidth: 0, hoverOffset: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', rtl: true, labels: { font: { family: 'Cairo', weight: 'bold', size: 10 } } } } }
+            });
+
+            let sortedZones = Object.keys(zonesCount).sort((a,b) => zonesCount[b] - zonesCount[a]);
+            let sortedZoneValues = sortedZones.map(z => zonesCount[z]);
+
+            zonesChartInstance = new Chart(ctxZones, {
+                type: 'bar',
+                data: {
+                    labels: sortedZones,
+                    datasets: [{ label: 'عدد الأوردرات', data: sortedZoneValues, backgroundColor: '#6366f1', borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Cairo' } } }, x: { ticks: { font: { family: 'Cairo', weight: 'bold', size: 10 } } } }, plugins: { legend: { display: false } } }
+            });
+        };
+
+        window.printPrepList = () => {
+            let title = currentAnalysisBatch ? `أمر تجهيز - ${currentAnalysisBatch}` : "أمر تجهيز مجمع (كل الطلبات الحية)";
+            let ordersToPrint = allOrdersRaw.filter(o => o.status !== 'trash' && o.status !== 'canceled');
+            
+            if(currentAnalysisBatch) {
+                ordersToPrint = ordersToPrint.filter(o => {
+                    let bName = o.batchName ? o.batchName : (o.customTag ? `تاج: ${o.customTag}` : "أوردرات عادية");
+                    return bName === currentAnalysisBatch;
+                });
             }
 
-            panel.innerHTML = Object.keys(summary).map(bName => {
-                let itemsHtml = Object.keys(summary[bName].items).map(itemName => 
-                    `<span class="bg-white text-slate-600 border border-slate-100 px-3 py-1.5 rounded-lg inline-block whitespace-nowrap shadow-sm text-xs"><span class="text-indigo-600 font-black">${summary[bName].items[itemName]}x</span> ${itemName}</span>`
-                ).join(' ');
+            let itemsCount = {};
+            ordersToPrint.forEach(o => {
+                if(o.items && Array.isArray(o.items)){
+                    o.items.forEach(i => { itemsCount[i.name] = (itemsCount[i.name] || 0) + i.quantity; });
+                }
+            });
 
-                return `
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 border-r-4 border-r-indigo-400 flex flex-col gap-4 w-full md:w-[calc(50%-0.5rem)] shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-center pb-2 border-b border-slate-50">
-                        <span class="text-sm font-black text-slate-800"><i class="fa-solid fa-chart-line text-indigo-400 mr-1.5"></i> ${bName}</span>
-                        <span class="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">${summary[bName].count} أوردر</span>
-                    </div>
-                    <div class="flex flex-wrap gap-2 leading-relaxed">
-                        ${itemsHtml || '<span class="text-slate-400 text-xs font-bold">لا توجد أصناف مسجلة</span>'}
-                    </div>
-                </div>`;
-            }).join('');
+            if(Object.keys(itemsCount).length === 0) return alert("لا توجد كميات مطلوبة للطباعة!");
+
+            let tableRows = Object.keys(itemsCount).map(k => `<tr><td>${k}</td><td class="font-black text-xl">${itemsCount[k]}</td></tr>`).join('');
+
+            let printWindow = window.open('', '', 'width=600,height=600'); 
+            printWindow.document.write(`<html lang="ar" dir="rtl"><head><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>body { font-family: 'Cairo', sans-serif; padding: 30px; color: #000; } h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; } table { width: 100%; border-collapse: collapse; margin-bottom: 30px; } th, td { border: 1px solid #000; padding: 12px; text-align: center; font-size: 18px; } th { background-color: #f0f0f0; } .font-black { font-weight: 900; } .footer { text-align: center; font-size: 12px; color: #666; }</style></head><body><h2>${title}</h2><table><thead><tr><th>اسم الصنف</th><th>الكمية المطلوبة للتجهيز</th></tr></thead><tbody>${tableRows}</tbody></table><div class="footer">طباعة من نظام الإدارة المركزي - سمان ههيا<br>${new Date().toLocaleString('ar-EG')}</div><script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); }<\/script></body></html>`); 
+            printWindow.document.close(); 
         };
+
 
         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
