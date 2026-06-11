@@ -383,11 +383,15 @@
                     <label class="text-xs font-black text-slate-800 block mb-3"><i class="fa-regular fa-comment-dots text-amber-500 mr-1"></i> ملاحظات للطلب (للمندوب أو الإدارة)</label>
                     <textarea id="no-notes" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-amber-100 text-sm font-bold text-slate-700 bg-slate-50 focus:bg-white transition-all resize-none mb-4" rows="2"></textarea>
                     
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-wide text-center">الإجمالي النهائي للطلب</label>
+                     <label class="text-[10px] font-black text-slate-400 flex justify-center items-center gap-2 mb-2 uppercase tracking-wide">
+                        الإجمالي النهائي للطلب
+                        <button onclick="toggleManualTotal('no')" class="text-slate-400 hover:text-amber-500 transition-colors" title="فك القفل وتعديل الإجمالي يدوياً"><i id="no-lock-icon" class="fa-solid fa-lock text-[10px]"></i></button>
+                    </label>
                     <div class="flex gap-2">
                         <button onclick="calcTotal('no')" class="bg-slate-100 px-5 rounded-xl text-sm hover:bg-slate-200 transition-colors"><i class="fa-solid fa-calculator text-brand-primary"></i></button>
-                        <input type="number" id="no-total" class="flex-1 border-none bg-emerald-50 rounded-xl p-3.5 outline-none font-black text-brand-primary text-2xl text-center" placeholder="0" disabled>
+                        <input type="number" id="no-total" class="flex-1 border-none bg-emerald-50 rounded-xl p-3.5 outline-none focus:ring-2 focus:ring-amber-200 font-black text-brand-primary text-2xl text-center transition-all" placeholder="0" disabled>
                     </div>
+
                 </div>
 
             </div>
@@ -1233,9 +1237,33 @@
             document.getElementById(`${prefix}-price`).value = itemsTotal;
             let d = Number(document.getElementById(`${prefix}-delivery`).value) || 0; 
             let disc = Number(document.getElementById(`${prefix}-discount`).value) || 0;
-            let final = itemsTotal + d - disc;
-            document.getElementById(`${prefix}-total`).value = final > 0 ? final : 0;
+            
+            let totalInput = document.getElementById(`${prefix}-total`);
+            if(totalInput && totalInput.disabled) {
+                let final = itemsTotal + d - disc;
+                totalInput.value = final > 0 ? final : 0;
+            }
         };
+
+        window.toggleManualTotal = (prefix) => {
+            let totalInput = document.getElementById(`${prefix}-total`);
+            let icon = document.getElementById(`${prefix}-lock-icon`);
+            if(totalInput.disabled) {
+                totalInput.disabled = false;
+                totalInput.classList.remove('bg-emerald-50', 'text-brand-primary');
+                totalInput.classList.add('bg-amber-50', 'text-amber-600');
+                icon.classList.remove('fa-lock');
+                icon.classList.add('fa-lock-open', 'text-amber-500');
+            } else {
+                totalInput.disabled = true;
+                totalInput.classList.add('bg-emerald-50', 'text-brand-primary');
+                totalInput.classList.remove('bg-amber-50', 'text-amber-600');
+                icon.classList.add('fa-lock');
+                icon.classList.remove('fa-lock-open', 'text-amber-500');
+                calcTotal(prefix);
+            }
+        };
+
 
         window.startOrderForCustomer = () => { 
             const phone = document.getElementById('cm-phone').innerText; 
