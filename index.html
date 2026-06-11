@@ -1806,47 +1806,102 @@
             btn.innerHTML = '<i class="fa-solid fa-file-import text-green-400"></i> <span class="hidden md:inline">استيراد تيك تيك</span>';
         };
 
-        window.viewBatchBookings = async (bId) => {
+                let currentBatchForPrint = null; // متغير لربط الطباعة بالدفعة المفتوحة
+
+        window.viewBatchBookings = (bId) => {
             const b = storeBatches[bId]; if(!b) return;
+            currentBatchForPrint = bId; 
             document.getElementById('bb-title').innerText = b.name; 
             const contentDiv = document.getElementById('bb-content'); 
-            contentDiv.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-teal-400"></i><p class="text-xs font-bold text-slate-400 mt-3">جاري تجميع كشف التسليمات...</p></div>'; 
-            openModal('batch-bookings-modal');
             
-            try { 
-                const snap = await db.collection('orders').where('batchId', '==', bId).get(); 
-                let orders = []; 
-                snap.forEach(doc => { let data = doc.data(); if(data.status !== 'canceled') orders.push(data); });
-                
-                if(orders.length === 0) { 
-                    contentDiv.innerHTML = '<div class="text-center py-16 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لم يتم تأكيد أي حجوزات في هذه الدفعة حتى الآن.</div>'; 
-                    return; 
-                }
-                
-                let tableHtml = `<div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden"><table class="w-full text-right text-sm border-collapse" id="print-table"><thead><tr class="bg-slate-50 text-slate-500 border-b border-slate-100"><th class="p-4 font-black">العميل والموقع</th><th class="p-4 font-black">الموبايل</th><th class="p-4 font-black">الأصناف</th><th class="p-4 font-black text-center">الإجمالي</th><th class="p-4 font-black">ملاحظات</th></tr></thead><tbody class="divide-y divide-slate-50">`;
-                let totalMoney = 0; 
-                orders.forEach(o => { 
-                    let itemsStr = o.items ? o.items.map(i => `<span class="bg-indigo-50 px-2.5 py-1 rounded-lg text-indigo-700 font-black border border-indigo-100 whitespace-nowrap shadow-sm">${i.quantity}x ${i.name}</span>`).join(' ') : ''; 
-                    let locationStr = `${o.zone || 'بدون منطقة'} ${o.customerAddress ? '- ' + o.customerAddress : ''}`; 
-                    totalMoney += Number(o.total) || 0; 
-                    tableHtml += `<tr class="hover:bg-slate-50/50 transition-colors"><td class="p-4"><div class="font-black text-slate-800 text-sm mb-1">${o.customerName}</div><div class="text-[10px] text-slate-500 font-bold"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${locationStr}</div></td><td class="p-4 font-black text-slate-600 text-xs" dir="ltr">${o.customerPhone}</td><td class="p-4 flex flex-wrap gap-1.5 mt-1.5">${itemsStr}</td><td class="p-4 font-black text-brand-primary text-center text-lg">${o.total} <span class="text-xs">ج</span></td><td class="p-4 text-[10px] font-bold text-amber-600 max-w-[150px] leading-relaxed">${o.adminNote || '-'}</td></tr>`; 
-                }); 
-                tableHtml += `</tbody></table></div>`;
-                
-                let summaryHtml = `<div class="mb-6 flex flex-wrap gap-4 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-soft"><div class="flex-1 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50"><p class="text-[10px] text-blue-500 font-bold mb-1 uppercase tracking-wider">الحجوزات</p><h4 class="font-black text-blue-700 text-2xl">${orders.length} <span class="text-sm font-bold">أوردر</span></h4></div><div class="flex-1 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50"><p class="text-[10px] text-emerald-500 font-bold mb-1 uppercase tracking-wider">التحصيل المتوقع</p><h4 class="font-black text-emerald-700 text-2xl">${totalMoney.toLocaleString()} <span class="text-sm font-bold">ج</span></h4></div></div>`;
-                contentDiv.innerHTML = summaryHtml + tableHtml;
-            } catch (e) { 
-                contentDiv.innerHTML = '<p class="text-center text-red-500 font-bold py-10">حدث خطأ أثناء جلب البيانات!</p>'; 
+            // قراءة فورية من الكاش (بسرعة البرق بدل استدعاء السيرفر)
+            let orders = allOrdersRaw.filter(o => o.batchId === bId && o.status !== 'canceled' && o.status !== 'trash');
+            
+            if(orders.length === 0) { 
+                contentDiv.innerHTML = '<div class="text-center py-16 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لم يتم تأكيد أي حجوزات في هذه الدفعة حتى الآن.</div>'; 
+                openModal('batch-bookings-modal');
+                return; 
             }
+            
+            let totalMoney = 0; 
+            let htmlOrders = '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">';
+            
+            orders.forEach(o => { 
+                totalMoney += Number(o.total) || 0;
+                let itemsStr = o.items ? o.items.map(i => `<span class="bg-indigo-50 px-2.5 py-1 rounded-lg text-indigo-700 font-black border border-indigo-100 whitespace-nowrap shadow-sm text-[10px]">${i.quantity}x ${i.name}</span>`).join(' ') : 'لا يوجد تفاصيل';
+                
+                let sBadge = o.status==='new' ? '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded text-[9px] font-black">جديد</span>' : 
+                            (o.status==='processing' ? '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded text-[9px] font-black">جاري التجهيز</span>' : 
+                            '<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded text-[9px] font-black">مكتمل</span>');
+
+                htmlOrders += `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 hover:border-teal-200 transition-colors flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h5 class="font-black text-slate-800 text-sm mb-1 cursor-pointer hover:text-brand-primary" onclick="openCustomerCard('${o.customerPhone}')">${o.customerName} <span class="text-[10px] text-slate-400 font-bold" dir="ltr">${o.customerPhone}</span></h5>
+                                <p class="text-[10px] text-slate-500 font-bold"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${o.zone || 'غير مسجل'} ${o.customerAddress ? '- '+o.customerAddress : ''}</p>
+                            </div>
+                            <div class="flex flex-col items-end gap-1.5">
+                                ${sBadge}
+                                <span class="font-black text-brand-primary text-base">${o.total} <span class="text-[10px]">ج</span></span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3 flex flex-wrap gap-1">
+                            ${itemsStr}
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center gap-2 pt-3 border-t border-slate-50">
+                        <div class="flex gap-1 w-full">
+                            <button onclick="openEditOrderModal('${o.id}')" class="flex-1 bg-slate-800 text-white py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-slate-900 transition-all flex items-center justify-center gap-1"><i class="fa-solid fa-pen"></i> تعديل</button>
+                            <button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 bg-[#25D366] text-white py-2 rounded-xl text-[10px] font-bold shadow-sm hover:bg-[#1ebd57] transition-all flex items-center justify-center gap-1"><i class="fa-brands fa-whatsapp"></i></button>
+                        </div>
+                        <select onchange="updateOrderStatus('${o.id}', this.value); setTimeout(()=>viewBatchBookings('${bId}'), 600);" class="text-[10px] font-bold bg-white border border-slate-200 rounded-xl px-1 py-2 outline-none text-slate-700 cursor-pointer w-1/2 focus:ring-2 focus:ring-teal-100">
+                            <option value="new" ${o.status==='new'?'selected':''}>جديد</option>
+                            <option value="processing" ${o.status==='processing'?'selected':''}>يُجهز</option>
+                            <option value="completed" ${o.status==='completed'?'selected':''}>مكتمل</option>
+                            <option value="canceled">إلغاء ❌</option>
+                        </select>
+                    </div>
+                </div>`;
+            });
+            htmlOrders += '</div>';
+            
+            let summaryHtml = `
+            <div class="mb-2 flex flex-wrap gap-4 bg-white p-4 rounded-2xl border border-slate-100 shadow-soft">
+                <div class="flex-1 bg-teal-50/50 p-3 rounded-xl border border-teal-100/50 text-center">
+                    <p class="text-[10px] text-teal-600 font-bold mb-1 uppercase tracking-wider">الأوردرات</p>
+                    <h4 class="font-black text-teal-800 text-xl">${orders.length}</h4>
+                </div>
+                <div class="flex-1 bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50 text-center">
+                    <p class="text-[10px] text-emerald-500 font-bold mb-1 uppercase tracking-wider">إجمالي التحصيل</p>
+                    <h4 class="font-black text-emerald-700 text-xl">${totalMoney.toLocaleString()} <span class="text-xs">ج</span></h4>
+                </div>
+            </div>`;
+            
+            contentDiv.innerHTML = summaryHtml + htmlOrders;
+            openModal('batch-bookings-modal');
         };
 
         window.printBatchBookings = () => { 
-            let content = document.getElementById('bb-content').innerHTML; 
+            if(!currentBatchForPrint) return;
+            // تجميع الجدول النظيف للطباعة من الخلفية
+            let orders = allOrdersRaw.filter(o => o.batchId === currentBatchForPrint && o.status !== 'canceled' && o.status !== 'trash');
             let title = document.getElementById('bb-title').innerText; 
+            
+            let tableHtml = `<table class="w-full text-right text-sm border-collapse" id="print-table"><thead><tr class="bg-slate-50 text-slate-500 border-b border-slate-100"><th class="p-4 font-black">العميل والموقع</th><th class="p-4 font-black">الموبايل</th><th class="p-4 font-black">الأصناف</th><th class="p-4 font-black text-center">الإجمالي</th><th class="p-4 font-black">ملاحظات</th></tr></thead><tbody class="divide-y divide-slate-50">`;
+            orders.forEach(o => { 
+                let itemsStr = o.items ? o.items.map(i => `<strong>${i.quantity}x</strong> ${i.name}`).join(' | ') : ''; 
+                let locationStr = `${o.zone || 'بدون منطقة'} ${o.customerAddress ? '- ' + o.customerAddress : ''}`; 
+                tableHtml += `<tr><td class="p-4"><div class="font-black text-slate-800 text-sm mb-1">${o.customerName}</div><div class="text-[10px] text-slate-500 font-bold">${locationStr}</div></td><td class="p-4 font-black text-slate-600 text-xs" dir="ltr">${o.customerPhone}</td><td class="p-4 text-xs">${itemsStr}</td><td class="p-4 font-black text-brand-primary text-center text-lg">${o.total} <span class="text-xs">ج</span></td><td class="p-4 text-[10px] font-bold text-amber-600">${o.adminNote || '-'}</td></tr>`; 
+            }); 
+            tableHtml += `</tbody></table>`;
+
             let printWindow = window.open('', '', 'width=900,height=700'); 
-            printWindow.document.write(`<html lang="ar" dir="rtl"><head><title>كشف حجوزات - ${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>body { font-family: 'Cairo', sans-serif; padding: 20px; color: #1e293b; background: #fff; } .header-print { text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0; } h2 { margin: 0; font-size: 24px; font-weight: 900; color: #0f172a; } table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #cbd5e1; padding: 12px; font-size: 13px; text-align: right; } th { background-color: #f8fafc; font-weight: 800; color: #475569; } .text-center { text-align: center; } .bg-white { box-shadow: none !important; border: none !important; } .mb-6 { margin-bottom: 20px; display: flex; gap: 20px; } .flex-1 { flex: 1; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; } i, .shadow-sm, .shadow-soft { box-shadow: none !important; } </style></head><body><div class="header-print"><h2>سمان ههيا - كشف تسليمات</h2><p style="margin-top:5px; color:#64748b; font-weight:bold;">الدفعة: <strong>${title}</strong></p></div>${content}<div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; font-weight:bold;">تمت الطباعة بواسطة النظام المركزي (CRM)</div><script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); }<\/script></body></html>`); 
+            printWindow.document.write(`<html lang="ar" dir="rtl"><head><title>كشف حجوزات - ${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>body { font-family: 'Cairo', sans-serif; padding: 20px; color: #1e293b; background: #fff; } .header-print { text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0; } h2 { margin: 0; font-size: 24px; font-weight: 900; color: #0f172a; } table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #cbd5e1; padding: 12px; font-size: 13px; text-align: right; } th { background-color: #f8fafc; font-weight: 800; color: #475569; } .text-center { text-align: center; } </style></head><body><div class="header-print"><h2>سمان ههيا - كشف تسليمات</h2><p style="margin-top:5px; color:#64748b; font-weight:bold;">الدفعة: <strong>${title}</strong></p></div>${tableHtml}<div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; font-weight:bold;">تمت الطباعة بواسطة النظام المركزي (CRM)</div><script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); }<\/script></body></html>`); 
             printWindow.document.close(); 
         };
+
 
         // === 11. دوال الإعدادات والمخزون ===
         function renderInventoryUI() { 
