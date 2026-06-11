@@ -728,45 +728,107 @@
 
         window.updateBatchSummary = () => {
             const panel = document.getElementById('batch-summary-panel'); if(!panel) return;
+            
+            let totalOrders = 0;
+            let totalRevenue = 0, totalDelivery = 0, totalDiscount = 0;
+            let globalItems = {};
+            let zonesCount = {};
             let summary = {};
             
             allOrdersRaw.forEach(o => {
                 if(o.status !== 'trash' && o.status !== 'canceled') {
+                    totalOrders++;
+                    totalRevenue += Number(o.total) || 0;
+                    totalDelivery += Number(o.deliveryFee) || 0;
+                    totalDiscount += Number(o.discount) || 0;
+
+                    let z = o.zone || 'مناطق غير محددة';
+                    zonesCount[z] = (zonesCount[z] || 0) + 1;
+
                     let bName = o.batchName ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
+                    if(!summary[bName]) summary[bName] = { count: 0, revenue: 0, items: {} };
                     
-                    if(!summary[bName]) summary[bName] = { count: 0, items: {} };
                     summary[bName].count++;
+                    summary[bName].revenue += Number(o.total) || 0;
 
                     if(o.items && Array.isArray(o.items)){
                         o.items.forEach(i => {
+                            globalItems[i.name] = (globalItems[i.name] || 0) + i.quantity;
                             summary[bName].items[i.name] = (summary[bName].items[i.name] || 0) + i.quantity;
                         });
                     }
                 }
             });
 
-            if(Object.keys(summary).length === 0) {
+            if(totalOrders === 0) {
                 panel.innerHTML = `<div class="w-full text-center py-12 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-2xl">لا توجد طلبات حية للتحليل حالياً.</div>`;
                 return;
             }
 
-            panel.innerHTML = Object.keys(summary).map(bName => {
+            let topZonesHtml = Object.keys(zonesCount).sort((a,b) => zonesCount[b] - zonesCount[a]).map(z => 
+                `<span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg text-[10px] font-black border border-indigo-100">${z} <span class="bg-white text-indigo-500 px-1.5 py-0.5 rounded ml-1 shadow-sm">${zonesCount[z]}</span></span>`
+            ).join('');
+
+            let globalItemsHtml = Object.keys(globalItems).sort((a,b) => globalItems[b] - globalItems[a]).map(itemName => 
+                `<div class="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-sm font-black text-brand-primary">${globalItems[itemName]}</span></div>`
+            ).join('');
+
+            let smartDashboardHtml = `
+            <div class="w-full grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                    <p class="text-[10px] font-bold text-slate-500 mb-1">الطلبات الحية</p>
+                    <p class="text-2xl font-black text-blue-600">${totalOrders}</p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                    <p class="text-[10px] font-bold text-slate-500 mb-1">إجمالي التحصيل</p>
+                    <p class="text-2xl font-black text-emerald-600">${totalRevenue.toLocaleString()} <span class="text-xs">ج</span></p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                    <p class="text-[10px] font-bold text-slate-500 mb-1">التوصيل المتوقع</p>
+                    <p class="text-2xl font-black text-amber-500">${totalDelivery.toLocaleString()} <span class="text-xs">ج</span></p>
+                </div>
+                <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                    <p class="text-[10px] font-bold text-slate-500 mb-1">إجمالي الخصومات</p>
+                    <p class="text-2xl font-black text-red-500">${totalDiscount.toLocaleString()} <span class="text-xs">ج</span></p>
+                </div>
+            </div>
+            
+            <div class="w-full bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mb-5">
+                <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-boxes-packing text-brand-primary mr-1"></i> إجمالي المنتجات المطلوبة للتجهيز الآن</h4>
+                <div class="grid grid-cols-3 md:grid-cols-6 gap-3">${globalItemsHtml}</div>
+            </div>
+
+            <div class="w-full bg-white p-5 rounded-2xl border border-slate-100 shadow-sm mb-6">
+                <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-map-location-dot text-indigo-500 mr-1"></i> خريطة التوزيع الجغرافي للطلبات</h4>
+                <div class="flex flex-wrap gap-2">${topZonesHtml}</div>
+            </div>
+            
+            <h4 class="w-full text-sm font-black text-slate-800 mb-3"><i class="fa-solid fa-layer-group text-teal-500 mr-1"></i> تفصيل الدفعات والهاشتاجات</h4>
+            `;
+
+            let batchesHtml = Object.keys(summary).map(bName => {
                 let itemsHtml = Object.keys(summary[bName].items).map(itemName => 
-                    `<span class="bg-white text-slate-600 border border-slate-100 px-3 py-1.5 rounded-lg inline-block whitespace-nowrap shadow-sm text-xs"><span class="text-indigo-600 font-black">${summary[bName].items[itemName]}x</span> ${itemName}</span>`
+                    `<span class="bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg inline-block whitespace-nowrap shadow-sm text-[10px]"><span class="text-teal-600 font-black">${summary[bName].items[itemName]}x</span> ${itemName}</span>`
                 ).join(' ');
 
                 return `
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 border-r-4 border-r-indigo-400 flex flex-col gap-4 w-full md:w-[calc(50%-0.5rem)] shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-center pb-2 border-b border-slate-50">
-                        <span class="text-sm font-black text-slate-800"><i class="fa-solid fa-chart-line text-indigo-400 mr-1.5"></i> ${bName}</span>
-                        <span class="text-[10px] font-black bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">${summary[bName].count} أوردر</span>
+                <div class="bg-white p-5 rounded-2xl border border-slate-100 border-r-4 border-r-teal-400 flex flex-col gap-4 w-full shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-50">
+                        <span class="text-sm font-black text-slate-800"><i class="fa-solid fa-tag text-teal-400 mr-1.5"></i> ${bName}</span>
+                        <div class="flex gap-2">
+                            <span class="text-[10px] font-black bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg border border-blue-100">${summary[bName].count} طلب</span>
+                            <span class="text-[10px] font-black bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg border border-emerald-100">${summary[bName].revenue.toLocaleString()} ج</span>
+                        </div>
                     </div>
                     <div class="flex flex-wrap gap-2 leading-relaxed">
-                        ${itemsHtml || '<span class="text-slate-400 text-xs font-bold">لا توجد أصناف مسجلة</span>'}
+                        ${itemsHtml || '<span class="text-slate-400 text-[10px] font-bold">لا توجد أصناف مسجلة</span>'}
                     </div>
                 </div>`;
             }).join('');
+
+            panel.innerHTML = smartDashboardHtml + `<div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4">${batchesHtml}</div>`;
         };
+
 
         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
