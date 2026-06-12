@@ -1309,9 +1309,21 @@
             checkCustomerExists(); 
         };
         
-        window.checkCustomerExists = () => { 
-            let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, ''); if(!phone) return; 
+        window.checkCustomerExists = async () => { 
+            let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, ''); 
+            if(!phone || phone.length < 10) return; 
+            
             let c = customersData.find(x => x.phone === phone || x.phone === '0'+phone); 
+            
+            // اللمسة السحرية: لو العميل مش في الشاشة، هنخبط على الداتابيز نجيبه مباشرة
+            if(!c) {
+                let cleanPhone = phone.startsWith('0') ? phone : '0' + phone;
+                try {
+                    let doc = await db.collection('customers').doc(cleanPhone).get();
+                    if(doc.exists) c = doc.data();
+                } catch(e) { console.log("خطأ في البحث המباشر"); }
+            }
+
             if(c) { 
                 document.getElementById('no-name').value = c.name || ''; 
                 document.getElementById('no-zone').value = c.zone || ''; 
@@ -1319,6 +1331,7 @@
                 autoSetDeliveryPrice(); 
             } 
         };
+
 
         window.autoSetDeliveryPrice = () => { 
             const sel = document.getElementById('no-zone'); 
