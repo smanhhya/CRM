@@ -676,9 +676,10 @@
                 updateBatchSummary();
             });
             db.collection('customers').onSnapshot(snap => {
-                document.getElementById('dash-customers').innerText = snap.size; customersData = [];
-
+                customersData = [];
                 snap.forEach(doc => customersData.push(doc.data()));
+                document.getElementById('dash-customers').innerText = customersData.length;
+                
                 customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0));
                 
                 let tbody = '';
@@ -705,7 +706,13 @@
                     </tr>`;
                 });
                 document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="5" class="text-center p-12 text-slate-400 font-bold text-sm">لا يوجد عملاء حتى الآن</td></tr>`;
+                
+                // تحديث البحث فورا لو اليوزر كاتب حاجة
+                if(document.getElementById('search-customer').value.trim() !== '') {
+                    filterCustomers();
+                }
             });
+
         }
 
         // === 4. إدارة الطلبات والرسائل المرنة ===
