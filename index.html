@@ -789,14 +789,25 @@
                 }
             });
 
+            // الدالة السحرية اللي بتاخد الكلمة، تقفل النافذة، وتفلتر الأوردرات
+            window.filterOrdersFromAnalysis = (keyword) => {
+                closeModal('analysis-modal');
+                let searchBox = document.getElementById('search-order');
+                if(searchBox) {
+                    searchBox.value = keyword === "أوردرات عادية" ? "" : keyword;
+                    renderOrdersList();
+                }
+            };
+
             if(totalOrders === 0) {
                 panel.innerHTML = `<div class="w-full text-center py-12 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-2xl">لا توجد طلبات حية للتحليل حالياً.</div>`;
                 return;
             }
 
             let topZonesHtml = Object.keys(zonesCount).sort((a,b) => zonesCount[b] - zonesCount[a]).map(z => 
-                `<span class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg text-[10px] font-black border border-indigo-100">${z} <span class="bg-white text-indigo-500 px-1.5 py-0.5 rounded ml-1 shadow-sm">${zonesCount[z]}</span></span>`
+                `<span onclick="filterOrdersFromAnalysis('${z}')" class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg text-[10px] font-black border border-indigo-100 cursor-pointer hover:bg-indigo-500 hover:text-white transition-colors" title="اضغط لعرض طلبات هذه المنطقة">${z} <span class="bg-white text-indigo-500 px-1.5 py-0.5 rounded ml-1 shadow-sm">${zonesCount[z]}</span></span>`
             ).join('');
+
 
             let globalItemsHtml = Object.keys(globalItems).sort((a,b) => globalItems[b] - globalItems[a]).map(itemName => 
                 `<div class="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-sm font-black text-brand-primary">${globalItems[itemName]}</span></div>`
@@ -841,9 +852,10 @@
                 ).join(' ');
 
                 return `
-                <div class="bg-white p-5 rounded-2xl border border-slate-100 border-r-4 border-r-teal-400 flex flex-col gap-4 w-full shadow-sm hover:shadow-md transition-shadow">
-                    <div class="flex justify-between items-center pb-3 border-b border-slate-50">
+                <div onclick="filterOrdersFromAnalysis('${bName}')" class="bg-white p-5 rounded-2xl border border-slate-100 border-r-4 border-r-teal-400 flex flex-col gap-4 w-full shadow-sm hover:shadow-md transition-all cursor-pointer hover:bg-teal-50/50 hover:scale-[1.02]" title="اضغط لعرض طلبات هذه الدفعة">
+                    <div class="flex justify-between items-center pb-3 border-b border-slate-50 pointer-events-none">
                         <span class="text-sm font-black text-slate-800"><i class="fa-solid fa-tag text-teal-400 mr-1.5"></i> ${bName}</span>
+
                         <div class="flex gap-2">
                             <span class="text-[10px] font-black bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg border border-blue-100">${summary[bName].count} طلب</span>
                             <span class="text-[10px] font-black bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-lg border border-emerald-100">${summary[bName].revenue.toLocaleString()} ج</span>
@@ -865,10 +877,11 @@
             
             let filtered = allOrdersRaw.filter(o => {
                 let matchTab = (currentOrderTab === 'all' && o.status !== 'trash') || (o.status === currentOrderTab);
-                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${o.customTag || ''}`.toLowerCase();
+                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${o.customTag || ''} ${o.batchName || ''} ${o.zone || ''}`.toLowerCase();
                 let matchSearch = searchStr.includes(filterText);
                 return matchTab && matchSearch;
             });
+
 
             if(filtered.length === 0) { 
                 container.innerHTML = '<div class="text-center text-slate-400 py-16 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لا توجد طلبات في هذا القسم.</div>'; 
@@ -884,8 +897,8 @@
                             (o.status==='completed' ? '<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-lg text-[10px] font-black">مكتمل</span>' : 
                             '<span class="bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black">ملغي</span>'));
                 
-                let customTagHtml = o.customTag ? `<span class="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded font-black inline-flex items-center gap-1"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
-                let batchTagHtml = o.batchName ? `<span class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
+                let customTagHtml = o.customTag ? `<span onclick="document.getElementById('search-order').value='${o.customTag}'; renderOrdersList();" class="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-purple-500 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه المجموعة"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
+                let batchTagHtml = o.batchName ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
 
                 return `
                 <div class="bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5">
