@@ -511,8 +511,22 @@
         </div>
     </div>
 
+    <!-- نافذة العصا السحرية للملاحظات -->
+    <div id="note-action-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xs overflow-hidden flex flex-col transform transition-all">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-wand-magic-sparkles text-amber-500 mr-2"></i> خيارات الملاحظة</h3>
+                <button onclick="closeModal('note-action-modal')" class="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div class="p-6 bg-slate-50/50 flex flex-col gap-3">
+                <button onclick="editCurrentNote()" class="w-full bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 py-3.5 rounded-xl font-black shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-pen text-blue-500"></i> تعديل النص يدوياً</button>
+                <button onclick="deleteCurrentNote()" class="w-full bg-white border border-slate-200 text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-300 py-3.5 rounded-xl font-black shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-trash text-red-500"></i> مسح الملاحظة بالكامل</button>
+            </div>
+        </div>
+    </div>
 
     <script>
+
         // === 1. متغيرات النظام ===
         let storeSettings = { deliveryZones: [], drivers: [], promoCodes: [], storeOpen: true };
         let storeProducts = {}; 
@@ -892,8 +906,9 @@
                     </div>
                     
                     <div class="bg-amber-50/50 p-3 rounded-xl mb-3 border border-amber-100/50">
-                        <div class="text-[11px] text-amber-800 font-bold whitespace-pre-wrap mb-2.5 max-h-16 overflow-y-auto custom-scroll leading-relaxed">${o.adminNote || '<span class="text-amber-600/50 font-semibold">لا توجد ملاحظات على هذا الطلب...</span>'}</div>
+                        <div ${o.adminNote ? `onclick="openNoteOptions('${o.id}')" oncontextmenu="openNoteOptions('${o.id}'); return false;"` : ''} class="text-[11px] text-amber-800 font-bold whitespace-pre-wrap mb-2.5 max-h-16 overflow-y-auto custom-scroll leading-relaxed ${o.adminNote ? 'cursor-pointer hover:bg-amber-100/80 p-2 rounded-lg border border-transparent hover:border-amber-200 active:bg-amber-200 transition-all select-none' : ''}" title="اضغط كليك يمين أو ضغطة سريعة للتعديل">${o.adminNote || '<span class="text-amber-600/50 font-semibold">لا توجد ملاحظات على هذا الطلب...</span>'}</div>
                         <div class="flex gap-2 items-center">
+
                             <input type="text" id="new-note-${o.id}" class="flex-1 border border-amber-200/60 bg-white rounded-lg p-2 text-xs outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 font-bold text-amber-900 transition-all placeholder:text-amber-300" placeholder="أضف ملاحظة وتاريخها هيتحفظ لوحده...">
                             <button onclick="appendOrderNote('${o.id}')" class="bg-amber-500 text-white w-8 h-8 rounded-lg flex items-center justify-center hover:bg-amber-600 shadow-sm active:scale-95 transition-all"><i class="fa-solid fa-plus text-sm"></i></button>
                         </div>
@@ -959,6 +974,37 @@
                 }
             } catch(e) { alert("حدث خطأ أثناء تغيير الحالة!"); }
         };
+        let currentOrderNoteId = null;
+
+        window.openNoteOptions = (id) => {
+            currentOrderNoteId = id;
+            openModal('note-action-modal');
+        };
+
+        window.editCurrentNote = async () => {
+            closeModal('note-action-modal');
+            let o = allOrdersRaw.find(x => x.id === currentOrderNoteId);
+            if (!o) return;
+            let newText = prompt("تعديل الملاحظة:", o.adminNote);
+            if (newText !== null && newText.trim() !== "") {
+                try {
+                    await db.collection('orders').doc(o.id).update({ adminNote: newText.trim() });
+                } catch(e) { alert("خطأ في التعديل"); }
+            }
+        };
+
+        window.deleteCurrentNote = async () => {
+            closeModal('note-action-modal');
+            if (confirm("هل أنت متأكد من مسح الملاحظة بالكامل؟")) {
+                try {
+                    await db.collection('orders').doc(currentOrderNoteId).update({ adminNote: '' });
+                } catch(e) { alert("خطأ في المسح"); }
+            }
+        };
+
+        window.appendOrderNote = async (id) => {
+            let input = document.getElementById(`new-note-${id}`); 
+            let text = input.value.trim(); 
 
         window.appendOrderNote = async (id) => {
             let input = document.getElementById(`new-note-${id}`); 
