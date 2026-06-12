@@ -675,9 +675,9 @@
                 renderOrdersList();
                 updateBatchSummary();
             });
-
-            db.collection('customers').orderBy('ordersCount', 'desc').limit(150).onSnapshot(snap => {
+            db.collection('customers').onSnapshot(snap => {
                 document.getElementById('dash-customers').innerText = snap.size; customersData = [];
+
                 snap.forEach(doc => customersData.push(doc.data()));
                 customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0));
                 
