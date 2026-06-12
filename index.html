@@ -651,7 +651,7 @@
                 renderBatchesUI();
             });
 
-            db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
+            db.collection('orders').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
                 let dSales = 0, mSales = 0, counts = { new: 0, processing: 0, completed: 0, canceled: 0 };
                 allOrdersRaw = []; dispatchOrdersRaw = [];
                 const currentMonth = new Date().getMonth();
@@ -676,7 +676,7 @@
                 updateBatchSummary();
             });
 
-            db.collection('customers').onSnapshot(snap => {
+            db.collection('customers').orderBy('ordersCount', 'desc').limit(150).onSnapshot(snap => {
                 document.getElementById('dash-customers').innerText = snap.size; customersData = [];
                 snap.forEach(doc => customersData.push(doc.data()));
                 customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0));
