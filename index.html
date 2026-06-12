@@ -369,7 +369,14 @@
                 </div>
 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-boxes-packing text-indigo-500 mr-1"></i> محتويات الطلب</h4>
+                    <!-- التعديل هنا: زرار تطبيق السعر القديم ظهر جنب كلمة محتويات الطلب -->
+                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-50">
+                        <h4 class="text-xs font-black text-slate-800"><i class="fa-solid fa-boxes-packing text-indigo-500 mr-1"></i> محتويات الطلب</h4>
+                        <label class="flex items-center gap-2 cursor-pointer bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
+                            <input type="checkbox" id="no-use-old-price" onchange="calcTotal('no')" class="w-4 h-4 text-amber-500 rounded cursor-pointer">
+                            <span class="text-[10px] font-black text-amber-700">تطبيق الأسعار القديمة</span>
+                        </label>
+                    </div>
                     <div id="dynamic-order-items" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5"></div>
 
                     <div class="grid grid-cols-3 gap-3 pt-4 border-t border-slate-50">
@@ -378,6 +385,7 @@
                         <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">خصم</label><input type="number" id="no-discount" class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-2.5 font-black text-red-500 text-center outline-none focus:ring-2 focus:ring-red-100 transition-all" placeholder="0" oninput="calcTotal('no')"></div>
                     </div>
                 </div>
+
 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
                     <label class="text-xs font-black text-slate-800 block mb-3"><i class="fa-regular fa-comment-dots text-amber-500 mr-1"></i> ملاحظات للطلب (للمندوب أو الإدارة)</label>
@@ -1225,17 +1233,28 @@
 
         window.calcTotal = (prefix) => { 
             let itemsTotal = 0;
+            let useOldPriceCheckbox = document.getElementById(`${prefix}-use-old-price`);
+            let useOldPrice = useOldPriceCheckbox ? useOldPriceCheckbox.checked : false;
+
             Object.keys(storeProducts).forEach(id => { 
                 let q = Number(document.getElementById(`${prefix}-q-${id}`)?.value) || 0; 
                 let price = storePrices[id] || storeProducts[id].basePrice || 0; 
+                
+                // لو مفعلين السعر القديم، والصنف ده ليه سعر قديم متسجل، استخدمه أوتوماتيك
+                if(useOldPrice && storeProducts[id].oldBatchPrice > 0) {
+                    price = storeProducts[id].oldBatchPrice;
+                }
+
                 itemsTotal += (q * price); 
             });
             document.getElementById(`${prefix}-price`).value = itemsTotal;
             let d = Number(document.getElementById(`${prefix}-delivery`).value) || 0; 
             let disc = Number(document.getElementById(`${prefix}-discount`).value) || 0;
+            
             let final = itemsTotal + d - disc;
             document.getElementById(`${prefix}-total`).value = final > 0 ? final : 0;
         };
+
 
         window.startOrderForCustomer = () => { 
             const phone = document.getElementById('cm-phone').innerText; 
@@ -1287,10 +1306,19 @@
             let ticktickItemsTitleArr = []; 
             let autoHashtags = []; 
 
+            // جلب حالة الزرار بتاع السعر القديم
+            let useOldPrice = document.getElementById('no-use-old-price') ? document.getElementById('no-use-old-price').checked : false;
+
             Object.keys(storeProducts).forEach(id => {
                 let q = Number(document.getElementById(`no-q-${id}`)?.value) || 0;
                 if(q > 0) { 
                     let price = storePrices[id] || storeProducts[id].basePrice;
+                    
+                    // استخدام السعر القديم لو متفعل
+                    if(useOldPrice && storeProducts[id].oldBatchPrice > 0) {
+                        price = storeProducts[id].oldBatchPrice;
+                    }
+
                     let pName = storeProducts[id].name;
                     items.push({ id: id, name: pName, quantity: q, price: price }); 
                     subtotal += (q * price); 
@@ -1336,7 +1364,6 @@
                 let cleanPhoneForDB = phone.startsWith('0') ? phone : '0'+phone;
                 await db.collection('customers').doc(cleanPhoneForDB).set({ name: name, phone: cleanPhoneForDB, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 
-                // 🌟 الخصم الصارم من الدفعة (بدون قراءة) 🌟
                 if(batchId) {
                     let bookedUpdates = {};
                     Object.keys(batchUpdates).forEach(pId => { 
@@ -1347,12 +1374,10 @@
                     }, { merge: true });
                 }
 
-                // 🌟 الخصم الصارم من المخزن الأساسي 🌟
                 let stockUpdatesDB = {};
                 items.forEach(i => { stockUpdatesDB[i.id] = firebase.firestore.FieldValue.increment(-i.quantity); });
                 await db.collection("inventory").doc("stock").set(stockUpdatesDB, { merge: true });
 
-                // تجهيز الهاشتاجات لتيك تيك
                 if (batchName) autoHashtags.push('#' + batchName.replace(/\s+/g, '_'));
                 if (customTag) autoHashtags.push(customTag.startsWith('#') ? customTag.replace(/\s+/g, '_') : '#' + customTag.replace(/\s+/g, '_'));
                 if (storeSettings.batchHashtag) autoHashtags.push(storeSettings.batchHashtag);
@@ -1399,9 +1424,13 @@
                 if(document.getElementById('no-batch')) document.getElementById('no-batch').selectedIndex = 0;
                 if(document.getElementById('no-custom-tag')) document.getElementById('no-custom-tag').value = '';
                 
+                // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
+                if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
+                
             } catch(e) { alert('خطأ أثناء الحفظ بقاعدة البيانات!'); }
             btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
         };
+
 
         // === 8. المناديب (واتساب) والتوجيه الذكي ===
         window.openDispatchModal = () => {
@@ -1768,10 +1797,11 @@
                 cont.innerHTML += `
                 <div class="bg-white p-5 rounded-[1.5rem] border border-slate-100 mb-4 shadow-soft">
                     <div class="flex justify-between items-start gap-3 mb-3">
-                        <div class="flex-1 grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <div class="flex-1 grid grid-cols-2 md:grid-cols-6 gap-3">
                             <div><label class="text-[10px] font-bold text-slate-400 block mb-1">اسم المنتج</label><input type="text" value="${p.name}" onchange="storeProducts['${id}'].name = this.value" class="w-full border-none bg-slate-50 focus:bg-white rounded-xl p-2.5 text-xs font-black text-slate-800 focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm"></div>
                             <div><label class="text-[10px] font-bold text-slate-400 block mb-1">الوزن / الوصف</label><input type="text" value="${p.weight||''}" onchange="storeProducts['${id}'].weight = this.value" class="w-full border-none bg-slate-50 focus:bg-white rounded-xl p-2.5 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm"></div>
                             <div><label class="text-[10px] font-bold text-slate-400 block mb-1">السعر (ج)</label><input type="number" value="${price}" onchange="storePrices['${id}'] = parseInt(this.value) || 0" class="w-full border-none bg-blue-50 focus:bg-white rounded-xl p-2.5 text-sm font-black text-blue-700 text-center focus:ring-2 focus:ring-blue-200 transition-all shadow-sm"></div>
+                            <div><label class="text-[10px] font-bold text-amber-500 block mb-1">السعر القديم (مخفي)</label><input type="number" value="${p.oldBatchPrice||''}" onchange="storeProducts['${id}'].oldBatchPrice = parseInt(this.value) || 0" class="w-full border-none bg-amber-50 focus:bg-white rounded-xl p-2.5 text-sm font-black text-amber-700 text-center focus:ring-2 focus:ring-amber-200 transition-all shadow-sm" placeholder="اختياري"></div>
                             <div><label class="text-[10px] font-bold text-slate-400 block mb-1">المتاح للحجز</label><input type="number" value="${stock}" onchange="storeStock['${id}'] = parseInt(this.value) || 0" class="w-full border-none bg-emerald-50 focus:bg-white rounded-xl p-2.5 text-sm font-black text-emerald-700 text-center focus:ring-2 focus:ring-emerald-200 transition-all shadow-sm"></div>
                             <div><label class="text-[10px] font-bold text-slate-400 block mb-1">رابط الصورة</label><input type="text" value="${imgSrc}" onchange="storeProducts['${id}'].images = [this.value]" class="w-full border-none bg-slate-50 focus:bg-white rounded-xl p-2.5 text-[10px] font-bold text-slate-500 focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm" dir="ltr" placeholder="https://..."></div>
                         </div>
@@ -1788,6 +1818,7 @@
                 </div>`; 
             }); 
         }
+
 
         window.addNewProductUI = () => { 
             const newId = 'p_' + Date.now(); 
