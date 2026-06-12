@@ -1822,10 +1822,11 @@
 
         window.addNewProductUI = () => { 
             const newId = 'p_' + Date.now(); 
-            storeProducts[newId] = { name: "صنف جديد", basePrice: 0, weight: "", images: [""], isExtra: false, isBest: false, isDisc: false, oldPrice: 0 }; 
+            storeProducts[newId] = { name: "صنف جديد", basePrice: 0, weight: "", images: [""], isExtra: false, isBest: false, isDisc: false, oldPrice: 0, oldBatchPrice: 0 }; 
             storePrices[newId] = 0; storeStock[newId] = 0; 
             renderInventoryUI(); generateDynamicOrderInputs(); 
         };
+
 
         window.deleteProductUI = (id) => { 
             if(confirm("حذف المنتج من المتجر تماماً؟")) { 
@@ -1937,12 +1938,16 @@
         window.calcEditTotal = () => { 
             let itemsTotal = 0; 
             Object.keys(storeProducts).forEach(id => { 
-                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; let price = storePrices[id] || storeProducts[id].basePrice || 0; itemsTotal += (q * price); 
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
+                itemsTotal += (q * price); 
             }); 
             document.getElementById('edit-price').value = itemsTotal; 
             let d = Number(document.getElementById('edit-delivery').value) || 0; let disc = Number(document.getElementById('edit-discount').value) || 0; 
             let finalTotal = itemsTotal + d - disc; if(finalTotal < 0) finalTotal = 0; document.getElementById('edit-total').value = finalTotal; 
         };
+
 
         window.saveEditedOrder = async () => {
             if(!editingOrderData) return;
@@ -1954,10 +1959,12 @@
             Object.keys(storeProducts).forEach(id => { 
                 let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
                 if(q > 0) { 
-                    let price = (storePrices[id] || storeProducts[id].basePrice || 0); 
+                    let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                    let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
                     newItems.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); newSubtotal += (q * price); 
                 } 
             });
+
             
             if(newItems.length === 0) return alert('لا يمكن حفظ طلب فارغ!');
 
