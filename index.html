@@ -1682,7 +1682,7 @@
             
             const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري القراءة والفلترة...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري القراءة والفلترة بذكاء...';
             btn.disabled = true;
 
             const reader = new FileReader();
@@ -1704,25 +1704,52 @@
                             if(!title) return;
                             
                             let rawText = arabicToEnglish(title + " " + content);
-                            let cleanTextForPhone = rawText.replace(/\D/g, ''); 
+                            
+                            // بنشيل المسافات والشرطات والأقواس الأول عشان نجمع الرقم على بعضه لو متفرق
+                            let textForRegex = rawText.replace(/[-+()\s]/g, '');
                             
                             let phone = '';
-                            let phoneMatch = cleanTextForPhone.match(/(201|01|1)[0125][0-9]{8}/);
-                            if (phoneMatch) {
-                                phone = phoneMatch[0];
-                                if (phone.startsWith('20')) phone = '0' + phone.substring(2);
-                                if (phone.length === 10 && phone.startsWith('1')) phone = '0' + phone;
-                            }
+                            let needsReview = false;
+
+                            // المحاولة الأولى: التقاط رقم مصري سليم (حتى لو فيه 0020 أو 20)
+                            let perfectMatch = textForRegex.match(/(00201|201|01|1)[0125][0-9]{8}/);
                             
+                            if (perfectMatch) {
+                                phone = perfectMatch[0];
+                                if (phone.startsWith('0020')) phone = '0' + phone.substring(4);
+                                else if (phone.startsWith('20')) phone = '0' + phone.substring(2);
+                                else if (phone.length === 10 && phone.startsWith('1')) phone = '0' + phone;
+                            } else {
+                                // المحاولة التانية: التقاط أي سلسلة أرقام متصلة طولها من 9 لـ 15 (عشان الأرقام المتلخبطة)
+                                let roughMatch = textForRegex.match(/\d{9,15}/);
+                                if (roughMatch) {
+                                    phone = roughMatch[0];
+                                    needsReview = true; // بنعلم عليه إنه محتاج مراجعة
+                                }
+                            }
+
                             let address = '';
                             let addrMatch = content.match(/العنوان\s*[:：]\s*(.*?)(?=\n|$)/);
                             if(addrMatch) address = addrMatch[1].trim();
                             
-                            let notes = content.replace(/\n/g, ' | ').trim();
+                            // التعديل الجديد: سحب تاريخ المهمة الأصلي من تيك تيك
+                            let taskDate = row['Created Time'] || row['Created Date'] || row['Start Date'] || '';
+                            let datePrefix = taskDate ? `[تاريخ الطلب القديم: ${taskDate.split('T')[0]}] ` : '';
                             
-                            if(phone && phone.length === 11) {
+                            let notes = content.replace(/\n/g, ' | ').trim();
+                            notes = datePrefix + notes; // لزق التاريخ في أول الملاحظة
+
+                            if (needsReview) {
+                                notes = "⚠️ [محتاج تدقيق الرقم] | " + notes;
+                            }
+                            
+                            // الحفظ لو لقينا أي رقم طوله من 9 لـ 15
+                            if(phone && phone.length >= 9 && phone.length <= 15) {
+                                // تنظيف اسم العميل من الأرقام الطويلة عشان الاسم يكون نضيف
+                                let cleanName = title.replace(/[٠-٩]/g, '').replace(/\d{9,15}/g, '').replace(/[-+()]/g, '').trim();
+                                
                                 parsedCustomers.push({ 
-                                    name: title.replace(/01[0-9]{9}/g, '').replace(/[٠-٩]/g, '').replace(/\d+/g, '').trim() || 'عميل مستورد', 
+                                    name: cleanName || 'عميل مستورد', 
                                     phone: phone, 
                                     zone: zone, 
                                     address: address, 
@@ -1735,11 +1762,11 @@
                         document.getElementById('ticktick-file').value = ''; 
                         
                         if(parsedCustomers.length === 0) {
-                            alert("لم يتم العثور على أرقام هواتف صالحة في الملف!");
+                            alert("لم يتم العثور على أرقام هواتف صالحة في الملف نهائياً!");
                             return;
                         }
                         
-                        if(confirm(`تم استخراج وفلترة [ ${parsedCustomers.length} ] عميل برقم موبايل سليم من الملف بنجاح!\n\nهل تريد حفظهم في أرشيف الموقع على فايربيس الآن؟`)) {
+                        if(confirm(`تم استخراج وفلترة [ ${parsedCustomers.length} ] عميل بنجاح!\nالأرقام السليمة، الأرقام اللي محتاجة تدقيق، وتواريخ الطلبات القديمة كلها اتجمعت.\n\nهل تريد حفظهم في أرشيف الموقع على فايربيس الآن؟`)) {
                             uploadTickTickToFirebase(parsedCustomers);
                         }
                     }
@@ -1747,6 +1774,7 @@
             };
             reader.readAsText(file);
         };
+
 
         window.uploadTickTickToFirebase = async (customers) => {
             const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
