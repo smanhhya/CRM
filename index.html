@@ -829,9 +829,12 @@
                 .replace(/{الخصم}/g, discountStr)
                 .replace(/{الإجمالي_النهائي}/g, order.total || 0);
 
-            let waNumber = phone.startsWith('0') ? '2' + phone : phone;
+            // 👇 التعديل بتاع الأمان نزل هنا 👇
+            let cleanPhone = phone || '';
+            let waNumber = cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone;
             window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, '_blank');
         };
+
 
         window.updateBatchSummary = () => {
             const panel = document.getElementById('batch-summary-panel'); if(!panel) return;
@@ -985,7 +988,10 @@
                 let itemsString = o.items ? o.items.map(i => i.name).join(' ') : '';
                 let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${o.customTag || ''} ${o.batchName || ''} ${o.zone || ''} ${itemsString}`.toLowerCase();
                 
-                let matchSearch = searchStr.includes(filterText);
+                // البحث الذكي متعدد الكلمات (بيلقط الدفعة والطبق حتى لو في بينهم مسافات)
+                let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
+                let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => searchStr.includes(word));
+
 
                 
                 // سحر الفلاتر الذكية 👑💸
@@ -1745,7 +1751,8 @@
             Object.keys(zonesMap).forEach(zone => { 
                 msg += `*📍 خط سير: ${zone}*\n`; 
                 zonesMap[zone].forEach((o, i) => { 
-                    let itemsStr = o.items.map(i=>`${i.quantity} ${i.name}`).join(' + ');
+                    let itemsStr = o.items ? o.items.map(i=>`${i.quantity} ${i.name}`).join(' + ') : 'بدون تفاصيل';
+
                     let orderMsg = dispatchTemplate
                         .replace(/{اسم_العميل}/g, o.customerName)
                         .replace(/{رقم_العميل}/g, o.customerPhone)
@@ -1782,7 +1789,10 @@
             }
             
             btn.innerHTML = origHtml; 
-            window.open(`https://wa.me/${phone.startsWith('0') ? '2' + phone : phone}?text=${encodeURIComponent(finalMessage)}`, '_blank'); 
+            
+            // 👇 التعديل بتاع الأمان نزل هنا 👇
+            let cleanPhone = phone || '';
+            window.open(`https://wa.me/${cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone}?text=${encodeURIComponent(finalMessage)}`, '_blank'); 
             
             // تصفير المودال للمرة الجاية
             document.getElementById('dispatch-preview-section').classList.add('hidden');
@@ -1790,6 +1800,7 @@
             document.getElementById('btn-send-dispatch').classList.add('hidden');
             closeModal('dispatch-modal');
         };
+
 
 
         window.toggleOrderDetails = (detailsId, iconId) => { 
