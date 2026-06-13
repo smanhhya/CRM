@@ -2076,4 +2076,234 @@
                     <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5">
                         <button onclick="changeEditQty('${pId}', -1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
                         <input type="number" id="edit-q-${pId}" min="0" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()">
-                        <button onclick="changeEditQty('${pId}', 1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class
+                        <button onclick="changeEditQty('${pId}', 1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
+                    </div>
+                </div>`;
+            });
+
+            let bSel = document.getElementById('edit-batch'); 
+            bSel.innerHTML = '<option value="">-- بدون دورة مسجلة --</option>';
+            Object.keys(storeBatches).forEach(bId => { 
+                bSel.innerHTML += `<option value="${bId}" ${editingOrderData.batchId === bId ? 'selected' : ''}>${storeBatches[bId].name}</option>`; 
+            });
+            
+            if(document.getElementById('edit-custom-tag')) { document.getElementById('edit-custom-tag').value = editingOrderData.customTag || ''; }
+            if(document.getElementById('edit-phone-2')) document.getElementById('edit-phone-2').value = editingOrderData.customerPhone2 || '';
+
+            document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0; 
+            document.getElementById('edit-discount').value = editingOrderData.discount || 0; 
+            calcEditTotal(); openModal('edit-order-modal');
+        };
+
+        window.changeEditQty = (pId, amount) => { 
+            let input = document.getElementById(`edit-q-${pId}`); let val = parseInt(input.value) || 0; val += amount; if(val < 0) val = 0; input.value = val; calcEditTotal(); 
+        };
+
+        window.calcEditTotal = () => { 
+            let itemsTotal = 0; 
+            Object.keys(storeProducts).forEach(id => { 
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
+                itemsTotal += (q * price); 
+            }); 
+            document.getElementById('edit-price').value = itemsTotal; 
+            let d = Number(document.getElementById('edit-delivery').value) || 0; let disc = Number(document.getElementById('edit-discount').value) || 0; 
+            let finalTotal = itemsTotal + d - disc; if(finalTotal < 0) finalTotal = 0; document.getElementById('edit-total').value = finalTotal; 
+        };
+
+
+        window.saveEditedOrder = async () => {
+            if(!editingOrderData) return;
+            let newItems = []; let newSubtotal = 0;
+            let newBatchId = document.getElementById('edit-batch').value; 
+            let oldBatchId = editingOrderData.batchId;
+            let oldItems = editingOrderData.items || [];
+            
+            Object.keys(storeProducts).forEach(id => { 
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                if(q > 0) { 
+                    let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                    let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
+                    newItems.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); newSubtotal += (q * price); 
+                } 
+            });
+
+            
+            if(newItems.length === 0) return alert('لا يمكن حفظ طلب فارغ!');
+
+            let newDelivery = Number(document.getElementById('edit-delivery').value) || 0; 
+            let newDiscount = Number(document.getElementById('edit-discount').value) || 0; 
+            let newTotal = Number(document.getElementById('edit-total').value) || 0;
+            let newBatchName = newBatchId ? storeBatches[newBatchId].name : '';
+            let newCustomTag = document.getElementById('edit-custom-tag') ? document.getElementById('edit-custom-tag').value.trim() : '';
+            let newPhone2 = document.getElementById('edit-phone-2') ? document.getElementById('edit-phone-2').value.trim() : '';
+            
+            let oldTotal = Number(editingOrderData.total) || 0; let difference = newTotal - oldTotal;
+            
+            const btn = document.getElementById('btn-save-edit'); const origHtml = btn.innerHTML; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحديث السيستم...'; btn.disabled = true;
+
+            try {
+                await db.collection('orders').doc(editingOrderData.id).update({ 
+                    items: newItems, 
+                    subtotal: newSubtotal, 
+                    deliveryFee: newDelivery, 
+                    discount: newDiscount, 
+                    total: newTotal, 
+                    batchId: newBatchId, 
+                    batchName: newBatchName, 
+                    customTag: newCustomTag,
+                    customerPhone2: newPhone2 
+                });
+                
+                if(difference !== 0 && editingOrderData.customerPhone) { let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; await db.collection('customers').doc(cleanPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(difference) }); }
+                if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(difference) }); }
+                
+                // 🌟 تحديث المخزون والدفعات في الـ CRM عند التعديل 🌟
+                if(editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') {
+                    let stockUpdates = {};
+                    let oldBatchBookedUpdates = {};
+                    let newBatchBookedUpdates = {};
+
+                    oldItems.forEach(i => {
+                        stockUpdates[i.id] = (stockUpdates[i.id] || 0) + i.quantity;
+                        if(oldBatchId) oldBatchBookedUpdates[i.id] = (oldBatchBookedUpdates[i.id] || 0) - i.quantity;
+                    });
+
+                    newItems.forEach(i => {
+                        stockUpdates[i.id] = (stockUpdates[i.id] || 0) - i.quantity;
+                        if(newBatchId) newBatchBookedUpdates[i.id] = (newBatchBookedUpdates[i.id] || 0) + i.quantity;
+                    });
+
+                    let finalStockUpdates = {};
+                    Object.keys(stockUpdates).forEach(id => { if(stockUpdates[id] !== 0) finalStockUpdates[id] = firebase.firestore.FieldValue.increment(stockUpdates[id]); });
+                    if(Object.keys(finalStockUpdates).length > 0) { await db.collection("inventory").doc("stock").set(finalStockUpdates, { merge: true }); }
+
+                    if (oldBatchId === newBatchId && oldBatchId) {
+                        let combinedBatchUpdates = {};
+                        new Set([...Object.keys(oldBatchBookedUpdates), ...Object.keys(newBatchBookedUpdates)]).forEach(id => {
+                            let netChange = (oldBatchBookedUpdates[id] || 0) + (newBatchBookedUpdates[id] || 0);
+                            if(netChange !== 0) combinedBatchUpdates[id] = firebase.firestore.FieldValue.increment(netChange);
+                        });
+                        if(Object.keys(combinedBatchUpdates).length > 0) { await db.collection("inventory").doc("batches").set({ [oldBatchId]: { booked: combinedBatchUpdates } }, { merge: true }); }
+                    } else {
+                        if (oldBatchId) {
+                            let oldFinal = {}; Object.keys(oldBatchBookedUpdates).forEach(id => { if(oldBatchBookedUpdates[id] !== 0) oldFinal[id] = firebase.firestore.FieldValue.increment(oldBatchBookedUpdates[id]); });
+                            if(Object.keys(oldFinal).length > 0) await db.collection("inventory").doc("batches").set({ [oldBatchId]: { booked: oldFinal } }, { merge: true });
+                        }
+                        if (newBatchId) {
+                            let newFinal = {}; Object.keys(newBatchBookedUpdates).forEach(id => { if(newBatchBookedUpdates[id] !== 0) newFinal[id] = firebase.firestore.FieldValue.increment(newBatchBookedUpdates[id]); });
+                            if(Object.keys(newFinal).length > 0) await db.collection("inventory").doc("batches").set({ [newBatchId]: { booked: newFinal } }, { merge: true });
+                        }
+                    }
+                }
+
+                closeModal('edit-order-modal');
+            } catch(e) { alert("حدث خطأ أثناء حفظ التعديلات!"); console.log(e); }
+            btn.innerHTML = origHtml; btn.disabled = false;
+        };
+
+        // === 13. السحر الجديد: التحديد المتعدد والتعديل الطاير ===
+        
+        // دوال التحديد المتعدد
+        window.toggleBulkActionBar = () => {
+            let checked = document.querySelectorAll('.bulk-order-cb:checked');
+            let bar = document.getElementById('bulk-actions-bar');
+            if(checked.length > 0) {
+                document.getElementById('bulk-count').innerText = checked.length;
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
+            }
+        };
+
+        window.bulkChangeStatus = async (newStatus) => {
+            let checked = Array.from(document.querySelectorAll('.bulk-order-cb:checked')).map(cb => cb.value);
+            if(checked.length === 0) return;
+            
+            let statusName = newStatus === 'processing' ? 'قيد التجهيز' : (newStatus === 'completed' ? 'مكتمل' : 'لم يتم الرد');
+            if(!confirm(`سيتم تحويل [ ${checked.length} ] طلبات إلى حالة (${statusName}). تأكيد؟`)) return;
+
+            let bar = document.getElementById('bulk-actions-bar');
+            let originalHtml = bar.innerHTML;
+            bar.innerHTML = '<div class="w-full text-center text-sm font-bold text-amber-400"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث الجماعي للسيستم...</div>';
+
+            try {
+                let dbBatch = db.batch();
+                checked.forEach(id => {
+                    let ref = db.collection('orders').doc(id);
+                    dbBatch.update(ref, { status: newStatus });
+                });
+                await dbBatch.commit();
+                
+                bar.innerHTML = originalHtml;
+                bar.classList.add('hidden');
+                
+                document.querySelectorAll('.bulk-order-cb').forEach(cb => cb.checked = false);
+            } catch(e) {
+                alert("حدث خطأ أثناء التحديث الجماعي!");
+                bar.innerHTML = originalHtml;
+            }
+        };
+
+        // دوال التعديل الطاير (Inline Editing)
+        window.inlineEdit = (el, orderId, field) => {
+            if (el.querySelector('input')) return;
+            let originalText = el.innerText.trim();
+            if (field === 'customerPhone2' && originalText.includes(' ')) {
+                 originalText = originalText.replace(/[^0-9]/g, ''); 
+            }
+            
+            let input = document.createElement('input');
+            input.type = 'text';
+            input.value = originalText;
+            input.className = 'border border-brand-primary rounded px-1 py-0.5 text-xs font-bold text-slate-800 outline-none w-auto max-w-[150px] inline-block bg-white shadow-sm';
+            
+            input.onblur = () => saveInlineEdit(input, orderId, field, originalText, el);
+            input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); else if (e.key === 'Escape') cancelInlineEdit(input, originalText, el); };
+            
+            el.innerHTML = '';
+            el.appendChild(input);
+            input.focus();
+        };
+
+        window.saveInlineEdit = async (input, orderId, field, originalText, el) => {
+            let newVal = input.value.trim();
+            if (newVal === originalText || newVal === '') {
+                cancelInlineEdit(input, originalText, el);
+                return;
+            }
+            
+            el.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-brand-primary"></i>';
+            try {
+                let updateData = {};
+                updateData[field] = newVal;
+                await db.collection('orders').doc(orderId).update(updateData);
+                
+                let o = allOrdersRaw.find(x => x.id === orderId);
+                if(o && o.customerPhone && (field === 'customerName' || field === 'zone' || field === 'customerAddress')) {
+                    let cleanPhone = o.customerPhone.startsWith('0') ? o.customerPhone : '0' + o.customerPhone;
+                    let custUpdate = {};
+                    if(field === 'customerName') custUpdate.name = newVal;
+                    if(field === 'zone') custUpdate.zone = newVal;
+                    if(field === 'customerAddress') custUpdate.address = newVal;
+                    await db.collection('customers').doc(cleanPhone).update(custUpdate).catch(()=>console.log("Customer doc might not exist"));
+                }
+            } catch(e) {
+                alert("خطأ في حفظ التعديل الطاير!");
+                cancelInlineEdit(input, originalText, el);
+            }
+        };
+        
+        window.cancelInlineEdit = (input, originalText, el) => {
+            if(el.getAttribute('data-field') === 'customerPhone2' && originalText !== '') {
+                el.innerHTML = `<i class="fa-solid fa-phone text-[8px]"></i> ` + originalText;
+            } else {
+                el.innerText = originalText;
+            }
+        };
+
+    </script>
+</body>
+</html>
