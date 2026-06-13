@@ -178,6 +178,7 @@
                     <button onclick="setOrderTab('all')" id="tab-all" class="order-tab active whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-slate-800 text-white transition-all shadow-sm">الكل</button>
                     <button onclick="setOrderTab('new')" id="tab-new" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">جديد <span id="badge-new" class="ml-1.5 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
                     <button onclick="setOrderTab('processing')" id="tab-processing" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">قيد التجهيز <span id="badge-processing" class="ml-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('no_answer')" id="tab-no_answer" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">لم يتم الرد 📴 <span id="badge-no_answer" class="ml-1.5 bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
                     <button onclick="setOrderTab('completed')" id="tab-completed" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مكتمل <span id="badge-completed" class="ml-1.5 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
                     <button onclick="setOrderTab('canceled')" id="tab-canceled" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">ملغي</button>
                 </div>
@@ -308,6 +309,11 @@
                 <button onclick="closeModal('edit-order-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="p-6 overflow-y-auto custom-scroll space-y-6 bg-slate-50/50">
+
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100 mb-4">
+                    <label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (للطوارئ)</label>
+                    <input type="tel" id="edit-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="إضافة رقم آخر...">
+                </div>
                 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
                     <label class="text-sm font-black text-slate-800 block mb-4"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-2"></i> الكميات المطلوبة</label>
@@ -352,8 +358,9 @@
                 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
                     <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-regular fa-address-card text-blue-500 mr-1"></i> بيانات العميل</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">الموبايل (يبحث تلقائياً في الأرشيف)</label><input type="tel" id="no-phone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" oninput="checkCustomerExists()"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">الموبايل الأساسي</label><input type="tel" id="no-phone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" oninput="checkCustomerExists()"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (اختياري)</label><input type="tel" id="no-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="01..."></div>
                         <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">اسم العميل</label><input type="text" id="no-name" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm"></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -369,7 +376,6 @@
                 </div>
 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <!-- التعديل هنا: زرار تطبيق السعر القديم ظهر جنب كلمة محتويات الطلب -->
                     <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-50">
                         <h4 class="text-xs font-black text-slate-800"><i class="fa-solid fa-boxes-packing text-indigo-500 mr-1"></i> محتويات الطلب</h4>
                         <label class="flex items-center gap-2 cursor-pointer bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
@@ -511,7 +517,6 @@
         </div>
     </div>
 
-    <!-- نافذة العصا السحرية للملاحظات -->
     <div id="note-action-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xs overflow-hidden flex flex-col transform transition-all">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
@@ -652,7 +657,7 @@
             });
 
             db.collection('orders').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
-                let dSales = 0, mSales = 0, counts = { new: 0, processing: 0, completed: 0, canceled: 0 };
+                let dSales = 0, mSales = 0, counts = { new: 0, processing: 0, no_answer: 0, completed: 0, canceled: 0 };
                 allOrdersRaw = []; dispatchOrdersRaw = [];
                 const currentMonth = new Date().getMonth();
 
@@ -670,7 +675,7 @@
                 document.getElementById('dash-sales-day').innerHTML = `${dSales.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
                 document.getElementById('dash-sales-month').innerHTML = `${mSales.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
                 
-                ['new', 'processing', 'completed'].forEach(s => { let b = document.getElementById(`badge-${s}`); if(b) b.innerText = counts[s]; });
+                ['new', 'processing', 'no_answer', 'completed'].forEach(s => { let b = document.getElementById(`badge-${s}`); if(b) b.innerText = counts[s]; });
                 
                 renderOrdersList();
                 updateBatchSummary();
@@ -894,11 +899,15 @@
                 
                 let sBadge = o.status==='new' ? '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جديد</span>' : 
                             (o.status==='processing' ? '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جاري التجهيز</span>' : 
+                            (o.status==='no_answer' ? '<span class="bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-lg text-[10px] font-black"><i class="fa-solid fa-phone-slash mr-1"></i> لم يتم الرد</span>' : 
                             (o.status==='completed' ? '<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-lg text-[10px] font-black">مكتمل</span>' : 
-                            '<span class="bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black">ملغي</span>'));
+                            '<span class="bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black">ملغي</span>')));
                 
                 let customTagHtml = o.customTag ? `<span onclick="document.getElementById('search-order').value='${o.customTag}'; renderOrdersList();" class="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-purple-500 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه المجموعة"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
                 let batchTagHtml = o.batchName ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
+
+                let phone2Html = o.customerPhone2 ? `<a href="tel:${o.customerPhone2}" class="text-[10px] text-purple-400 font-bold border border-purple-100 bg-purple-50 px-1.5 rounded ml-1 hover:text-purple-600 transition-colors" dir="ltr" title="رقم بديل"><i class="fa-solid fa-phone text-[8px]"></i> ${o.customerPhone2}</a>` : '';
+
 
                 return `
                 <div class="bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5">
@@ -908,6 +917,7 @@
                                 <span class="cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${o.customerPhone}')">${o.customerName || 'بدون اسم'}</span>
                                 <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-6 h-6 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[10px]"></i></a>
                                 <span class="text-[11px] text-slate-400 font-bold" dir="ltr">${o.customerPhone}</span>
+                                ${phone2Html}
                             </h5>
                             <p class="text-xs text-slate-500 font-bold mb-2.5"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${o.zone || 'غير مسجل'} ${o.customerAddress ? '- '+o.customerAddress : ''}</p>
                             <div class="flex flex-wrap gap-1.5">
@@ -944,6 +954,7 @@
                             <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
                                 <option value="new" ${o.status==='new'?'selected':''}>الآن: جديد</option>
                                 <option value="processing" ${o.status==='processing'?'selected':''}>تحويل لتجهيز</option>
+                                <option value="no_answer" ${o.status==='no_answer'?'selected':''}>لم يتم الرد 📴</option>
                                 <option value="completed" ${o.status==='completed'?'selected':''}>تأكيد مكتمل</option>
                                 <option value="canceled" ${o.status==='canceled'?'selected':''}>إلغاء الطلب ❌</option>
                                 <option value="trash" class="text-red-500 font-black bg-red-50">حذف للسلة 🗑️</option>
@@ -1172,8 +1183,8 @@
                         } else {
                             let o = item.data;
                             let itemsHtml = o.items && o.items.length > 0 ? o.items.map(i => `<div class="flex justify-between text-[11px] font-bold text-slate-600 border-b border-slate-50 py-2 last:border-0"><span class="flex items-center gap-1.5"><span class="bg-slate-100 text-slate-500 px-1.5 rounded">${i.quantity}x</span> ${i.name}</span><span class="text-slate-400">${i.price * i.quantity} ج</span></div>`).join('') : '<p class="text-xs text-slate-400">لا توجد تفاصيل</p>';
-                            let statusAr = o.status === 'new' ? 'جديد' : (o.status === 'processing' ? 'قيد التجهيز' : (o.status === 'completed' ? 'مكتمل' : 'ملغي'));
-                            let statusColor = o.status === 'new' ? 'text-blue-600 bg-blue-50 border-blue-100' : (o.status === 'processing' ? 'text-amber-600 bg-amber-50 border-amber-100' : (o.status === 'completed' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-slate-500 bg-slate-50 border-slate-200'));
+                            let statusAr = o.status === 'new' ? 'جديد' : (o.status === 'processing' ? 'قيد التجهيز' : (o.status === 'no_answer' ? 'لم يتم الرد' : (o.status === 'completed' ? 'مكتمل' : 'ملغي')));
+                            let statusColor = o.status === 'new' ? 'text-blue-600 bg-blue-50 border-blue-100' : (o.status === 'processing' ? 'text-amber-600 bg-amber-50 border-amber-100' : (o.status === 'no_answer' ? 'text-purple-600 bg-purple-50 border-purple-100' : (o.status === 'completed' ? 'text-emerald-600 bg-emerald-50 border-emerald-100' : 'text-slate-500 bg-slate-50 border-slate-200')));
                             let noteHtml = o.adminNote ? `<div class="mt-3 bg-amber-50/50 border border-amber-100/50 rounded-xl p-3 text-xs font-bold text-amber-800 leading-relaxed"><i class="fa-solid fa-pen-to-square text-amber-400 mr-1"></i> <strong>ملاحظات الأوردر:</strong><br>${o.adminNote}</div>` : '';
                             
                             return `
@@ -1363,6 +1374,7 @@
         
         window.submitNewOrder = async () => {
             let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, '');
+            let phone2 = document.getElementById('no-phone-2') ? document.getElementById('no-phone-2').value.trim() : '';
             let name = document.getElementById('no-name').value.trim();
             let zone = document.getElementById('no-zone').value;
             let address = document.getElementById('no-address').value.trim();
@@ -1418,6 +1430,7 @@
                 const orderData = { 
                     customerName: name, 
                     customerPhone: phone, 
+                    customerPhone2: phone2,
                     zone: zone, 
                     customerAddress: address, 
                     batchId: batchId, 
@@ -1499,6 +1512,7 @@
                 document.getElementById('no-zone').selectedIndex = 0;
                 if(document.getElementById('no-batch')) document.getElementById('no-batch').selectedIndex = 0;
                 if(document.getElementById('no-custom-tag')) document.getElementById('no-custom-tag').value = '';
+                if(document.getElementById('no-phone-2')) document.getElementById('no-phone-2').value = '';
                 
                 // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
                 if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
@@ -2029,6 +2043,7 @@
             });
             
             if(document.getElementById('edit-custom-tag')) { document.getElementById('edit-custom-tag').value = editingOrderData.customTag || ''; }
+            if(document.getElementById('edit-phone-2')) document.getElementById('edit-phone-2').value = editingOrderData.customerPhone2 || '';
 
             document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0; 
             document.getElementById('edit-discount').value = editingOrderData.discount || 0; 
@@ -2077,6 +2092,7 @@
             let newTotal = Number(document.getElementById('edit-total').value) || 0;
             let newBatchName = newBatchId ? storeBatches[newBatchId].name : '';
             let newCustomTag = document.getElementById('edit-custom-tag') ? document.getElementById('edit-custom-tag').value.trim() : '';
+            let newPhone2 = document.getElementById('edit-phone-2') ? document.getElementById('edit-phone-2').value.trim() : '';
             
             let oldTotal = Number(editingOrderData.total) || 0; let difference = newTotal - oldTotal;
             
@@ -2084,7 +2100,18 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحديث السيستم...'; btn.disabled = true;
 
             try {
-                await db.collection('orders').doc(editingOrderData.id).update({ items: newItems, subtotal: newSubtotal, deliveryFee: newDelivery, discount: newDiscount, total: newTotal, batchId: newBatchId, batchName: newBatchName, customTag: newCustomTag });
+                await db.collection('orders').doc(editingOrderData.id).update({ 
+                    items: newItems, 
+                    subtotal: newSubtotal, 
+                    deliveryFee: newDelivery, 
+                    discount: newDiscount, 
+                    total: newTotal, 
+                    batchId: newBatchId, 
+                    batchName: newBatchName, 
+                    customTag: newCustomTag,
+                    customerPhone2: newPhone2 
+                });
+                
                 if(difference !== 0 && editingOrderData.customerPhone) { let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; await db.collection('customers').doc(cleanPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(difference) }); }
                 if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(difference) }); }
                 
