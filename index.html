@@ -984,7 +984,6 @@
 
 
         window.renderOrdersList = () => {
-        window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
             
@@ -1775,7 +1774,6 @@
             document.getElementById('btn-send-dispatch').classList.remove('hidden');
         };
 
-        window.confirmAndSendDispatch = async () => {
         window.confirmAndSendDispatch = async () => {
             const phone = document.getElementById('dispatch-driver-select').value; 
             const driverName = document.getElementById('dispatch-driver-select').options[document.getElementById('dispatch-driver-select').selectedIndex].text;
