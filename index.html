@@ -980,7 +980,7 @@
                     <div class="flex justify-between items-start mb-3 pl-8">
                         <div>
                             <h5 class="font-black text-slate-800 text-base flex flex-wrap items-center gap-2.5 mb-1.5">
-                                <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerName')" title="اضغط مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
+                                <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed select-none" onclick="smartNameClick(this, '${o.id}', '${o.customerPhone}', 'customerName')" title="اضغط مرة لفتح ملف العميل.. مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
                                 <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-6 h-6 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[10px]"></i></a>
                                 <span class="text-[11px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
                                 ${phone2Html}
@@ -2356,14 +2356,32 @@
             renderOrdersList();
         };
 
-        // 2. سحب الموبايل الآمن (Swipe Actions)
+        // ==================================================
+        // دوال الذكاء الاصطناعي للواجهة (Click & Swipe Logic)
+        // ==================================================
+
+        // دالة التفريق بين الضغطة الواحدة (فتح الأرشيف) والمزدوجة (تعديل الاسم)
+        let clickTimer = null;
+        window.smartNameClick = (el, orderId, phone, field) => {
+            if(clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+                inlineEdit(el, orderId, field); // ضغطة مزدوجة -> تعديل
+            } else {
+                clickTimer = setTimeout(() => {
+                    clickTimer = null;
+                    openCustomerCard(phone); // ضغطة واحدة -> فتح الأرشيف
+                }, 250); // ربع ثانية للتفريق بينهم
+            }
+        };
+
+        // 2. السحب الذكي الموجه للموبايل (Smart Swipe Funnel)
         let touchstartX = 0;
         let touchendX = 0;
         let activeOrderCard = null;
 
         document.addEventListener('touchstart', e => {
             touchstartX = e.changedTouches[0].screenX;
-            // نتأكد إنه بيسحب كارت أوردر مش حاجة تانية
             activeOrderCard = e.target.closest('.order-card'); 
         }, {passive: true});
 
@@ -2372,22 +2390,51 @@
             if(activeOrderCard) {
                 let diff = touchendX - touchstartX;
                 let orderId = activeOrderCard.getAttribute('data-id');
+                let orderObj = allOrdersRaw.find(x => x.id === orderId);
                 
-                // لو سحب يمين مسافة كافية (مقصودة)
-                if(diff > 120) { 
-                    if(confirm('✅ هل تريد تأكيد تسليم هذا الأوردر (مكتمل)؟')) {
-                        updateOrderStatus(orderId, 'completed');
-                    }
-                } 
-                // لو سحب شمال مسافة كافية
-                else if (diff < -120) { 
-                    if(confirm('📴 هل تريد تحويل هذا الأوردر إلى (لم يتم الرد)؟')) {
-                        updateOrderStatus(orderId, 'no_answer');
+                if(orderObj) {
+                    let stat = orderObj.status;
+
+                    // ➡️ سحب قوي لليمين
+                    if(diff > 120) { 
+                        if (stat === 'new') {
+                            if(confirm('➡️ تحويل هذا الأوردر إلى (قيد التجهيز)؟')) updateOrderStatus(orderId, 'processing');
+                        } else if (stat === 'processing') {
+                            if(confirm('✅ تأكيد تسليم هذا الأوردر (مكتمل)؟')) updateOrderStatus(orderId, 'completed');
+                        } else if (stat === 'no_answer') {
+                            if(confirm('📞 العميل رد! إرجاع الأوردر إلى (قيد التجهيز)؟')) updateOrderStatus(orderId, 'processing');
+                        }
+                    } 
+                    // ⬅️ سحب قوي للشمال
+                    else if (diff < -120) { 
+                        if (stat === 'new') {
+                            if(confirm('📴 تحويل هذا الأوردر إلى (لم يتم الرد)؟')) updateOrderStatus(orderId, 'no_answer');
+                        } else if (stat === 'processing') {
+                            // حصلت مشكلة أثناء التجهيز/التوصيل
+                            let problem = prompt('⚠️ حصلت مشكلة في الأوردر ده! اكتب الملاحظة هنا:');
+                            if(problem !== null && problem.trim() !== '') {
+                                let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                                let updatedNotes = orderObj.adminNote ? orderObj.adminNote + `\n\n[${dateStr}] ⚠️ ` + problem : `[${dateStr}] ⚠️ ` + problem;
+                                db.collection('orders').doc(orderId).update({ adminNote: updatedNotes });
+                            }
+                        } else if (stat === 'no_answer') {
+                            // العميل نفض وهنلغيه
+                            let cancelNote = prompt('❌ العميل مجابش! اكتب سبب الإلغاء قبل الحذف (أو سيبه فاضي واضغط OK للحذف مباشرة):');
+                            if(cancelNote !== null) {
+                                if(cancelNote.trim() !== '') {
+                                    let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                                    let updatedNotes = orderObj.adminNote ? orderObj.adminNote + `\n\n[${dateStr}] ❌ إلغاء: ` + cancelNote : `[${dateStr}] ❌ إلغاء: ` + cancelNote;
+                                    db.collection('orders').doc(orderId).update({ adminNote: updatedNotes });
+                                }
+                                updateOrderStatus(orderId, 'canceled');
+                            }
+                        }
                     }
                 }
             }
             activeOrderCard = null;
         });
+
 
     </script>
 </body>
