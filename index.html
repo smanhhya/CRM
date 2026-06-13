@@ -543,6 +543,52 @@
             </div>
         </div>
     </div>
+    <div id="dispatch-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-motorcycle text-blue-500 mr-2"></i> توجيه الطلبات للمندوب</h3>
+                <button onclick="closeModal('dispatch-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/50">
+                <div class="mb-5">
+                    <label class="text-[10px] font-bold text-slate-500 block mb-2">اختر المندوب</label>
+                    <select id="dispatch-driver-select" class="w-full border border-slate-200 bg-white rounded-xl p-3.5 font-bold outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"></select>
+                </div>
+                <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                    <label class="text-xs font-black text-slate-700"><i class="fa-solid fa-list-check text-indigo-400 mr-1"></i> الطلبات المتاحة للتوجيه:</label>
+                    <button onclick="toggleAllDispatchCheckboxes()" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">تحديد الكل</button>
+                </div>
+                <div id="dispatch-orders-list" class="space-y-3"></div>
+
+                <div id="dispatch-preview-section" class="hidden mt-6 border-t border-slate-200 pt-5">
+                    <label class="text-[10px] font-bold text-slate-500 block mb-2"><i class="fa-solid fa-pen-to-square text-amber-500 mr-1"></i> مراجعة وتعديل الرسالة قبل الإرسال للمندوب:</label>
+                    <textarea id="dispatch-final-msg" rows="7" class="w-full border border-slate-200 rounded-xl p-3 text-xs font-bold bg-white focus:ring-2 focus:ring-[#25D366]/50 outline-none transition-all resize-none custom-scroll leading-relaxed text-slate-700 shadow-inner"></textarea>
+                </div>
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
+                <button id="btn-generate-dispatch" onclick="previewDispatchMessage()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl transition-all shadow-lg active:scale-95 text-base flex items-center justify-center gap-2"><i class="fa-solid fa-file-lines text-amber-400"></i> إنشاء الرسالة ومعاينتها</button>
+                
+                <button id="btn-send-dispatch" onclick="confirmAndSendDispatch()" class="hidden w-full bg-[#25D366] hover:bg-[#1ebd57] text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-[#25D366]/30 flex items-center justify-center gap-2 active:scale-95 text-base"><i class="fa-brands fa-whatsapp text-xl"></i> إرسال عبر واتساب للمندوب</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="action-prompt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden flex flex-col transform transition-all">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 id="action-prompt-title" class="text-lg font-black text-slate-800">تأكيد الإجراء</h3>
+                <button onclick="closeModal('action-prompt-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-5 bg-slate-50/50">
+                <label class="text-[10px] font-bold text-slate-500 block mb-2">كلمات سريعة (اضغط للإضافة):</label>
+                <div id="quick-tags-container" class="flex flex-wrap gap-2 mb-4"></div>
+                <textarea id="action-prompt-text" rows="3" class="w-full border border-slate-200 rounded-xl p-3 text-sm font-bold bg-white focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all resize-none" placeholder="اكتب ملاحظتك هنا..."></textarea>
+            </div>
+            <div class="p-4 bg-white border-t border-slate-100">
+                <button id="action-prompt-confirm" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3.5 rounded-xl shadow-md transition-all active:scale-95">تأكيد وتنفيذ</button>
+            </div>
+        </div>
+    </div>
 
     <div id="note-action-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xs overflow-hidden flex flex-col transform transition-all">
@@ -880,7 +926,7 @@
 
             let batchesHtml = Object.keys(summary).map(bName => {
                 let itemsHtml = Object.keys(summary[bName].items).map(itemName => 
-                    `<span class="bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg inline-block whitespace-nowrap shadow-sm text-[10px]"><span class="text-teal-600 font-black">${summary[bName].items[itemName]}x</span> ${itemName}</span>`
+                    `<span onclick="event.stopPropagation(); filterOrdersFromAnalysis('${bName} ${itemName}')" class="bg-slate-50 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-lg inline-block whitespace-nowrap shadow-sm text-[10px] cursor-pointer hover:bg-teal-500 hover:text-white hover:border-teal-400 transition-colors" title="اضغط لعرض طلبات هذا الصنف في هذه الدفعة فقط"><span class="text-teal-600 font-black">${summary[bName].items[itemName]}x</span> ${itemName}</span>`
                 ).join(' ');
 
                 return `
@@ -934,8 +980,13 @@
             
             let filtered = allOrdersRaw.filter(o => {
                 let matchTab = (currentOrderTab === 'all' && o.status !== 'trash') || (o.status === currentOrderTab);
-                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${o.customTag || ''} ${o.batchName || ''} ${o.zone || ''}`.toLowerCase();
+                
+                // سحب المنتجات عشان التحليل العميق يقرأها
+                let itemsString = o.items ? o.items.map(i => i.name).join(' ') : '';
+                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${o.customTag || ''} ${o.batchName || ''} ${o.zone || ''} ${itemsString}`.toLowerCase();
+                
                 let matchSearch = searchStr.includes(filterText);
+
                 
                 // سحر الفلاتر الذكية 👑💸
                 let matchSmart = true;
@@ -1663,7 +1714,11 @@
             cbs.forEach(cb => cb.checked = !allChecked); 
         };
 
-        window.sendOrdersToDriver = async () => {
+        // ==========================================
+        // 4. التحكم في رسالة المندوب (الجديدة)
+        // ==========================================
+        
+        window.previewDispatchMessage = () => {
             const selectElement = document.getElementById('dispatch-driver-select'); 
             const phone = selectElement.value; 
             if(!phone) return alert("رجاءً اختر المندوب من القائمة!");
@@ -1702,26 +1757,40 @@
                         .replace(/{الإجمالي_النهائي}/g, o.total);
 
                     msg += `\n${i+1}- ` + orderMsg + `\n`; if (o.driverNote) msg += `🛵 ملاحظة للمندوب: ${o.driverNote}\n`;
-
                 }); 
                 msg += `\n➖➖➖➖➖➖➖➖\n\n`; 
             });
             
-            const btn = document.querySelector('button[onclick="sendOrdersToDriver()"]'); 
-            const origHtml = btn.innerHTML; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التوجيه للواتساب...';
+            document.getElementById('dispatch-final-msg').value = msg;
+            document.getElementById('dispatch-preview-section').classList.remove('hidden');
+            document.getElementById('btn-generate-dispatch').classList.add('hidden');
+            document.getElementById('btn-send-dispatch').classList.remove('hidden');
+        };
+
+        window.confirmAndSendDispatch = async () => {
+            const phone = document.getElementById('dispatch-driver-select').value; 
+            const driverName = document.getElementById('dispatch-driver-select').options[document.getElementById('dispatch-driver-select').selectedIndex].text;
+            let selectedIds = Array.from(document.querySelectorAll('.disp-cb:checked')).map(cb => cb.value); 
+            
+            let finalMessage = document.getElementById('dispatch-final-msg').value;
+            let btn = document.getElementById('btn-send-dispatch'); 
+            let origHtml = btn.innerHTML; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التوجيه...';
             
             for (let id of selectedIds) { 
-                let o = selectedOrders.find(x => x.id === id); 
-                if(o) { 
-                    try { await db.collection('orders').doc(id).update({ driverName: driverName, status: 'processing' }); } 
-                    catch(e) { } 
-                } 
+                try { await db.collection('orders').doc(id).update({ driverName: driverName, status: 'processing' }); } catch(e) { } 
             }
+            
             btn.innerHTML = origHtml; 
-            window.open(`https://wa.me/${phone.startsWith('0') ? '2' + phone : phone}?text=${encodeURIComponent(msg)}`, '_blank'); 
+            window.open(`https://wa.me/${phone.startsWith('0') ? '2' + phone : phone}?text=${encodeURIComponent(finalMessage)}`, '_blank'); 
+            
+            // تصفير المودال للمرة الجاية
+            document.getElementById('dispatch-preview-section').classList.add('hidden');
+            document.getElementById('btn-generate-dispatch').classList.remove('hidden');
+            document.getElementById('btn-send-dispatch').classList.add('hidden');
             closeModal('dispatch-modal');
         };
+
 
         window.toggleOrderDetails = (detailsId, iconId) => { 
             const detailsDiv = document.getElementById(detailsId); 
@@ -2357,10 +2426,10 @@
         };
 
         // ==================================================
-        // دوال الذكاء الاصطناعي للواجهة (Click & Swipe Logic)
+        // دوال الذكاء الاصطناعي للواجهة (Click, Swipe & Quick Tags)
         // ==================================================
 
-        // دالة التفريق بين الضغطة الواحدة (فتح الأرشيف) والمزدوجة (تعديل الاسم)
+        // 1. دالة التفريق بين الضغطة الواحدة والمزدوجة
         let clickTimer = null;
         window.smartNameClick = (el, orderId, phone, field) => {
             if(clickTimer) {
@@ -2371,11 +2440,32 @@
                 clickTimer = setTimeout(() => {
                     clickTimer = null;
                     openCustomerCard(phone); // ضغطة واحدة -> فتح الأرشيف
-                }, 250); // ربع ثانية للتفريق بينهم
+                }, 250); 
             }
         };
 
-        // 2. السحب الذكي الموجه للموبايل (Smart Swipe Funnel)
+        // 2. نافذة الملاحظات السريعة (Quick Tags Modal)
+        let currentPromptCallback = null;
+        window.openActionPrompt = (title, tags, placeholder, onConfirm) => {
+            document.getElementById('action-prompt-title').innerHTML = title;
+            document.getElementById('action-prompt-text').placeholder = placeholder;
+            document.getElementById('action-prompt-text').value = '';
+            
+            let tagsHtml = tags.map(t => `<button onclick="document.getElementById('action-prompt-text').value += '${t} '" class="bg-white border border-slate-200 text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-brand-primary hover:text-white hover:border-brand-primary transition-colors shadow-sm">${t}</button>`).join('');
+            document.getElementById('quick-tags-container').innerHTML = tagsHtml;
+            
+            currentPromptCallback = onConfirm;
+            openModal('action-prompt-modal');
+            setTimeout(() => document.getElementById('action-prompt-text').focus(), 100);
+        };
+
+        document.getElementById('action-prompt-confirm').onclick = () => {
+            let val = document.getElementById('action-prompt-text').value;
+            closeModal('action-prompt-modal');
+            if(currentPromptCallback) currentPromptCallback(val);
+        };
+
+        // 3. السحب الذكي الموجه للموبايل (Smart Swipe Funnel)
         let touchstartX = 0;
         let touchendX = 0;
         let activeOrderCard = null;
@@ -2395,7 +2485,6 @@
                 if(orderObj) {
                     let stat = orderObj.status;
 
-                    // ➡️ سحب قوي لليمين
                     if(diff > 120) { 
                         if (stat === 'new') {
                             if(confirm('➡️ تحويل هذا الأوردر إلى (قيد التجهيز)؟')) updateOrderStatus(orderId, 'processing');
@@ -2405,35 +2494,44 @@
                             if(confirm('📞 العميل رد! إرجاع الأوردر إلى (قيد التجهيز)؟')) updateOrderStatus(orderId, 'processing');
                         }
                     } 
-                    // ⬅️ سحب قوي للشمال
                     else if (diff < -120) { 
                         if (stat === 'new') {
                             if(confirm('📴 تحويل هذا الأوردر إلى (لم يتم الرد)؟')) updateOrderStatus(orderId, 'no_answer');
                         } else if (stat === 'processing') {
-                            // حصلت مشكلة أثناء التجهيز/التوصيل
-                            let problem = prompt('⚠️ حصلت مشكلة في الأوردر ده! اكتب الملاحظة هنا:');
-                            if(problem !== null && problem.trim() !== '') {
-                                let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
-                                let updatedNotes = orderObj.adminNote ? orderObj.adminNote + `\n\n[${dateStr}] ⚠️ ` + problem : `[${dateStr}] ⚠️ ` + problem;
-                                db.collection('orders').doc(orderId).update({ adminNote: updatedNotes });
-                            }
-                        } else if (stat === 'no_answer') {
-                            // العميل نفض وهنلغيه
-                            let cancelNote = prompt('❌ العميل مجابش! اكتب سبب الإلغاء قبل الحذف (أو سيبه فاضي واضغط OK للحذف مباشرة):');
-                            if(cancelNote !== null) {
-                                if(cancelNote.trim() !== '') {
-                                    let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
-                                    let updatedNotes = orderObj.adminNote ? orderObj.adminNote + `\n\n[${dateStr}] ❌ إلغاء: ` + cancelNote : `[${dateStr}] ❌ إلغاء: ` + cancelNote;
-                                    db.collection('orders').doc(orderId).update({ adminNote: updatedNotes });
+                            openActionPrompt(
+                                '<i class="fa-solid fa-triangle-exclamation text-amber-500 mr-2"></i> الإبلاغ عن مشكلة', 
+                                ['الرقم غير متاح', 'أجل الاستلام', 'العنوان خطأ', 'رفض الاستلام'], 
+                                'اكتب المشكلة هنا...', 
+                                (problem) => {
+                                    if(problem.trim() !== '') {
+                                        let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                                        let updatedNotes = orderObj.adminNote ? orderObj.adminNote + `\n\n[${dateStr}] ⚠️ ` + problem : `[${dateStr}] ⚠️ ` + problem;
+                                        db.collection('orders').doc(orderId).update({ adminNote: updatedNotes });
+                                    }
                                 }
-                                updateOrderStatus(orderId, 'canceled');
-                            }
+                            );
+                        } else if (stat === 'no_answer') {
+                            openActionPrompt(
+                                '<i class="fa-solid fa-ban text-red-500 mr-2"></i> إلغاء الطلب نهائياً', 
+                                ['لا يرد نهائياً', 'الرقم غير صحيح', 'ألغى الطلب بنفسه'], 
+                                'سبب الإلغاء (اختياري)...', 
+                                (cancelNote) => {
+                                    if(cancelNote.trim() !== '') {
+                                        let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                                        let updatedNotes = orderObj.adminNote ? orderObj.adminNote + `\n\n[${dateStr}] ❌ إلغاء: ` + cancelNote : `[${dateStr}] ❌ إلغاء: ` + cancelNote;
+                                        db.collection('orders').doc(orderId).update({ adminNote: updatedNotes });
+                                    }
+                                    updateOrderStatus(orderId, 'canceled');
+                                }
+                            );
                         }
                     }
                 }
             }
             activeOrderCard = null;
         });
+
+        
 
 
     </script>
