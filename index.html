@@ -103,7 +103,6 @@
             <div class="pt-6 pb-2 px-2 text-[10px] uppercase font-black text-emerald-300/50 tracking-wider">التحكم والتجهيز</div>
             <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-boxes-packing w-7 text-center text-indigo-400"></i> الأصناف والأسعار</button>
             <button onclick="switchTab('batches', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-layer-group w-7 text-center text-teal-400"></i> إدارة الدفعات</button>
-            <button onclick="switchTab('settings', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-sliders w-7 text-center text-slate-400"></i> إعدادات السيستم</button>
             
             <div class="my-2 border-t border-slate-700/50"></div>
             <button onclick="switchTab('trash', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-500/20 hover:text-red-300 text-emerald-100/70 transition-all"><i class="fa-solid fa-trash-can w-7 text-center text-red-400"></i> سلة المحذوفات</button>
@@ -167,7 +166,7 @@
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white p-2 md:p-3 rounded-2xl shadow-soft border border-slate-100">
                     <div class="relative w-full md:flex-1">
                         <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
-                        <input type="text" id="search-order" onkeyup="renderOrdersList()" placeholder="بحث بالاسم، الموبايل، الهاشتاج أو الأصناف..." class="w-full pl-4 pr-11 py-2.5 rounded-xl border-none outline-none text-sm font-bold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-primary/20 transition-all">
+                        <input type="text" id="search-order" onkeyup="renderOrdersList()" placeholder="بحث برقم الطلب، الموبايل أو الهاشتاج..." class="w-full pl-4 pr-11 py-2.5 rounded-xl border-none outline-none text-sm font-bold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-primary/20 transition-all">
                     </div>
                     <div class="relative w-full md:flex-1">
                         <i class="fa-solid fa-wand-magic-sparkles absolute right-4 top-3.5 text-amber-500"></i>
@@ -178,7 +177,6 @@
                         <button onclick="openDispatchModal()" class="flex-1 md:flex-none bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-motorcycle"></i> <span class="hidden md:inline">التوجيه</span></button>
                     </div>
                 </div>
-                
                 <div class="flex gap-2 mb-3 px-1">
                     <button onclick="toggleSmartFilter('vip', this)" class="smart-filter-btn flex-1 bg-gradient-to-r from-amber-100 to-amber-50 border border-amber-200 text-amber-700 font-black py-2.5 rounded-xl text-xs shadow-sm hover:shadow-md transition-all active:scale-95"><i class="fa-solid fa-crown mr-1 text-amber-500"></i> عملاء VIP</button>
                     <button onclick="toggleSmartFilter('high_value', this)" class="smart-filter-btn flex-1 bg-gradient-to-r from-emerald-100 to-emerald-50 border border-emerald-200 text-emerald-700 font-black py-2.5 rounded-xl text-xs shadow-sm hover:shadow-md transition-all active:scale-95"><i class="fa-solid fa-money-bill-wave mr-1 text-emerald-500"></i> أوردرات دسمة</button>
@@ -323,76 +321,6 @@
         </div>
     </main>
 
-    <div id="add-order-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h3 class="text-xl font-black text-slate-800"><i class="fa-solid fa-cart-plus text-brand-primary mr-2"></i> إنشاء طلب جديد</h3>
-                <button onclick="closeModal('add-order-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto custom-scroll space-y-6 bg-slate-50/50">
-                
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-regular fa-address-card text-blue-500 mr-1"></i> بيانات العميل</h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">الموبايل الأساسي</label><input type="tel" id="no-phone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" oninput="checkCustomerExists()"></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (اختياري)</label><input type="tel" id="no-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="01..."></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">اسم العميل</label><input type="text" id="no-name" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm"></div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">منطقة التوصيل</label><select id="no-zone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" onchange="autoSetDeliveryPrice()"></select></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">العنوان التفصيلي (الشارع/المنزل)</label><input type="text" id="no-address" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm"></div>
-                    </div>
-                </div>
-                
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-layer-group text-teal-500 mr-1"></i> الربط بالدورات والفرز</h4>
-                    <select id="no-batch" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-teal-100 font-bold bg-slate-50 focus:bg-white transition-all text-sm text-slate-700 mb-3"></select>
-                    <input type="text" id="no-custom-tag" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-100 font-bold text-xs bg-slate-50 focus:bg-white transition-all text-slate-700" placeholder="هاشتاج مخصص حر (مثال: دفعة_العيد) - اختياري">
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-50">
-                        <h4 class="text-xs font-black text-slate-800"><i class="fa-solid fa-boxes-packing text-indigo-500 mr-1"></i> محتويات الطلب</h4>
-                        <label class="flex items-center gap-2 cursor-pointer bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
-                            <input type="checkbox" id="no-use-old-price" onchange="calcTotal('no')" class="w-4 h-4 text-amber-500 rounded cursor-pointer">
-                            <span class="text-[10px] font-black text-amber-700">تطبيق الأسعار القديمة</span>
-                        </label>
-                    </div>
-                    <div id="dynamic-order-items" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5"></div>
-
-                    <div class="grid grid-cols-3 gap-3 pt-4 border-t border-slate-50">
-                        <div><label class="text-[10px] font-bold text-slate-400 block mb-1.5 text-center">المنتجات</label><input type="number" id="no-price" class="w-full border-none bg-slate-50 rounded-xl p-2.5 font-black text-center text-slate-500" placeholder="0" disabled></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">التوصيل</label><input type="number" id="no-delivery" class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-2.5 font-black text-center outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="0" oninput="calcTotal('no')"></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">خصم</label><input type="number" id="no-discount" class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-2.5 font-black text-red-500 text-center outline-none focus:ring-2 focus:ring-red-100 transition-all" placeholder="0" oninput="calcTotal('no')"></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="text-[10px] font-black text-slate-800 block mb-1.5"><i class="fa-solid fa-lock text-red-400 mr-1"></i> ملاحظات إدارية (سرية لك)</label>
-                            <textarea id="no-notes" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-red-100 text-xs font-bold text-slate-700 bg-slate-50 focus:bg-white transition-all resize-none" rows="2" placeholder="حسابات، أسرار العميل..."></textarea>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-black text-slate-800 block mb-1.5"><i class="fa-solid fa-motorcycle text-blue-500 mr-1"></i> ملاحظات للمندوب</label>
-                            <textarea id="no-driver-notes" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-100 text-xs font-bold text-slate-700 bg-slate-50 focus:bg-white transition-all resize-none" rows="2" placeholder="موعد التسليم، علامة مميزة..."></textarea>
-                        </div>
-                    </div>
-                    
-                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-wide text-center">الإجمالي النهائي للطلب</label>
-                    <div class="flex gap-2">
-                        <button onclick="calcTotal('no')" class="bg-slate-100 px-5 rounded-xl text-sm hover:bg-slate-200 transition-colors"><i class="fa-solid fa-calculator text-brand-primary"></i></button>
-                        <input type="number" id="no-total" class="flex-1 border-none bg-emerald-50 rounded-xl p-3.5 outline-none font-black text-brand-primary text-2xl text-center" placeholder="0" disabled>
-                    </div>
-                </div>
-
-            </div>
-            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
-                <button onclick="submitNewOrder()" id="btn-save-order" class="w-full bg-brand-primary hover:bg-emerald-800 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-brand-primary/30 active:scale-95 text-base">تأكيد وحفظ الطلب</button>
-            </div>
-        </div>
-    </div>
-
     <div id="edit-order-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[75] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
@@ -439,6 +367,77 @@
         </div>
     </div>
 
+    <div id="add-order-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-xl font-black text-slate-800"><i class="fa-solid fa-cart-plus text-brand-primary mr-2"></i> إنشاء طلب جديد</h3>
+                <button onclick="closeModal('add-order-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scroll space-y-6 bg-slate-50/50">
+                
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                    <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-regular fa-address-card text-blue-500 mr-1"></i> بيانات العميل</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">الموبايل الأساسي</label><input type="tel" id="no-phone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" oninput="checkCustomerExists()"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (اختياري)</label><input type="tel" id="no-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="01..."></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">اسم العميل</label><input type="text" id="no-name" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">منطقة التوصيل</label><select id="no-zone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" onchange="autoSetDeliveryPrice()"></select></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">العنوان التفصيلي (الشارع/المنزل)</label><input type="text" id="no-address" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm"></div>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                    <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-layer-group text-teal-500 mr-1"></i> الربط بالدورات والفرز</h4>
+                    <select id="no-batch" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-teal-100 font-bold bg-slate-50 focus:bg-white transition-all text-sm text-slate-700 mb-3"></select>
+                    <input type="text" id="no-custom-tag" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-100 font-bold text-xs bg-slate-50 focus:bg-white transition-all text-slate-700" placeholder="هاشتاج مخصص حر (مثال: دفعة_العيد) - اختياري">
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-50">
+                        <h4 class="text-xs font-black text-slate-800"><i class="fa-solid fa-boxes-packing text-indigo-500 mr-1"></i> محتويات الطلب</h4>
+                        <label class="flex items-center gap-2 cursor-pointer bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 hover:bg-amber-100 transition-colors">
+                            <input type="checkbox" id="no-use-old-price" onchange="calcTotal('no')" class="w-4 h-4 text-amber-500 rounded cursor-pointer">
+                            <span class="text-[10px] font-black text-amber-700">تطبيق الأسعار القديمة</span>
+                        </label>
+                    </div>
+                    <div id="dynamic-order-items" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5"></div>
+
+                    <div class="grid grid-cols-3 gap-3 pt-4 border-t border-slate-50">
+                        <div><label class="text-[10px] font-bold text-slate-400 block mb-1.5 text-center">المنتجات</label><input type="number" id="no-price" class="w-full border-none bg-slate-50 rounded-xl p-2.5 font-black text-center text-slate-500" placeholder="0" disabled></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">التوصيل</label><input type="number" id="no-delivery" class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-2.5 font-black text-center outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all" placeholder="0" oninput="calcTotal('no')"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">خصم</label><input type="number" id="no-discount" class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-2.5 font-black text-red-500 text-center outline-none focus:ring-2 focus:ring-red-100 transition-all" placeholder="0" oninput="calcTotal('no')"></div>
+                    </div>
+                </div>
+
+
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-[10px] font-black text-slate-800 block mb-1.5"><i class="fa-solid fa-lock text-red-400 mr-1"></i> ملاحظات إدارية (سرية لك)</label>
+                            <textarea id="no-notes" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-red-100 text-xs font-bold text-slate-700 bg-slate-50 focus:bg-white transition-all resize-none" rows="2" placeholder="حسابات، أسرار العميل..."></textarea>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-slate-800 block mb-1.5"><i class="fa-solid fa-motorcycle text-blue-500 mr-1"></i> ملاحظات للمندوب</label>
+                            <textarea id="no-driver-notes" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-100 text-xs font-bold text-slate-700 bg-slate-50 focus:bg-white transition-all resize-none" rows="2" placeholder="موعد التسليم، علامة مميزة..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <label class="text-[10px] font-black text-slate-400 block mb-2 uppercase tracking-wide text-center">الإجمالي النهائي للطلب</label>
+                    <div class="flex gap-2">
+                        <button onclick="calcTotal('no')" class="bg-slate-100 px-5 rounded-xl text-sm hover:bg-slate-200 transition-colors"><i class="fa-solid fa-calculator text-brand-primary"></i></button>
+                        <input type="number" id="no-total" class="flex-1 border-none bg-emerald-50 rounded-xl p-3.5 outline-none font-black text-brand-primary text-2xl text-center" placeholder="0" disabled>
+                    </div>
+                </div>
+
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
+                <button onclick="submitNewOrder()" id="btn-save-order" class="w-full bg-brand-primary hover:bg-emerald-800 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-brand-primary/30 active:scale-95 text-base">تأكيد وحفظ الطلب</button>
+            </div>
+        </div>
+    </div>
+
     <div id="dispatch-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
@@ -455,46 +454,9 @@
                     <button onclick="toggleAllDispatchCheckboxes()" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">تحديد الكل</button>
                 </div>
                 <div id="dispatch-orders-list" class="space-y-3"></div>
-
-                <div id="dispatch-preview-section" class="hidden mt-6 border-t border-slate-200 pt-5">
-                    <label class="text-[10px] font-bold text-slate-500 block mb-2"><i class="fa-solid fa-pen-to-square text-amber-500 mr-1"></i> مراجعة وتعديل الرسالة قبل الإرسال للمندوب:</label>
-                    <textarea id="dispatch-final-msg" rows="7" class="w-full border border-slate-200 rounded-xl p-3 text-xs font-bold bg-white focus:ring-2 focus:ring-[#25D366]/50 outline-none transition-all resize-none custom-scroll leading-relaxed text-slate-700 shadow-inner"></textarea>
-                </div>
             </div>
             <div class="p-5 border-t border-slate-100 bg-white shrink-0">
-                <button id="btn-generate-dispatch" onclick="previewDispatchMessage()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl transition-all shadow-lg active:scale-95 text-base flex items-center justify-center gap-2"><i class="fa-solid fa-file-lines text-amber-400"></i> إنشاء الرسالة ومعاينتها</button>
-                
-                <button id="btn-send-dispatch" onclick="confirmAndSendDispatch()" class="hidden w-full bg-[#25D366] hover:bg-[#1ebd57] text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-[#25D366]/30 flex items-center justify-center gap-2 active:scale-95 text-base"><i class="fa-brands fa-whatsapp text-xl"></i> إرسال عبر واتساب للمندوب</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="action-prompt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden flex flex-col transform transition-all">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h3 id="action-prompt-title" class="text-lg font-black text-slate-800">تأكيد الإجراء</h3>
-                <button onclick="closeModal('action-prompt-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="p-5 bg-slate-50/50">
-                <label class="text-[10px] font-bold text-slate-500 block mb-2">كلمات سريعة (اضغط للإضافة):</label>
-                <div id="quick-tags-container" class="flex flex-wrap gap-2 mb-4"></div>
-                <textarea id="action-prompt-text" rows="3" class="w-full border border-slate-200 rounded-xl p-3 text-sm font-bold bg-white focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all resize-none" placeholder="اكتب ملاحظتك هنا..."></textarea>
-            </div>
-            <div class="p-4 bg-white border-t border-slate-100">
-                <button id="action-prompt-confirm" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3.5 rounded-xl shadow-md transition-all active:scale-95">تأكيد وتنفيذ</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="note-action-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xs overflow-hidden flex flex-col transform transition-all">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-wand-magic-sparkles text-amber-500 mr-2"></i> خيارات الملاحظة</h3>
-                <button onclick="closeModal('note-action-modal')" class="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
-            </div>
-            <div class="p-6 bg-slate-50/50 flex flex-col gap-3">
-                <button onclick="editCurrentNote()" class="w-full bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 py-3.5 rounded-xl font-black shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-pen text-blue-500"></i> تعديل النص يدوياً</button>
-                <button onclick="deleteCurrentNote()" class="w-full bg-white border border-slate-200 text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-300 py-3.5 rounded-xl font-black shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-trash text-red-500"></i> مسح الملاحظة بالكامل</button>
+                <button onclick="sendOrdersToDriver()" class="w-full bg-[#25D366] hover:bg-[#1ebd57] text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-[#25D366]/30 flex items-center justify-center gap-2 active:scale-95 text-base"><i class="fa-brands fa-whatsapp text-xl"></i> إرسال خط السير للمندوب</button>
             </div>
         </div>
     </div>
@@ -581,7 +543,65 @@
             </div>
         </div>
     </div>
+    <div id="dispatch-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-motorcycle text-blue-500 mr-2"></i> توجيه الطلبات للمندوب</h3>
+                <button onclick="closeModal('dispatch-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/50">
+                <div class="mb-5">
+                    <label class="text-[10px] font-bold text-slate-500 block mb-2">اختر المندوب</label>
+                    <select id="dispatch-driver-select" class="w-full border border-slate-200 bg-white rounded-xl p-3.5 font-bold outline-none focus:ring-2 focus:ring-blue-100 transition-all text-sm"></select>
+                </div>
+                <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                    <label class="text-xs font-black text-slate-700"><i class="fa-solid fa-list-check text-indigo-400 mr-1"></i> الطلبات المتاحة للتوجيه:</label>
+                    <button onclick="toggleAllDispatchCheckboxes()" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">تحديد الكل</button>
+                </div>
+                <div id="dispatch-orders-list" class="space-y-3"></div>
 
+                <div id="dispatch-preview-section" class="hidden mt-6 border-t border-slate-200 pt-5">
+                    <label class="text-[10px] font-bold text-slate-500 block mb-2"><i class="fa-solid fa-pen-to-square text-amber-500 mr-1"></i> مراجعة وتعديل الرسالة قبل الإرسال للمندوب:</label>
+                    <textarea id="dispatch-final-msg" rows="7" class="w-full border border-slate-200 rounded-xl p-3 text-xs font-bold bg-white focus:ring-2 focus:ring-[#25D366]/50 outline-none transition-all resize-none custom-scroll leading-relaxed text-slate-700 shadow-inner"></textarea>
+                </div>
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
+                <button id="btn-generate-dispatch" onclick="previewDispatchMessage()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl transition-all shadow-lg active:scale-95 text-base flex items-center justify-center gap-2"><i class="fa-solid fa-file-lines text-amber-400"></i> إنشاء الرسالة ومعاينتها</button>
+                
+                <button id="btn-send-dispatch" onclick="confirmAndSendDispatch()" class="hidden w-full bg-[#25D366] hover:bg-[#1ebd57] text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-[#25D366]/30 flex items-center justify-center gap-2 active:scale-95 text-base"><i class="fa-brands fa-whatsapp text-xl"></i> إرسال عبر واتساب للمندوب</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="action-prompt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden flex flex-col transform transition-all">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 id="action-prompt-title" class="text-lg font-black text-slate-800">تأكيد الإجراء</h3>
+                <button onclick="closeModal('action-prompt-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-5 bg-slate-50/50">
+                <label class="text-[10px] font-bold text-slate-500 block mb-2">كلمات سريعة (اضغط للإضافة):</label>
+                <div id="quick-tags-container" class="flex flex-wrap gap-2 mb-4"></div>
+                <textarea id="action-prompt-text" rows="3" class="w-full border border-slate-200 rounded-xl p-3 text-sm font-bold bg-white focus:ring-2 focus:ring-brand-primary/20 outline-none transition-all resize-none" placeholder="اكتب ملاحظتك هنا..."></textarea>
+            </div>
+            <div class="p-4 bg-white border-t border-slate-100">
+                <button id="action-prompt-confirm" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-3.5 rounded-xl shadow-md transition-all active:scale-95">تأكيد وتنفيذ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="note-action-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-xs overflow-hidden flex flex-col transform transition-all">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-wand-magic-sparkles text-amber-500 mr-2"></i> خيارات الملاحظة</h3>
+                <button onclick="closeModal('note-action-modal')" class="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div class="p-6 bg-slate-50/50 flex flex-col gap-3">
+                <button onclick="editCurrentNote()" class="w-full bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 py-3.5 rounded-xl font-black shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-pen text-blue-500"></i> تعديل النص يدوياً</button>
+                <button onclick="deleteCurrentNote()" class="w-full bg-white border border-slate-200 text-slate-700 hover:bg-red-50 hover:text-red-600 hover:border-red-300 py-3.5 rounded-xl font-black shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-trash text-red-500"></i> مسح الملاحظة بالكامل</button>
+            </div>
+        </div>
+    </div>
 
     <script>
 
@@ -765,6 +785,7 @@
                 });
                 document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="5" class="text-center p-12 text-slate-400 font-bold text-sm">لا يوجد عملاء حتى الآن</td></tr>`;
                 
+                // تحديث البحث فورا لو اليوزر كاتب حاجة
                 if(document.getElementById('search-customer').value.trim() !== '') {
                     filterCustomers();
                 }
@@ -793,13 +814,14 @@
             
             let template = storeSettings.whatsappTemplate || "مرحباً {اسم_العميل}،\nتفاصيل طلبك:\n{تفاصيل_الطلبات}\nالإجمالي: {الإجمالي_النهائي} ج.م\nشكراً لتعاملك معنا!";
             
-            let itemsText = order.items ? order.items.map(i => `${i.quantity}x ${i.name}`).join('\n') : '';
+            // حماية من الداتا القديمة هنا كمان
+            let itemsText = (order.items && Array.isArray(order.items)) ? order.items.map(i => `${i.quantity}x ${i.name}`).join('\n') : 'بدون تفاصيل';
             let discountStr = order.discount > 0 ? `الخصم: ${order.discount} ج.م\n` : '';
             let addressStr = order.customerAddress ? order.customerAddress : '';
             
             let msg = template
-                .replace(/{اسم_العميل}/g, order.customerName)
-                .replace(/{رقم_العميل}/g, order.customerPhone)
+                .replace(/{اسم_العميل}/g, order.customerName || '')
+                .replace(/{رقم_العميل}/g, order.customerPhone || '')
                 .replace(/{المنطقة}/g, order.zone || '')
                 .replace(/{العنوان}/g, addressStr)
                 .replace(/{تفاصيل_الطلبات}/g, itemsText)
@@ -808,10 +830,17 @@
                 .replace(/{الخصم}/g, discountStr)
                 .replace(/{الإجمالي_النهائي}/g, order.total || 0);
 
-            let cleanPhone = phone || '';
+            // توجيه سريع وتخطي الـ Popup Blocker
+            let cleanPhone = (phone || order.customerPhone || '').toString().trim();
             let waNumber = cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone;
-            window.open(`https://api.whatsapp.com/send?phone=${waNumber}&text=${encodeURIComponent(msg)}`, '_blank');
+            if(waNumber) {
+                window.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
+            } else {
+                alert("لا يوجد رقم هاتف مسجل للعميل!");
+            }
         };
+
+
 
         window.updateBatchSummary = () => {
             const panel = document.getElementById('batch-summary-panel'); if(!panel) return;
@@ -847,6 +876,7 @@
                 }
             });
 
+            // الدالة السحرية اللي بتاخد الكلمة، تقفل النافذة، وتفلتر الأوردرات
             window.filterOrdersFromAnalysis = (keyword) => {
                 closeModal('analysis-modal');
                 let searchBox = document.getElementById('search-order');
@@ -864,6 +894,7 @@
             let topZonesHtml = Object.keys(zonesCount).sort((a,b) => zonesCount[b] - zonesCount[a]).map(z => 
                 `<span onclick="filterOrdersFromAnalysis('${z}')" class="bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-lg text-[10px] font-black border border-indigo-100 cursor-pointer hover:bg-indigo-500 hover:text-white transition-colors" title="اضغط لعرض طلبات هذه المنطقة">${z} <span class="bg-white text-indigo-500 px-1.5 py-0.5 rounded ml-1 shadow-sm">${zonesCount[z]}</span></span>`
             ).join('');
+
 
             let globalItemsHtml = Object.keys(globalItems).sort((a,b) => globalItems[b] - globalItems[a]).map(itemName => 
                 `<div class="bg-slate-50 border border-slate-100 p-2.5 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-sm font-black text-brand-primary">${globalItems[itemName]}</span></div>`
@@ -926,12 +957,14 @@
             panel.innerHTML = smartDashboardHtml + `<div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4">${batchesHtml}</div>`;
         };
 
+        // دالة الكشاف السريع (Smart Fetcher)
         window.handleSmartFetcher = async (e) => {
             if (e.key === 'Enter') {
                 let input = document.getElementById('smart-fetcher');
                 let rawVal = input.value.trim();
                 if(!rawVal) return;
                 
+                // تنظيف الرقم تماماً
                 const arabicToEnglish = str => str.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660);
                 let phone = arabicToEnglish(rawVal).replace(/\D/g, '');
                 if (phone.startsWith('002')) phone = phone.substring(3);
@@ -939,7 +972,9 @@
                 else if (phone.length === 10 && phone.startsWith('1')) phone = '0' + phone;
                 else if (phone.length > 11 && phone.startsWith('2')) phone = phone.substring(1);
 
-                input.value = ''; 
+                input.value = ''; // تفريغ الكشاف بعد السحب
+                
+                // نفتح المودال وننفذ البحث الذكي
                 openModal('add-order-modal');
                 document.getElementById('no-phone').value = phone;
                 await checkCustomerExists();
@@ -947,6 +982,8 @@
             }
         };
 
+
+        window.renderOrdersList = () => {
         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
@@ -954,12 +991,16 @@
             let filtered = allOrdersRaw.filter(o => {
                 let matchTab = (currentOrderTab === 'all' && o.status !== 'trash') || (o.status === currentOrderTab);
                 
-                let itemsString = o.items ? o.items.map(i => i.name).join(' ') : '';
-                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${o.customTag || ''} ${o.batchName || ''} ${o.zone || ''} ${itemsString}`.toLowerCase();
+                // الحماية من الداتا القديمة وتجهيز نص البحث للتحليل العميق
+                let itemsString = (o.items && Array.isArray(o.items)) ? o.items.map(i => i.name).join(' ') : '';
+                let bNameSearch = o.batchName ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
+                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${bNameSearch} ${o.zone || ''} ${itemsString}`.toLowerCase();
                 
+                // الفلترة متعددة الكلمات
                 let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => searchStr.includes(word));
 
+                // سحر الفلاتر الذكية 👑💸
                 let matchSmart = true;
                 if(currentSmartFilter === 'vip') {
                     let c = customersData.find(x => x.phone === o.customerPhone || x.phone === '0'+o.customerPhone);
@@ -979,7 +1020,8 @@
 
             container.innerHTML = filtered.map(o => {
                 let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
-                let itemsStr = o.items ? o.items.map(i => `${i.quantity}x ${i.name}`).join('، ') : 'لا يوجد تفاصيل';
+                // حماية الكارت نفسه من الشاشة البيضاء لو الداتا القديمة ناقصة
+                let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `${i.quantity}x ${i.name}`).join('، ') : 'لا يوجد تفاصيل';
                 
                 let sBadge = o.status==='new' ? '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جديد</span>' : 
                             (o.status==='processing' ? '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جاري التجهيز</span>' : 
@@ -1055,6 +1097,11 @@
             }).join('');
         };
 
+
+                    
+
+
+        // 🌟 التعديل السحري: إرجاع الكميات للمخزن والدفعة عند الإلغاء 🌟
         window.updateOrderStatus = async (id, s) => { 
             let o = allOrdersRaw.find(x => x.id === id);
             if(!o) return;
@@ -1068,6 +1115,7 @@
                 if (s === 'trash') updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
                 await db.collection('orders').doc(id).update(updateData); 
                 
+                // لو الأوردر اتلغى (وهو مكنش ملغي أصلاً)، رجع الكميات للمخزن وللدفعة
                 if(s === 'canceled' && oldStatus !== 'canceled') {
                     let stockUpdates = {};
                     let batchBookedUpdates = {};
@@ -1076,11 +1124,14 @@
                             stockUpdates[i.id] = firebase.firestore.FieldValue.increment(i.quantity);
                             if(o.batchId) batchBookedUpdates[i.id] = firebase.firestore.FieldValue.increment(-i.quantity);
                         });
+                        // إرجاع للمخزن
                         await db.collection('inventory').doc('stock').set(stockUpdates, {merge: true});
+                        // إرجاع للدفعة
                         if(o.batchId) {
                             await db.collection('inventory').doc('batches').set({ [o.batchId]: { booked: batchBookedUpdates } }, {merge: true});
                         }
                     }
+                    // سحب الفلوس من الإحصائيات
                     if(o.total) {
                         await db.collection('inventory').doc('stats').update({
                             sales: firebase.firestore.FieldValue.increment(-Number(o.total)),
@@ -1090,7 +1141,6 @@
                 }
             } catch(e) { alert("حدث خطأ أثناء تغيير الحالة!"); }
         };
-
         let currentOrderNoteId = null;
 
         window.openNoteOptions = (id) => {
@@ -1119,6 +1169,7 @@
             }
         };
 
+
         window.appendOrderNote = async (id) => {
             let input = document.getElementById(`new-note-${id}`); 
             let text = input.value.trim(); 
@@ -1141,6 +1192,7 @@
             }
         };
 
+        // === 5. سلة المحذوفات ===
         window.renderTrashUI = async () => {
             const container = document.getElementById('trash-list-container'); if(!container) return;
             container.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-red-400"></i></div>';
@@ -1203,6 +1255,7 @@
             } catch(e) { alert("خطأ في الحذف النهائي!"); } 
         };
 
+        // === 6. أرشيف العملاء والكشكول ===
         window.filterCustomers = () => { 
             let filter = document.getElementById('search-customer').value.toLowerCase(); 
             document.querySelectorAll('.customer-row').forEach(row => { 
@@ -1361,6 +1414,7 @@
             }
         };
 
+        // === 7. إنشاء طلب جديد (الخصم الصارم للدفعة والمخزن) ===
         window.generateDynamicOrderInputs = () => {
             const container = document.getElementById('dynamic-order-items'); if(!container) return; 
             container.innerHTML = '';
@@ -1396,6 +1450,7 @@
                 let q = Number(document.getElementById(`${prefix}-q-${id}`)?.value) || 0; 
                 let price = storePrices[id] || storeProducts[id].basePrice || 0; 
                 
+                // لو مفعلين السعر القديم، والصنف ده ليه سعر قديم متسجل، استخدمه أوتوماتيك
                 if(useOldPrice && storeProducts[id].oldBatchPrice > 0) {
                     price = storeProducts[id].oldBatchPrice;
                 }
@@ -1427,6 +1482,7 @@
             
             let c = customersData.find(x => x.phone === phone || x.phone === '0'+phone); 
             
+            // اللمسة السحرية: لو العميل مش في الشاشة، هنخبط على الداتابيز نجيبه مباشرة
             if(!c) {
                 let cleanPhone = phone.startsWith('0') ? phone : '0' + phone;
                 try {
@@ -1442,6 +1498,7 @@
                 autoSetDeliveryPrice(); 
             } 
         };
+
 
         window.autoSetDeliveryPrice = () => { 
             const sel = document.getElementById('no-zone'); 
@@ -1474,6 +1531,7 @@
             let ticktickItemsTitleArr = []; 
             let autoHashtags = []; 
 
+            // جلب حالة الزرار بتاع السعر القديم
             let useOldPrice = document.getElementById('no-use-old-price') ? document.getElementById('no-use-old-price').checked : false;
 
             Object.keys(storeProducts).forEach(id => {
@@ -1481,6 +1539,7 @@
                 if(q > 0) { 
                     let price = storePrices[id] || storeProducts[id].basePrice;
                     
+                    // استخدام السعر القديم لو متفعل
                     if(useOldPrice && storeProducts[id].oldBatchPrice > 0) {
                         price = storeProducts[id].oldBatchPrice;
                     }
@@ -1519,7 +1578,7 @@
                     deliveryFee: delivery, 
                     discount: discount, 
                     adminNote: notes, 
-                    driverNote: driverNotes, 
+                    driverNote: driverNotes, // 🛵 السطر الجديد بتاع المندوب 
                     items: items, 
                     status: 'new', 
                     orderDate: orderDateFormatted, 
@@ -1595,12 +1654,16 @@
                 if(document.getElementById('no-phone-2')) document.getElementById('no-phone-2').value = '';
                 if(document.getElementById('no-driver-notes')) document.getElementById('no-driver-notes').value = '';
 
+                
+                // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
                 if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
                 
             } catch(e) { alert('خطأ أثناء الحفظ بقاعدة البيانات!'); }
             btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
         };
 
+
+        // === 8. المناديب (واتساب) والتوجيه الذكي ===
         window.openDispatchModal = () => {
             const sel = document.getElementById('dispatch-driver-select'); 
             sel.innerHTML = '<option value="">-- اختر المندوب --</option>';
@@ -1646,11 +1709,6 @@
                 });
                 cont.innerHTML = html; 
             }
-            
-            document.getElementById('dispatch-preview-section').classList.add('hidden');
-            document.getElementById('btn-generate-dispatch').classList.remove('hidden');
-            document.getElementById('btn-send-dispatch').classList.add('hidden');
-            
             openModal('dispatch-modal');
         };
 
@@ -1693,11 +1751,12 @@
             Object.keys(zonesMap).forEach(zone => { 
                 msg += `*📍 خط سير: ${zone}*\n`; 
                 zonesMap[zone].forEach((o, i) => { 
-                    let itemsStr = o.items ? o.items.map(i=>`${i.quantity} ${i.name}`).join(' + ') : 'بدون تفاصيل';
+                    // الحماية هنا اهي
+                    let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(item => `${item.quantity} ${item.name}`).join(' + ') : 'بدون تفاصيل';
 
                     let orderMsg = dispatchTemplate
-                        .replace(/{اسم_العميل}/g, o.customerName)
-                        .replace(/{رقم_العميل}/g, o.customerPhone)
+                        .replace(/{اسم_العميل}/g, o.customerName || '')
+                        .replace(/{رقم_العميل}/g, o.customerPhone || '')
                         .replace(/{المنطقة}/g, o.zone || '')
                         .replace(/{العنوان}/g, o.customerAddress || '')
                         .replace(/{تفاصيل_الطلبات}/g, itemsStr)
@@ -1717,6 +1776,7 @@
         };
 
         window.confirmAndSendDispatch = async () => {
+        window.confirmAndSendDispatch = async () => {
             const phone = document.getElementById('dispatch-driver-select').value; 
             const driverName = document.getElementById('dispatch-driver-select').options[document.getElementById('dispatch-driver-select').selectedIndex].text;
             let selectedIds = Array.from(document.querySelectorAll('.disp-cb:checked')).map(cb => cb.value); 
@@ -1732,14 +1792,18 @@
             
             btn.innerHTML = origHtml; 
             
-            let cleanPhone = phone || '';
-            window.open(`https://wa.me/${cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone}?text=${encodeURIComponent(finalMessage)}`, '_blank'); 
+            // التوجيه السريع بدون حظر
+            let cleanPhone = (phone || '').toString().trim();
+            let waNumber = cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone;
+            window.location.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(finalMessage)}`; 
             
             document.getElementById('dispatch-preview-section').classList.add('hidden');
             document.getElementById('btn-generate-dispatch').classList.remove('hidden');
             document.getElementById('btn-send-dispatch').classList.add('hidden');
             closeModal('dispatch-modal');
         };
+
+
 
         window.toggleOrderDetails = (detailsId, iconId) => { 
             const detailsDiv = document.getElementById(detailsId); 
@@ -1751,10 +1815,620 @@
             } 
         };
 
+        // === 9. نظام الدفعات والحجوزات ===
+        window.renderBatchesUI = () => {
+            const cont = document.getElementById('batches-list-container'); if(!cont) return;
+            if(Object.keys(storeBatches).length === 0) { 
+                cont.innerHTML = '<div class="w-full text-center py-16 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لا توجد دفعات حالياً. أضف دفعة جديدة للبدء بالتنظيم.</div>'; 
+                return; 
+            }
+            cont.innerHTML = ''; 
+            
+            Object.keys(storeBatches).reverse().forEach(bId => { 
+                const b = storeBatches[bId]; 
+                let stockHtml = '<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 border-t border-slate-100 pt-4">'; 
+                Object.keys(storeProducts).forEach(pId => { 
+                    let pName = storeProducts[pId].name; 
+                    let bStock = b.stock ? (b.stock[pId] || 0) : 0; 
+                    let bBooked = b.booked ? (b.booked[pId] || 0) : 0; 
+                    let remaining = bStock - bBooked; 
+                    
+                    stockHtml += `
+                    <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-100/50">
+                        <label class="text-[11px] font-black text-slate-700 block truncate mb-2">${pName}</label>
+                        <div class="flex items-center gap-1.5">
+                            <div class="flex-1"><span class="text-[9px] text-slate-400 font-bold block text-center mb-0.5">الكمية</span><input type="number" value="${bStock}" onchange="updateBatchStock('${bId}', '${pId}', this.value)" class="w-full border-none bg-white rounded-lg p-1.5 text-xs font-black text-slate-800 text-center outline-none focus:ring-2 focus:ring-brand-primary/20 shadow-sm transition-all"></div>
+                            <div class="flex-1 text-center bg-white border border-slate-200 rounded-lg p-1.5 shadow-sm"><span class="text-[9px] text-slate-400 font-bold block mb-0.5">محجوز</span><span class="text-xs font-black text-blue-500">${bBooked}</span></div>
+                            <div class="flex-1 text-center bg-emerald-50 border border-emerald-100 rounded-lg p-1.5 shadow-sm"><span class="text-[9px] text-emerald-600 font-bold block mb-0.5">متبقي</span><span class="text-xs font-black text-emerald-700">${remaining}</span></div>
+                        </div>
+                    </div>`; 
+                }); 
+                stockHtml += '</div>';
+
+                cont.innerHTML += `
+                <div class="bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 relative overflow-hidden mb-4 hover:shadow-md transition-shadow">
+                    <div class="absolute top-0 right-0 w-2 h-full ${b.isOpen ? 'bg-emerald-500' : 'bg-slate-300'}"></div>
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pl-2">
+                        <div class="flex-1 w-full relative">
+                            <i class="fa-solid fa-pen absolute right-3 top-3.5 text-slate-300 text-xs"></i>
+                            <input type="text" value="${b.name}" onchange="storeBatches['${bId}'].name = this.value" class="border-none bg-slate-50 hover:bg-slate-100 rounded-xl p-3 pr-8 text-sm font-black text-slate-800 w-full md:w-3/4 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm" placeholder="اسم الدورة (مثال: حجز 15-7)">
+                        </div>
+                        <div class="flex items-center gap-4 w-full md:w-auto justify-between shrink-0">
+                            <label class="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-600"><input type="checkbox" ${b.isOpen ? 'checked' : ''} onchange="storeBatches['${bId}'].isOpen = this.checked; renderBatchesUI();" class="w-4 h-4 text-emerald-600 rounded"> مفتوحة للحجز</label>
+                            <div class="flex items-center gap-2">
+                                <button onclick="viewBatchBookings('${bId}')" class="bg-blue-50 text-blue-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95"><i class="fa-solid fa-list-check"></i> الكشف</button>
+                                <button onclick="deleteBatchUI('${bId}')" class="bg-red-50 text-red-500 w-8 h-8 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center active:scale-95"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    ${stockHtml}
+                </div>`; 
+            });
+        };
+
+        window.addNewBatchUI = () => { 
+            const bId = 'batch_' + Date.now(); 
+            storeBatches[bId] = { name: "", isOpen: true, stock: {}, booked: {} }; 
+            renderBatchesUI(); 
+        };
+        
+        window.updateBatchStock = (bId, pId, val) => { 
+            if(!storeBatches[bId].stock) storeBatches[bId].stock = {}; 
+            storeBatches[bId].stock[pId] = parseInt(val) || 0; 
+            renderBatchesUI(); 
+        };
+        
+        window.deleteBatchUI = (bId) => { 
+            if(confirm("سيتم حذف الدفعة. تأكيد؟")) { 
+                delete storeBatches[bId]; 
+                renderBatchesUI(); 
+            } 
+        };
+
+        window.processTickTickCSV = (event) => {
+            const file = event.target.files[0];
+            if(!file) return;
+            
+            const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري القراءة والفلترة بذكاء...';
+            btn.disabled = true;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                let text = e.target.result;
+                const headerIndex = text.indexOf('"Folder Name"');
+                if(headerIndex !== -1) text = text.substring(headerIndex);
+                
+                Papa.parse(text, {
+                    header: true, skipEmptyLines: true,
+                    complete: function(results) {
+                        let parsedCustomers = [];
+                        const arabicToEnglish = str => str.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660);
+
+                        results.data.forEach(row => {
+                            let title = row['Title'] || '';
+                            let content = row['Content'] || '';
+                            let zone = (row['Column Name'] && row['Column Name'] !== 'nan') ? row['Column Name'] : (row['List Name'] || '');
+                            if(!title) return;
+                            
+                            let rawText = arabicToEnglish(title + " " + content);
+                            
+                            // بنشيل المسافات والشرطات والأقواس الأول عشان نجمع الرقم على بعضه لو متفرق
+                            let textForRegex = rawText.replace(/[-+()\s]/g, '');
+                            
+                            let phone = '';
+                            let needsReview = false;
+
+                            // المحاولة الأولى: التقاط رقم مصري سليم (حتى لو فيه 0020 أو 20)
+                            let perfectMatch = textForRegex.match(/(00201|201|01|1)[0125][0-9]{8}/);
+                            
+                            if (perfectMatch) {
+                                phone = perfectMatch[0];
+                                if (phone.startsWith('0020')) phone = '0' + phone.substring(4);
+                                else if (phone.startsWith('20')) phone = '0' + phone.substring(2);
+                                else if (phone.length === 10 && phone.startsWith('1')) phone = '0' + phone;
+                            } else {
+                                // المحاولة التانية: التقاط أي سلسلة أرقام متصلة طولها من 9 لـ 15 (عشان الأرقام المتلخبطة)
+                                let roughMatch = textForRegex.match(/\d{9,15}/);
+                                if (roughMatch) {
+                                    phone = roughMatch[0];
+                                    needsReview = true; // بنعلم عليه إنه محتاج مراجعة
+                                }
+                            }
+
+                            let address = '';
+                            let addrMatch = content.match(/العنوان\s*[:：]\s*(.*?)(?=\n|$)/);
+                            if(addrMatch) address = addrMatch[1].trim();
+                            
+                            // التعديل الجديد: سحب تاريخ المهمة الأصلي من تيك تيك
+                            let taskDate = row['Created Time'] || row['Created Date'] || row['Start Date'] || '';
+                            let datePrefix = taskDate ? `[تاريخ الطلب القديم: ${taskDate.split('T')[0]}] ` : '';
+                            
+                            let notes = content.replace(/\n/g, ' | ').trim();
+                            notes = datePrefix + notes; // لزق التاريخ في أول الملاحظة
+
+                            if (needsReview) {
+                                notes = "⚠️ [محتاج تدقيق الرقم] | " + notes;
+                            }
+                            
+                            // الحفظ لو لقينا أي رقم طوله من 9 لـ 15
+                            if(phone && phone.length >= 9 && phone.length <= 15) {
+                                // تنظيف اسم العميل من الأرقام الطويلة عشان الاسم يكون نضيف
+                                let cleanName = title.replace(/[٠-٩]/g, '').replace(/\d{9,15}/g, '').replace(/[-+()]/g, '').trim();
+                                
+                                parsedCustomers.push({ 
+                                    name: cleanName || 'عميل مستورد', 
+                                    phone: phone, 
+                                    zone: zone, 
+                                    address: address, 
+                                    adminNotes: notes 
+                                });
+                            }
+                        });
+                        
+                        btn.innerHTML = originalHtml; btn.disabled = false;
+                        document.getElementById('ticktick-file').value = ''; 
+                        
+                        if(parsedCustomers.length === 0) {
+                            alert("لم يتم العثور على أرقام هواتف صالحة في الملف نهائياً!");
+                            return;
+                        }
+                        
+                        if(confirm(`تم استخراج وفلترة [ ${parsedCustomers.length} ] عميل بنجاح!\nالأرقام السليمة، الأرقام اللي محتاجة تدقيق، وتواريخ الطلبات القديمة كلها اتجمعت.\n\nهل تريد حفظهم في أرشيف الموقع على فايربيس الآن؟`)) {
+                            uploadTickTickToFirebase(parsedCustomers);
+                        }
+                    }
+                });
+            };
+            reader.readAsText(file);
+        };
+
+
+        window.uploadTickTickToFirebase = async (customers) => {
+            const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-green-400"></i> جاري الرفع لفايربيس...';
+            
+            const batches = [];
+            let currentBatch = db.batch();
+            let count = 0;
+            
+            customers.forEach(c => {
+                let docRef = db.collection('customers').doc(c.phone);
+                currentBatch.set(docRef, { 
+                    name: c.name, 
+                    phone: c.phone, 
+                    zone: c.zone, 
+                    address: c.address, 
+                    adminNotes: c.adminNotes, 
+                    imported: true, 
+                    ordersCount: firebase.firestore.FieldValue.increment(0), 
+                    totalSpent: firebase.firestore.FieldValue.increment(0) 
+                }, { merge: true }); 
+                
+                count++;
+                if(count === 400) { batches.push(currentBatch.commit()); currentBatch = db.batch(); count = 0; }
+            });
+            
+            if(count > 0) batches.push(currentBatch.commit());
+            
+            try {
+                await Promise.all(batches);
+                alert(`تم استيراد وحفظ ${customers.length} عميل في أرشيف المتجر بنجاح! 🎉\nكل أرقامهم وعناوينهم وتفاصيلهم معاك دلوقتي.`);
+            } catch(e) {
+                alert('حدث خطأ أثناء الرفع لقاعدة البيانات!');
+            }
+            btn.innerHTML = '<i class="fa-solid fa-file-import text-green-400"></i> <span class="hidden md:inline">استيراد تيك تيك</span>';
+        };
+
+        window.viewBatchBookings = async (bId) => {
+            const b = storeBatches[bId]; if(!b) return;
+            document.getElementById('bb-title').innerText = b.name; 
+            const contentDiv = document.getElementById('bb-content'); 
+            contentDiv.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl text-teal-400"></i><p class="text-xs font-bold text-slate-400 mt-3">جاري تجميع كشف التسليمات...</p></div>'; 
+            openModal('batch-bookings-modal');
+            
+            try { 
+                const snap = await db.collection('orders').where('batchId', '==', bId).get(); 
+                let orders = []; 
+                snap.forEach(doc => { let data = doc.data(); if(data.status !== 'canceled') orders.push(data); });
+                
+                if(orders.length === 0) { 
+                    contentDiv.innerHTML = '<div class="text-center py-16 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لم يتم تأكيد أي حجوزات في هذه الدفعة حتى الآن.</div>'; 
+                    return; 
+                }
+                
+                let tableHtml = `<div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden"><table class="w-full text-right text-sm border-collapse" id="print-table"><thead><tr class="bg-slate-50 text-slate-500 border-b border-slate-100"><th class="p-4 font-black">العميل والموقع</th><th class="p-4 font-black">الموبايل</th><th class="p-4 font-black">الأصناف</th><th class="p-4 font-black text-center">الإجمالي</th><th class="p-4 font-black">ملاحظات</th></tr></thead><tbody class="divide-y divide-slate-50">`;
+                let totalMoney = 0; 
+                orders.forEach(o => { 
+                    let itemsStr = o.items ? o.items.map(i => `<span class="bg-indigo-50 px-2.5 py-1 rounded-lg text-indigo-700 font-black border border-indigo-100 whitespace-nowrap shadow-sm">${i.quantity}x ${i.name}</span>`).join(' ') : ''; 
+                    let locationStr = `${o.zone || 'بدون منطقة'} ${o.customerAddress ? '- ' + o.customerAddress : ''}`; 
+                    totalMoney += Number(o.total) || 0; 
+                    tableHtml += `<tr class="hover:bg-slate-50/50 transition-colors"><td class="p-4"><div class="font-black text-slate-800 text-sm mb-1">${o.customerName}</div><div class="text-[10px] text-slate-500 font-bold"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${locationStr}</div></td><td class="p-4 font-black text-slate-600 text-xs" dir="ltr">${o.customerPhone}</td><td class="p-4 flex flex-wrap gap-1.5 mt-1.5">${itemsStr}</td><td class="p-4 font-black text-brand-primary text-center text-lg">${o.total} <span class="text-xs">ج</span></td><td class="p-4 text-[10px] font-bold text-amber-600 max-w-[150px] leading-relaxed">${o.adminNote || '-'}</td></tr>`; 
+                }); 
+                tableHtml += `</tbody></table></div>`;
+                
+                let summaryHtml = `<div class="mb-6 flex flex-wrap gap-4 bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-soft"><div class="flex-1 bg-blue-50/50 p-4 rounded-xl border border-blue-100/50"><p class="text-[10px] text-blue-500 font-bold mb-1 uppercase tracking-wider">الحجوزات</p><h4 class="font-black text-blue-700 text-2xl">${orders.length} <span class="text-sm font-bold">أوردر</span></h4></div><div class="flex-1 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50"><p class="text-[10px] text-emerald-500 font-bold mb-1 uppercase tracking-wider">التحصيل المتوقع</p><h4 class="font-black text-emerald-700 text-2xl">${totalMoney.toLocaleString()} <span class="text-sm font-bold">ج</span></h4></div></div>`;
+                contentDiv.innerHTML = summaryHtml + tableHtml;
+            } catch (e) { 
+                contentDiv.innerHTML = '<p class="text-center text-red-500 font-bold py-10">حدث خطأ أثناء جلب البيانات!</p>'; 
+            }
+        };
+
+        window.printBatchBookings = () => { 
+            let content = document.getElementById('bb-content').innerHTML; 
+            let title = document.getElementById('bb-title').innerText; 
+            let printWindow = window.open('', '', 'width=900,height=700'); 
+            printWindow.document.write(`<html lang="ar" dir="rtl"><head><title>كشف حجوزات - ${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>body { font-family: 'Cairo', sans-serif; padding: 20px; color: #1e293b; background: #fff; } .header-print { text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0; } h2 { margin: 0; font-size: 24px; font-weight: 900; color: #0f172a; } table { width: 100%; border-collapse: collapse; margin-top: 15px; } th, td { border: 1px solid #cbd5e1; padding: 12px; font-size: 13px; text-align: right; } th { background-color: #f8fafc; font-weight: 800; color: #475569; } .text-center { text-align: center; } .bg-white { box-shadow: none !important; border: none !important; } .mb-6 { margin-bottom: 20px; display: flex; gap: 20px; } .flex-1 { flex: 1; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; } i, .shadow-sm, .shadow-soft { box-shadow: none !important; } </style></head><body><div class="header-print"><h2>سمان ههيا - كشف تسليمات</h2><p style="margin-top:5px; color:#64748b; font-weight:bold;">الدفعة: <strong>${title}</strong></p></div>${content}<div style="text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; font-weight:bold;">تمت الطباعة بواسطة النظام المركزي (CRM)</div><script>window.onload = function() { window.print(); setTimeout(function(){ window.close(); }, 500); }<\/script></body></html>`); 
+            printWindow.document.close(); 
+        };
+
+        // === 11. دوال الإعدادات والمخزون ===
+        function renderInventoryUI() { 
+            const cont = document.getElementById('products-list-container'); if(!cont) return; 
+            cont.innerHTML = ''; 
+            Object.keys(storeProducts).forEach(id => { 
+                const p = storeProducts[id]; 
+                const price = storePrices[id] || p.basePrice || 0; 
+                const stock = storeStock[id] || 0; 
+                const oldPrice = p.oldPrice || ''; 
+                const imgSrc = (p.images && p.images.length > 0) ? p.images[0] : ''; 
+                
+                cont.innerHTML += `
+                <div class="bg-white p-5 rounded-[1.5rem] border border-slate-100 mb-4 shadow-soft">
+                    <div class="flex justify-between items-start gap-3 mb-3">
+                        <div class="flex-1 grid grid-cols-2 md:grid-cols-6 gap-3">
+                            <div><label class="text-[10px] font-bold text-slate-400 block mb-1">اسم المنتج</label><input type="text" value="${p.name}" onchange="storeProducts['${id}'].name = this.value" class="w-full border-none bg-slate-50 focus:bg-white rounded-xl p-2.5 text-xs font-black text-slate-800 focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm"></div>
+                            <div><label class="text-[10px] font-bold text-slate-400 block mb-1">الوزن / الوصف</label><input type="text" value="${p.weight||''}" onchange="storeProducts['${id}'].weight = this.value" class="w-full border-none bg-slate-50 focus:bg-white rounded-xl p-2.5 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm"></div>
+                            <div><label class="text-[10px] font-bold text-slate-400 block mb-1">السعر (ج)</label><input type="number" value="${price}" onchange="storePrices['${id}'] = parseInt(this.value) || 0" class="w-full border-none bg-blue-50 focus:bg-white rounded-xl p-2.5 text-sm font-black text-blue-700 text-center focus:ring-2 focus:ring-blue-200 transition-all shadow-sm"></div>
+                            <div><label class="text-[10px] font-bold text-amber-500 block mb-1">السعر القديم (مخفي)</label><input type="number" value="${p.oldBatchPrice||''}" onchange="storeProducts['${id}'].oldBatchPrice = parseInt(this.value) || 0" class="w-full border-none bg-amber-50 focus:bg-white rounded-xl p-2.5 text-sm font-black text-amber-700 text-center focus:ring-2 focus:ring-amber-200 transition-all shadow-sm" placeholder="اختياري"></div>
+                            <div><label class="text-[10px] font-bold text-slate-400 block mb-1">المتاح للحجز</label><input type="number" value="${stock}" onchange="storeStock['${id}'] = parseInt(this.value) || 0" class="w-full border-none bg-emerald-50 focus:bg-white rounded-xl p-2.5 text-sm font-black text-emerald-700 text-center focus:ring-2 focus:ring-emerald-200 transition-all shadow-sm"></div>
+                            <div><label class="text-[10px] font-bold text-slate-400 block mb-1">رابط الصورة</label><input type="text" value="${imgSrc}" onchange="storeProducts['${id}'].images = [this.value]" class="w-full border-none bg-slate-50 focus:bg-white rounded-xl p-2.5 text-[10px] font-bold text-slate-500 focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm" dir="ltr" placeholder="https://..."></div>
+                        </div>
+                        <button onclick="deleteProductUI('${id}')" class="w-9 h-9 bg-red-50 text-red-500 rounded-xl flex justify-center items-center hover:bg-red-500 hover:text-white mt-5 shrink-0 transition-colors shadow-sm"><i class="fa-solid fa-trash text-sm"></i></button>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-5 bg-slate-50/80 p-3 rounded-xl border border-slate-100/50 mt-2">
+                        <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-slate-600"><input type="checkbox" ${p.isExtra?'checked':''} onchange="storeProducts['${id}'].isExtra = this.checked" class="w-4 h-4 text-brand-primary rounded"> يُعرض كمنتج إضافي</label>
+                        <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-amber-600"><input type="checkbox" ${p.isBest?'checked':''} onchange="storeProducts['${id}'].isBest = this.checked" class="w-4 h-4 text-amber-500 rounded"> الأكثر طلباً 🔥</label>
+                        <div class="flex items-center gap-3 border-r border-slate-200 pr-4">
+                            <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-red-500"><input type="checkbox" ${p.isDisc?'checked':''} onchange="storeProducts['${id}'].isDisc = this.checked; renderInventoryUI();" class="w-4 h-4 text-red-500 rounded"> تفعيل سعر الخصم</label>
+                            ${p.isDisc ? `<input type="number" value="${oldPrice}" onchange="storeProducts['${id}'].oldPrice = parseInt(this.value) || 0" class="w-20 border-none bg-white rounded-lg p-1.5 text-[11px] font-black text-red-400 text-center line-through shadow-sm outline-none focus:ring-2 focus:ring-red-100" placeholder="السعر القديم">` : ''}
+                        </div>
+                    </div>
+                </div>`; 
+            }); 
+        }
+
+
+        window.addNewProductUI = () => { 
+            const newId = 'p_' + Date.now(); 
+            storeProducts[newId] = { name: "صنف جديد", basePrice: 0, weight: "", images: [""], isExtra: false, isBest: false, isDisc: false, oldPrice: 0, oldBatchPrice: 0 }; 
+            storePrices[newId] = 0; storeStock[newId] = 0; 
+            renderInventoryUI(); generateDynamicOrderInputs(); 
+        };
+
+
+        window.deleteProductUI = (id) => { 
+            if(confirm("حذف المنتج من المتجر تماماً؟")) { 
+                delete storeProducts[id]; delete storePrices[id]; delete storeStock[id]; 
+                renderInventoryUI(); generateDynamicOrderInputs(); 
+            } 
+        };
+
+        function renderSettingsUI() { 
+            document.getElementById('st-name').value = storeSettings.storeName || ''; 
+            document.getElementById('st-phone').value = storeSettings.storePhone || ''; 
+            document.getElementById('st-min-order').value = storeSettings.minOrder || 0; 
+            document.getElementById('st-is-open').checked = storeSettings.storeOpen !== false; 
+            document.getElementById('st-free-del').checked = storeSettings.freeDeliveryActive; 
+            document.getElementById('st-free-th').value = storeSettings.freeDeliveryThreshold || 0; 
+            document.getElementById('st-free-th').disabled = !storeSettings.freeDeliveryActive; 
+            
+            const zCont = document.getElementById('zones-list-container'); 
+            if(zCont) { 
+                zCont.innerHTML = ''; 
+                (storeSettings.deliveryZones || []).forEach((z, i) => { 
+                    zCont.innerHTML += `<div class="flex gap-2 mb-2"><input type="text" value="${z.name}" onchange="storeSettings.deliveryZones[${i}].name=this.value" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-100 transition-all" placeholder="اسم المنطقة"><input type="number" value="${z.price}" onchange="storeSettings.deliveryZones[${i}].price=parseInt(this.value)||0" class="w-24 border border-slate-200 rounded-xl p-2.5 text-xs font-black text-indigo-600 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-indigo-100 transition-all text-center" placeholder="السعر"><button onclick="storeSettings.deliveryZones.splice(${i}, 1); renderSettingsUI();" class="w-10 bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></div>`; 
+                }); 
+            } 
+            
+            const dCont = document.getElementById('drivers-list-container'); 
+            if(dCont) { 
+                dCont.innerHTML = ''; 
+                (storeSettings.drivers || []).forEach((d, i) => { 
+                    dCont.innerHTML += `<div class="flex gap-2 mb-2"><input type="text" value="${d.name}" onchange="storeSettings.drivers[${i}].name=this.value" placeholder="اسم المندوب" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all"><input type="text" value="${d.phone}" onchange="storeSettings.drivers[${i}].phone=this.value" placeholder="رقم الواتساب" class="w-32 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-left" dir="ltr"><button onclick="storeSettings.drivers.splice(${i}, 1); renderSettingsUI();" class="w-10 bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></div>`; 
+                }); 
+            } 
+            
+            if(document.getElementById('admin-whatsapp-template')) { 
+                document.getElementById('admin-whatsapp-template').value = storeSettings.whatsappTemplate || ''; 
+                document.getElementById('admin-dispatch-template').value = storeSettings.dispatchTemplate || ''; 
+                document.getElementById('admin-ticktick-template').value = storeSettings.ticktickTemplate || ''; 
+                document.getElementById('admin-batch-hashtag').value = storeSettings.batchHashtag || ''; 
+            } 
+        }
+
+        window.addNewZoneUI = () => { if(!storeSettings.deliveryZones) storeSettings.deliveryZones = []; storeSettings.deliveryZones.push({name:'', price:0}); renderSettingsUI(); }; 
+        window.addNewDriverUI = () => { if(!storeSettings.drivers) storeSettings.drivers = []; storeSettings.drivers.push({name:'', phone:''}); renderSettingsUI(); };
+
+        window.saveAllSettings = async () => {
+            const btn = document.getElementById('global-save-btn'); const origHtml = btn.innerHTML; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...'; btn.disabled = true;
+
+            try {
+                if(document.getElementById('st-name')) { 
+                    storeSettings.storeName = document.getElementById('st-name').value; storeSettings.storePhone = document.getElementById('st-phone').value; storeSettings.minOrder = parseInt(document.getElementById('st-min-order').value) || 0; storeSettings.storeOpen = document.getElementById('st-is-open').checked; storeSettings.freeDeliveryActive = document.getElementById('st-free-del').checked; storeSettings.freeDeliveryThreshold = parseInt(document.getElementById('st-free-th').value) || 0; 
+                }
+                
+                if(document.getElementById('admin-whatsapp-template')) { 
+                    storeSettings.whatsappTemplate = document.getElementById('admin-whatsapp-template').value; storeSettings.dispatchTemplate = document.getElementById('admin-dispatch-template').value; storeSettings.ticktickTemplate = document.getElementById('admin-ticktick-template').value; storeSettings.batchHashtag = document.getElementById('admin-batch-hashtag').value; 
+                }
+
+                storeSettings.deliveryZones = (storeSettings.deliveryZones || []).filter(z => z && z.name && z.name.trim() !== ''); 
+                storeSettings.drivers = (storeSettings.drivers || []).filter(d => d && (d.name || d.phone)); 
+                storeSettings.productsData = storeProducts;
+
+                await Promise.all([ 
+                    db.collection("inventory").doc("settings").set(storeSettings, {merge: true}), db.collection("inventory").doc("stock").set(storeStock, {merge: true}), db.collection("inventory").doc("prices").set(storePrices, {merge: true}), db.collection("inventory").doc("batches").set(storeBatches) 
+                ]);
+                alert('تم الحفظ بنجاح! 🚀');
+            } catch(e) { alert('خطأ في الحفظ!'); }
+            btn.innerHTML = origHtml; btn.disabled = false;
+        };
+
+        // === 12. دوال نافذة (تعديل الطلب) ===
+        let editingOrderData = null;
+
+        window.openEditOrderModal = (id) => {
+            editingOrderData = allOrdersRaw.find(o => o.id === id); if(!editingOrderData) return;
+            document.getElementById('edit-cust-name').innerText = editingOrderData.customerName || 'عميل';
+            const container = document.getElementById('edit-dynamic-order-items'); container.innerHTML = '';
+            
+            Object.keys(storeProducts).forEach(pId => {
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === storeProducts[pId].name) : null;
+                let q = existingItem ? existingItem.quantity : 0;
+                container.innerHTML += `
+                <div class="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm flex flex-col justify-between">
+                    <span class="text-[11px] font-black text-slate-600 block text-center truncate mb-3">${storeProducts[pId].name}</span>
+                    <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5">
+                        <button onclick="changeEditQty('${pId}', -1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
+                        <input type="number" id="edit-q-${pId}" min="0" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()">
+                        <button onclick="changeEditQty('${pId}', 1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
+                    </div>
+                </div>`;
+            });
+
+            let bSel = document.getElementById('edit-batch'); 
+            bSel.innerHTML = '<option value="">-- بدون دورة مسجلة --</option>';
+            Object.keys(storeBatches).forEach(bId => { 
+                bSel.innerHTML += `<option value="${bId}" ${editingOrderData.batchId === bId ? 'selected' : ''}>${storeBatches[bId].name}</option>`; 
+            });
+            
+            if(document.getElementById('edit-custom-tag')) { document.getElementById('edit-custom-tag').value = editingOrderData.customTag || ''; }
+            if(document.getElementById('edit-phone-2')) document.getElementById('edit-phone-2').value = editingOrderData.customerPhone2 || '';
+
+            document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0; 
+            document.getElementById('edit-discount').value = editingOrderData.discount || 0; 
+            calcEditTotal(); openModal('edit-order-modal');
+        };
+
+        window.changeEditQty = (pId, amount) => { 
+            let input = document.getElementById(`edit-q-${pId}`); let val = parseInt(input.value) || 0; val += amount; if(val < 0) val = 0; input.value = val; calcEditTotal(); 
+        };
+
+        window.calcEditTotal = () => { 
+            let itemsTotal = 0; 
+            Object.keys(storeProducts).forEach(id => { 
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
+                itemsTotal += (q * price); 
+            }); 
+            document.getElementById('edit-price').value = itemsTotal; 
+            let d = Number(document.getElementById('edit-delivery').value) || 0; let disc = Number(document.getElementById('edit-discount').value) || 0; 
+            let finalTotal = itemsTotal + d - disc; if(finalTotal < 0) finalTotal = 0; document.getElementById('edit-total').value = finalTotal; 
+        };
+
+
+        window.saveEditedOrder = async () => {
+            if(!editingOrderData) return;
+            let newItems = []; let newSubtotal = 0;
+            let newBatchId = document.getElementById('edit-batch').value; 
+            let oldBatchId = editingOrderData.batchId;
+            let oldItems = editingOrderData.items || [];
+            
+            Object.keys(storeProducts).forEach(id => { 
+                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                if(q > 0) { 
+                    let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                    let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
+                    newItems.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); newSubtotal += (q * price); 
+                } 
+            });
+
+            
+            if(newItems.length === 0) return alert('لا يمكن حفظ طلب فارغ!');
+
+            let newDelivery = Number(document.getElementById('edit-delivery').value) || 0; 
+            let newDiscount = Number(document.getElementById('edit-discount').value) || 0; 
+            let newTotal = Number(document.getElementById('edit-total').value) || 0;
+            let newBatchName = newBatchId ? storeBatches[newBatchId].name : '';
+            let newCustomTag = document.getElementById('edit-custom-tag') ? document.getElementById('edit-custom-tag').value.trim() : '';
+            let newPhone2 = document.getElementById('edit-phone-2') ? document.getElementById('edit-phone-2').value.trim() : '';
+            
+            let oldTotal = Number(editingOrderData.total) || 0; let difference = newTotal - oldTotal;
+            
+            const btn = document.getElementById('btn-save-edit'); const origHtml = btn.innerHTML; 
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحديث السيستم...'; btn.disabled = true;
+
+            try {
+                await db.collection('orders').doc(editingOrderData.id).update({ 
+                    items: newItems, 
+                    subtotal: newSubtotal, 
+                    deliveryFee: newDelivery, 
+                    discount: newDiscount, 
+                    total: newTotal, 
+                    batchId: newBatchId, 
+                    batchName: newBatchName, 
+                    customTag: newCustomTag,
+                    customerPhone2: newPhone2 
+                });
+                
+                if(difference !== 0 && editingOrderData.customerPhone) { let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; await db.collection('customers').doc(cleanPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(difference) }); }
+                if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(difference) }); }
+                
+                // 🌟 تحديث المخزون والدفعات في الـ CRM عند التعديل 🌟
+                if(editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') {
+                    let stockUpdates = {};
+                    let oldBatchBookedUpdates = {};
+                    let newBatchBookedUpdates = {};
+
+                    oldItems.forEach(i => {
+                        stockUpdates[i.id] = (stockUpdates[i.id] || 0) + i.quantity;
+                        if(oldBatchId) oldBatchBookedUpdates[i.id] = (oldBatchBookedUpdates[i.id] || 0) - i.quantity;
+                    });
+
+                    newItems.forEach(i => {
+                        stockUpdates[i.id] = (stockUpdates[i.id] || 0) - i.quantity;
+                        if(newBatchId) newBatchBookedUpdates[i.id] = (newBatchBookedUpdates[i.id] || 0) + i.quantity;
+                    });
+
+                    let finalStockUpdates = {};
+                    Object.keys(stockUpdates).forEach(id => { if(stockUpdates[id] !== 0) finalStockUpdates[id] = firebase.firestore.FieldValue.increment(stockUpdates[id]); });
+                    if(Object.keys(finalStockUpdates).length > 0) { await db.collection("inventory").doc("stock").set(finalStockUpdates, { merge: true }); }
+
+                    if (oldBatchId === newBatchId && oldBatchId) {
+                        let combinedBatchUpdates = {};
+                        new Set([...Object.keys(oldBatchBookedUpdates), ...Object.keys(newBatchBookedUpdates)]).forEach(id => {
+                            let netChange = (oldBatchBookedUpdates[id] || 0) + (newBatchBookedUpdates[id] || 0);
+                            if(netChange !== 0) combinedBatchUpdates[id] = firebase.firestore.FieldValue.increment(netChange);
+                        });
+                        if(Object.keys(combinedBatchUpdates).length > 0) { await db.collection("inventory").doc("batches").set({ [oldBatchId]: { booked: combinedBatchUpdates } }, { merge: true }); }
+                    } else {
+                        if (oldBatchId) {
+                            let oldFinal = {}; Object.keys(oldBatchBookedUpdates).forEach(id => { if(oldBatchBookedUpdates[id] !== 0) oldFinal[id] = firebase.firestore.FieldValue.increment(oldBatchBookedUpdates[id]); });
+                            if(Object.keys(oldFinal).length > 0) await db.collection("inventory").doc("batches").set({ [oldBatchId]: { booked: oldFinal } }, { merge: true });
+                        }
+                        if (newBatchId) {
+                            let newFinal = {}; Object.keys(newBatchBookedUpdates).forEach(id => { if(newBatchBookedUpdates[id] !== 0) newFinal[id] = firebase.firestore.FieldValue.increment(newBatchBookedUpdates[id]); });
+                            if(Object.keys(newFinal).length > 0) await db.collection("inventory").doc("batches").set({ [newBatchId]: { booked: newFinal } }, { merge: true });
+                        }
+                    }
+                }
+
+                closeModal('edit-order-modal');
+            } catch(e) { alert("حدث خطأ أثناء حفظ التعديلات!"); console.log(e); }
+            btn.innerHTML = origHtml; btn.disabled = false;
+        };
+
+        // === 13. السحر الجديد: التحديد المتعدد والتعديل الطاير ===
+        
+        // دوال التحديد المتعدد
+        window.toggleBulkActionBar = () => {
+            let checked = document.querySelectorAll('.bulk-order-cb:checked');
+            let bar = document.getElementById('bulk-actions-bar');
+            if(checked.length > 0) {
+                document.getElementById('bulk-count').innerText = checked.length;
+                bar.classList.remove('hidden');
+            } else {
+                bar.classList.add('hidden');
+            }
+        };
+
+        window.bulkChangeStatus = async (newStatus) => {
+            let checked = Array.from(document.querySelectorAll('.bulk-order-cb:checked')).map(cb => cb.value);
+            if(checked.length === 0) return;
+            
+            let statusName = newStatus === 'processing' ? 'قيد التجهيز' : (newStatus === 'completed' ? 'مكتمل' : 'لم يتم الرد');
+            if(!confirm(`سيتم تحويل [ ${checked.length} ] طلبات إلى حالة (${statusName}). تأكيد؟`)) return;
+
+            let bar = document.getElementById('bulk-actions-bar');
+            let originalHtml = bar.innerHTML;
+            bar.innerHTML = '<div class="w-full text-center text-sm font-bold text-amber-400"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث الجماعي للسيستم...</div>';
+
+            try {
+                let dbBatch = db.batch();
+                checked.forEach(id => {
+                    let ref = db.collection('orders').doc(id);
+                    dbBatch.update(ref, { status: newStatus });
+                });
+                await dbBatch.commit();
+                
+                bar.innerHTML = originalHtml;
+                bar.classList.add('hidden');
+                
+                document.querySelectorAll('.bulk-order-cb').forEach(cb => cb.checked = false);
+            } catch(e) {
+                alert("حدث خطأ أثناء التحديث الجماعي!");
+                bar.innerHTML = originalHtml;
+            }
+        };
+
+        // دوال التعديل الطاير (Inline Editing)
+        window.inlineEdit = (el, orderId, field) => {
+            if (el.querySelector('input')) return;
+            let originalText = el.innerText.trim();
+            if (field === 'customerPhone2' && originalText.includes(' ')) {
+                 originalText = originalText.replace(/[^0-9]/g, ''); 
+            }
+            
+            let input = document.createElement('input');
+            input.type = 'text';
+            input.value = originalText;
+            input.className = 'border border-brand-primary rounded px-1 py-0.5 text-xs font-bold text-slate-800 outline-none w-auto max-w-[150px] inline-block bg-white shadow-sm';
+            
+            input.onblur = () => saveInlineEdit(input, orderId, field, originalText, el);
+            input.onkeydown = (e) => { if (e.key === 'Enter') input.blur(); else if (e.key === 'Escape') cancelInlineEdit(input, originalText, el); };
+            
+            el.innerHTML = '';
+            el.appendChild(input);
+            input.focus();
+        };
+
+        window.saveInlineEdit = async (input, orderId, field, originalText, el) => {
+            let newVal = input.value.trim();
+            if (newVal === originalText || newVal === '') {
+                cancelInlineEdit(input, originalText, el);
+                return;
+            }
+            
+            el.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-brand-primary"></i>';
+            try {
+                let updateData = {};
+                updateData[field] = newVal;
+                await db.collection('orders').doc(orderId).update(updateData);
+                
+                let o = allOrdersRaw.find(x => x.id === orderId);
+                if(o && o.customerPhone && (field === 'customerName' || field === 'zone' || field === 'customerAddress')) {
+                    let cleanPhone = o.customerPhone.startsWith('0') ? o.customerPhone : '0' + o.customerPhone;
+                    let custUpdate = {};
+                    if(field === 'customerName') custUpdate.name = newVal;
+                    if(field === 'zone') custUpdate.zone = newVal;
+                    if(field === 'customerAddress') custUpdate.address = newVal;
+                    await db.collection('customers').doc(cleanPhone).update(custUpdate).catch(()=>console.log("Customer doc might not exist"));
+                }
+            } catch(e) {
+                alert("خطأ في حفظ التعديل الطاير!");
+                cancelInlineEdit(input, originalText, el);
+            }
+        };
+        
+        window.cancelInlineEdit = (input, originalText, el) => {
+            if(el.getAttribute('data-field') === 'customerPhone2' && originalText !== '') {
+                el.innerHTML = `<i class="fa-solid fa-phone text-[8px]"></i> ` + originalText;
+            } else {
+                el.innerText = originalText;
+            }
+        };
+        // ==========================================
+        // سحر الـ UX: الفلاتر الذكية وسحب الموبايل
+        // ==========================================
+
+        // 1. الفلاتر الذكية
         let currentSmartFilter = null;
         window.toggleSmartFilter = (type, btnElement) => {
             if(currentSmartFilter === type) {
-                currentSmartFilter = null; 
+                currentSmartFilter = null; // إطفاء الفلتر لو ضغطت عليه تاني
                 document.querySelectorAll('.smart-filter-btn').forEach(b => b.classList.remove('ring-4', 'ring-brand-primary', 'shadow-md'));
             } else {
                 currentSmartFilter = type;
@@ -1764,20 +2438,26 @@
             renderOrdersList();
         };
 
+        // ==================================================
+        // دوال الذكاء الاصطناعي للواجهة (Click, Swipe & Quick Tags)
+        // ==================================================
+
+        // 1. دالة التفريق بين الضغطة الواحدة والمزدوجة
         let clickTimer = null;
         window.smartNameClick = (el, orderId, phone, field) => {
             if(clickTimer) {
                 clearTimeout(clickTimer);
                 clickTimer = null;
-                inlineEdit(el, orderId, field); 
+                inlineEdit(el, orderId, field); // ضغطة مزدوجة -> تعديل
             } else {
                 clickTimer = setTimeout(() => {
                     clickTimer = null;
-                    openCustomerCard(phone); 
+                    openCustomerCard(phone); // ضغطة واحدة -> فتح الأرشيف
                 }, 250); 
             }
         };
 
+        // 2. نافذة الملاحظات السريعة (Quick Tags Modal)
         let currentPromptCallback = null;
         window.openActionPrompt = (title, tags, placeholder, onConfirm) => {
             document.getElementById('action-prompt-title').innerHTML = title;
@@ -1798,6 +2478,7 @@
             if(currentPromptCallback) currentPromptCallback(val);
         };
 
+        // 3. السحب الذكي الموجه للموبايل (Smart Swipe Funnel)
         let touchstartX = 0;
         let touchendX = 0;
         let activeOrderCard = null;
@@ -1862,6 +2543,9 @@
             }
             activeOrderCard = null;
         });
+
+        
+
 
     </script>
 </body>
