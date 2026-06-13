@@ -323,52 +323,6 @@
         </div>
     </main>
 
-    <div id="edit-order-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[75] hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h3 class="text-xl font-black text-slate-800"><i class="fa-solid fa-pen-to-square text-amber-500 mr-2"></i> تعديل طلب العميل: <span id="edit-cust-name" class="text-brand-primary"></span></h3>
-                <button onclick="closeModal('edit-order-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto custom-scroll space-y-6 bg-slate-50/50">
-
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100 mb-4">
-                    <label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (للطوارئ)</label>
-                    <input type="tel" id="edit-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="إضافة رقم آخر...">
-                </div>
-                
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <label class="text-sm font-black text-slate-800 block mb-4"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-2"></i> الكميات المطلوبة</label>
-                    <div id="edit-dynamic-order-items" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <label class="text-sm font-black text-slate-800 block mb-3"><i class="fa-solid fa-layer-group text-teal-500 mr-2"></i> تنظيم الدفعة والهاشتاج</label>
-                    <select id="edit-batch" class="w-full border border-slate-200 rounded-xl p-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-100 bg-slate-50 focus:bg-white transition-all mb-3"></select>
-                    <input type="text" id="edit-custom-tag" class="w-full border border-slate-200 rounded-xl p-3 font-bold text-xs text-slate-700 outline-none focus:ring-2 focus:ring-purple-100 bg-slate-50 focus:bg-white transition-all" placeholder="هاشتاج مخصص حر للفرز (مثال: دفعة_العيد) - اختياري">
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
-                    <div class="grid grid-cols-3 gap-4 mb-5">
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">قيمة المنتجات</label><input type="number" id="edit-price" class="w-full border border-slate-100 rounded-xl p-2.5 font-black bg-slate-50 text-center text-slate-500" disabled></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">مصاريف التوصيل</label><input type="number" id="edit-delivery" class="w-full border border-slate-200 rounded-xl p-2.5 font-black text-center outline-none focus:ring-2 focus:ring-blue-100 transition-all bg-white" oninput="calcEditTotal()"></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">قيمة الخصم</label><input type="number" id="edit-discount" class="w-full border border-slate-200 rounded-xl p-2.5 font-black text-red-500 text-center outline-none focus:ring-2 focus:ring-red-100 transition-all bg-white" oninput="calcEditTotal()"></div>
-                    </div>
-                    <div class="border-t border-slate-100 pt-5">
-                        <label class="text-xs font-black text-slate-800 block mb-2 text-center">الإجمالي النهائي الجديد</label>
-                        <div class="flex gap-2">
-                            <button onclick="calcEditTotal()" class="bg-slate-100 px-5 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors"><i class="fa-solid fa-calculator text-brand-primary"></i></button>
-                            <input type="number" id="edit-total" class="flex-1 border-none bg-emerald-50 rounded-xl p-3 outline-none font-black text-brand-primary text-2xl text-center" disabled>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
-                <button onclick="saveEditedOrder()" id="btn-save-edit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-base"><i class="fa-solid fa-floppy-disk text-amber-400"></i> حفظ وتحديث الحسابات</button>
-            </div>
-        </div>
-    </div>
-
     <div id="add-order-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[70] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
             <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
@@ -435,6 +389,52 @@
             </div>
             <div class="p-5 border-t border-slate-100 bg-white shrink-0">
                 <button onclick="submitNewOrder()" id="btn-save-order" class="w-full bg-brand-primary hover:bg-emerald-800 text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-brand-primary/30 active:scale-95 text-base">تأكيد وحفظ الطلب</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-order-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[75] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-xl font-black text-slate-800"><i class="fa-solid fa-pen-to-square text-amber-500 mr-2"></i> تعديل طلب العميل: <span id="edit-cust-name" class="text-brand-primary"></span></h3>
+                <button onclick="closeModal('edit-order-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scroll space-y-6 bg-slate-50/50">
+
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100 mb-4">
+                    <label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (للطوارئ)</label>
+                    <input type="tel" id="edit-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="إضافة رقم آخر...">
+                </div>
+                
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                    <label class="text-sm font-black text-slate-800 block mb-4"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-2"></i> الكميات المطلوبة</label>
+                    <div id="edit-dynamic-order-items" class="grid grid-cols-2 md:grid-cols-3 gap-3"></div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                    <label class="text-sm font-black text-slate-800 block mb-3"><i class="fa-solid fa-layer-group text-teal-500 mr-2"></i> تنظيم الدفعة والهاشتاج</label>
+                    <select id="edit-batch" class="w-full border border-slate-200 rounded-xl p-3 font-bold text-slate-700 outline-none focus:ring-2 focus:ring-teal-100 bg-slate-50 focus:bg-white transition-all mb-3"></select>
+                    <input type="text" id="edit-custom-tag" class="w-full border border-slate-200 rounded-xl p-3 font-bold text-xs text-slate-700 outline-none focus:ring-2 focus:ring-purple-100 bg-slate-50 focus:bg-white transition-all" placeholder="هاشتاج مخصص حر للفرز (مثال: دفعة_العيد) - اختياري">
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                    <div class="grid grid-cols-3 gap-4 mb-5">
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">قيمة المنتجات</label><input type="number" id="edit-price" class="w-full border border-slate-100 rounded-xl p-2.5 font-black bg-slate-50 text-center text-slate-500" disabled></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">مصاريف التوصيل</label><input type="number" id="edit-delivery" class="w-full border border-slate-200 rounded-xl p-2.5 font-black text-center outline-none focus:ring-2 focus:ring-blue-100 transition-all bg-white" oninput="calcEditTotal()"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5 text-center">قيمة الخصم</label><input type="number" id="edit-discount" class="w-full border border-slate-200 rounded-xl p-2.5 font-black text-red-500 text-center outline-none focus:ring-2 focus:ring-red-100 transition-all bg-white" oninput="calcEditTotal()"></div>
+                    </div>
+                    <div class="border-t border-slate-100 pt-5">
+                        <label class="text-xs font-black text-slate-800 block mb-2 text-center">الإجمالي النهائي الجديد</label>
+                        <div class="flex gap-2">
+                            <button onclick="calcEditTotal()" class="bg-slate-100 px-5 rounded-xl text-xs font-bold hover:bg-slate-200 transition-colors"><i class="fa-solid fa-calculator text-brand-primary"></i></button>
+                            <input type="number" id="edit-total" class="flex-1 border-none bg-emerald-50 rounded-xl p-3 outline-none font-black text-brand-primary text-2xl text-center" disabled>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
+                <button onclick="saveEditedOrder()" id="btn-save-edit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-base"><i class="fa-solid fa-floppy-disk text-amber-400"></i> حفظ وتحديث الحسابات</button>
             </div>
         </div>
     </div>
@@ -1865,4 +1865,7 @@
 
     </script>
 </body>
-</html>
+</html> كل  حاجه  تتخيلها ممتازه  انا  حقيقي فخور بالللي وصلناله وحقيقي السيستم طلقه وكل ما يمتلكه من  قدره جباراه وحقيقي بشكرك  واتمني ميكنش اخر تعامل 
+كل الاقتراحات ممتازه  في اضافه  قويه  بس هحتاجلها في وقت تاني وحاابب  اسال لو  عايز  اضيف مستخدمين للسيستم  يعني انا  ادمن في مثلا مسوق يدخل يعمل اوردرات ويشوف التحليلات  زي المود  بتاعي بالظبط  بس مش بيلعب في الاصناف ولا يعدل في حالات الاوردر مثلا ولا سله  المحذوفات دي ليه صلاحيه  للمندوب يدخل يشوف  قائمه  اللي رايحاله  بس وميلعبش في حاجه غير انه  يغير حاله  الاوردر ل تم التسليم  او لم يتم  الرد  ومش من حقه  يغير في حاجه تاني 
+كل الاقتراحات اللي فوق  دي هحتاجها في  المود  القادم  لو ينفع  السيستم  يعمله  اما  كـ سيستم  للاداره فهو ممتاز وفخور بالنسخه اللي وصلنالها دي 
+وقولي رايك  كـ مطور في  السيستم  ومدي حمايته وامانه ومدي صلاحيه  ل 1000 عميل  ولا  اخره ااي  وعيوبه  ومميزاته وصدقني انا كصاحب  مشروع  مش كـ مبرمج فخور  اني عرفت  اطلع  النسخه  المحترمه  دي منك  شكرا ليك  جداا
