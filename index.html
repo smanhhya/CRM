@@ -168,6 +168,10 @@
                         <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
                         <input type="text" id="search-order" onkeyup="renderOrdersList()" placeholder="بحث برقم الطلب، الموبايل أو الهاشتاج..." class="w-full pl-4 pr-11 py-2.5 rounded-xl border-none outline-none text-sm font-bold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-primary/20 transition-all">
                     </div>
+                    <div class="relative w-full md:flex-1">
+                        <i class="fa-solid fa-wand-magic-sparkles absolute right-4 top-3.5 text-amber-500"></i>
+                        <input type="text" id="smart-fetcher" onkeyup="handleSmartFetcher(event)" placeholder="كشاف العملاء (اكتب/انسخ أي رقم هنا واضغط Enter)..." class="w-full pl-4 pr-11 py-2.5 rounded-xl border border-amber-200 outline-none text-sm font-bold bg-amber-50 focus:bg-white focus:ring-2 focus:ring-amber-400 transition-all text-amber-900 placeholder-amber-600/50">
+                    </div>
                     <div class="flex gap-2 w-full md:w-auto shrink-0">
                         <button onclick="openModal('analysis-modal')" class="flex-1 md:flex-none bg-indigo-50 text-indigo-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2 border border-indigo-100"><i class="fa-solid fa-chart-pie"></i> <span class="hidden md:inline">التحليل</span></button>
                         <button onclick="openDispatchModal()" class="flex-1 md:flex-none bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-motorcycle"></i> <span class="hidden md:inline">التوجيه</span></button>
@@ -181,6 +185,17 @@
                     <button onclick="setOrderTab('no_answer')" id="tab-no_answer" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">لم يتم الرد 📴 <span id="badge-no_answer" class="ml-1.5 bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
                     <button onclick="setOrderTab('completed')" id="tab-completed" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مكتمل <span id="badge-completed" class="ml-1.5 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
                     <button onclick="setOrderTab('canceled')" id="tab-canceled" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">ملغي</button>
+                </div>
+                
+                <div id="bulk-actions-bar" class="hidden bg-slate-800 text-white p-3 rounded-2xl mb-4 shadow-lg flex justify-between items-center transition-all">
+                    <div class="text-sm font-bold flex items-center gap-2">
+                        <span id="bulk-count" class="bg-brand-primary px-2.5 py-0.5 rounded-lg text-xs">0</span> طلب محدد
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="bulkChangeStatus('processing')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-xl text-xs font-black transition-colors">تحويل لتجهيز</button>
+                        <button onclick="bulkChangeStatus('no_answer')" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-xl text-xs font-black transition-colors">لم يتم الرد</button>
+                        <button onclick="bulkChangeStatus('completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-black transition-colors">تأكيد مكتمل</button>
+                    </div>
                 </div>
 
                 <div id="orders-list-vertical" class="flex-1 overflow-y-auto custom-scroll space-y-4 pr-1 pb-4"></div>
@@ -875,6 +890,31 @@
             panel.innerHTML = smartDashboardHtml + `<div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4">${batchesHtml}</div>`;
         };
 
+        // دالة الكشاف السريع (Smart Fetcher)
+        window.handleSmartFetcher = async (e) => {
+            if (e.key === 'Enter') {
+                let input = document.getElementById('smart-fetcher');
+                let rawVal = input.value.trim();
+                if(!rawVal) return;
+                
+                // تنظيف الرقم تماماً
+                const arabicToEnglish = str => str.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660);
+                let phone = arabicToEnglish(rawVal).replace(/\D/g, '');
+                if (phone.startsWith('002')) phone = phone.substring(3);
+                else if (phone.startsWith('201')) phone = phone.substring(2);
+                else if (phone.length === 10 && phone.startsWith('1')) phone = '0' + phone;
+                else if (phone.length > 11 && phone.startsWith('2')) phone = phone.substring(1);
+
+                input.value = ''; // تفريغ الكشاف بعد السحب
+                
+                // نفتح المودال وننفذ البحث الذكي
+                openModal('add-order-modal');
+                document.getElementById('no-phone').value = phone;
+                await checkCustomerExists();
+                document.getElementById('no-name').focus();
+            }
+        };
+
 
         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
@@ -906,20 +946,25 @@
                 let customTagHtml = o.customTag ? `<span onclick="document.getElementById('search-order').value='${o.customTag}'; renderOrdersList();" class="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-purple-500 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه المجموعة"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
                 let batchTagHtml = o.batchName ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
 
-                let phone2Html = o.customerPhone2 ? `<a href="tel:${o.customerPhone2}" class="text-[10px] text-purple-400 font-bold border border-purple-100 bg-purple-50 px-1.5 rounded ml-1 hover:text-purple-600 transition-colors" dir="ltr" title="رقم بديل"><i class="fa-solid fa-phone text-[8px]"></i> ${o.customerPhone2}</a>` : '';
+                let phone2Html = o.customerPhone2 ? `<span class="text-[10px] text-purple-400 font-bold border border-purple-100 bg-purple-50 px-1.5 rounded ml-1 cursor-pointer hover:border-purple-300 border-dashed transition-colors" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone2')" title="اضغط مرتين للتعديل الطاير"><i class="fa-solid fa-phone text-[8px]"></i> ${o.customerPhone2}</span>` : '';
 
 
                 return `
-                <div class="bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5">
-                    <div class="flex justify-between items-start mb-3">
+                <div class="bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5 relative group">
+                    <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-5 left-4 w-5 h-5 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
+                    <div class="flex justify-between items-start mb-3 pl-8">
                         <div>
-                            <h5 class="font-black text-slate-800 text-base flex items-center gap-2.5 mb-1.5">
-                                <span class="cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${o.customerPhone}')">${o.customerName || 'بدون اسم'}</span>
+                            <h5 class="font-black text-slate-800 text-base flex flex-wrap items-center gap-2.5 mb-1.5">
+                                <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerName')" title="اضغط مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
                                 <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-6 h-6 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[10px]"></i></a>
-                                <span class="text-[11px] text-slate-400 font-bold" dir="ltr">${o.customerPhone}</span>
+                                <span class="text-[11px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
                                 ${phone2Html}
                             </h5>
-                            <p class="text-xs text-slate-500 font-bold mb-2.5"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${o.zone || 'غير مسجل'} ${o.customerAddress ? '- '+o.customerAddress : ''}</p>
+                            <p class="text-xs text-slate-500 font-bold mb-2.5 flex items-center gap-1 flex-wrap">
+                                <i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> 
+                                <span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'zone')" title="تعديل المنطقة السريع">${o.zone || 'غير مسجل'}</span> 
+                                ${o.customerAddress ? `<span class="mx-1">-</span><span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerAddress')" title="تعديل العنوان التفصيلي">${o.customerAddress}</span>` : ''}
+                            </p>
                             <div class="flex flex-wrap gap-1.5">
                                 ${batchTagHtml}
                                 ${customTagHtml}
@@ -2031,134 +2076,4 @@
                     <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5">
                         <button onclick="changeEditQty('${pId}', -1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
                         <input type="number" id="edit-q-${pId}" min="0" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()">
-                        <button onclick="changeEditQty('${pId}', 1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
-                    </div>
-                </div>`;
-            });
-
-            let bSel = document.getElementById('edit-batch'); 
-            bSel.innerHTML = '<option value="">-- بدون دورة مسجلة --</option>';
-            Object.keys(storeBatches).forEach(bId => { 
-                bSel.innerHTML += `<option value="${bId}" ${editingOrderData.batchId === bId ? 'selected' : ''}>${storeBatches[bId].name}</option>`; 
-            });
-            
-            if(document.getElementById('edit-custom-tag')) { document.getElementById('edit-custom-tag').value = editingOrderData.customTag || ''; }
-            if(document.getElementById('edit-phone-2')) document.getElementById('edit-phone-2').value = editingOrderData.customerPhone2 || '';
-
-            document.getElementById('edit-delivery').value = editingOrderData.deliveryFee || 0; 
-            document.getElementById('edit-discount').value = editingOrderData.discount || 0; 
-            calcEditTotal(); openModal('edit-order-modal');
-        };
-
-        window.changeEditQty = (pId, amount) => { 
-            let input = document.getElementById(`edit-q-${pId}`); let val = parseInt(input.value) || 0; val += amount; if(val < 0) val = 0; input.value = val; calcEditTotal(); 
-        };
-
-        window.calcEditTotal = () => { 
-            let itemsTotal = 0; 
-            Object.keys(storeProducts).forEach(id => { 
-                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
-                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
-                let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
-                itemsTotal += (q * price); 
-            }); 
-            document.getElementById('edit-price').value = itemsTotal; 
-            let d = Number(document.getElementById('edit-delivery').value) || 0; let disc = Number(document.getElementById('edit-discount').value) || 0; 
-            let finalTotal = itemsTotal + d - disc; if(finalTotal < 0) finalTotal = 0; document.getElementById('edit-total').value = finalTotal; 
-        };
-
-
-        window.saveEditedOrder = async () => {
-            if(!editingOrderData) return;
-            let newItems = []; let newSubtotal = 0;
-            let newBatchId = document.getElementById('edit-batch').value; 
-            let oldBatchId = editingOrderData.batchId;
-            let oldItems = editingOrderData.items || [];
-            
-            Object.keys(storeProducts).forEach(id => { 
-                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
-                if(q > 0) { 
-                    let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
-                    let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
-                    newItems.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); newSubtotal += (q * price); 
-                } 
-            });
-
-            
-            if(newItems.length === 0) return alert('لا يمكن حفظ طلب فارغ!');
-
-            let newDelivery = Number(document.getElementById('edit-delivery').value) || 0; 
-            let newDiscount = Number(document.getElementById('edit-discount').value) || 0; 
-            let newTotal = Number(document.getElementById('edit-total').value) || 0;
-            let newBatchName = newBatchId ? storeBatches[newBatchId].name : '';
-            let newCustomTag = document.getElementById('edit-custom-tag') ? document.getElementById('edit-custom-tag').value.trim() : '';
-            let newPhone2 = document.getElementById('edit-phone-2') ? document.getElementById('edit-phone-2').value.trim() : '';
-            
-            let oldTotal = Number(editingOrderData.total) || 0; let difference = newTotal - oldTotal;
-            
-            const btn = document.getElementById('btn-save-edit'); const origHtml = btn.innerHTML; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحديث السيستم...'; btn.disabled = true;
-
-            try {
-                await db.collection('orders').doc(editingOrderData.id).update({ 
-                    items: newItems, 
-                    subtotal: newSubtotal, 
-                    deliveryFee: newDelivery, 
-                    discount: newDiscount, 
-                    total: newTotal, 
-                    batchId: newBatchId, 
-                    batchName: newBatchName, 
-                    customTag: newCustomTag,
-                    customerPhone2: newPhone2 
-                });
-                
-                if(difference !== 0 && editingOrderData.customerPhone) { let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; await db.collection('customers').doc(cleanPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(difference) }); }
-                if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(difference) }); }
-                
-                // 🌟 تحديث المخزون والدفعات في الـ CRM عند التعديل 🌟
-                if(editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') {
-                    let stockUpdates = {};
-                    let oldBatchBookedUpdates = {};
-                    let newBatchBookedUpdates = {};
-
-                    oldItems.forEach(i => {
-                        stockUpdates[i.id] = (stockUpdates[i.id] || 0) + i.quantity;
-                        if(oldBatchId) oldBatchBookedUpdates[i.id] = (oldBatchBookedUpdates[i.id] || 0) - i.quantity;
-                    });
-
-                    newItems.forEach(i => {
-                        stockUpdates[i.id] = (stockUpdates[i.id] || 0) - i.quantity;
-                        if(newBatchId) newBatchBookedUpdates[i.id] = (newBatchBookedUpdates[i.id] || 0) + i.quantity;
-                    });
-
-                    let finalStockUpdates = {};
-                    Object.keys(stockUpdates).forEach(id => { if(stockUpdates[id] !== 0) finalStockUpdates[id] = firebase.firestore.FieldValue.increment(stockUpdates[id]); });
-                    if(Object.keys(finalStockUpdates).length > 0) { await db.collection("inventory").doc("stock").set(finalStockUpdates, { merge: true }); }
-
-                    if (oldBatchId === newBatchId && oldBatchId) {
-                        let combinedBatchUpdates = {};
-                        new Set([...Object.keys(oldBatchBookedUpdates), ...Object.keys(newBatchBookedUpdates)]).forEach(id => {
-                            let netChange = (oldBatchBookedUpdates[id] || 0) + (newBatchBookedUpdates[id] || 0);
-                            if(netChange !== 0) combinedBatchUpdates[id] = firebase.firestore.FieldValue.increment(netChange);
-                        });
-                        if(Object.keys(combinedBatchUpdates).length > 0) { await db.collection("inventory").doc("batches").set({ [oldBatchId]: { booked: combinedBatchUpdates } }, { merge: true }); }
-                    } else {
-                        if (oldBatchId) {
-                            let oldFinal = {}; Object.keys(oldBatchBookedUpdates).forEach(id => { if(oldBatchBookedUpdates[id] !== 0) oldFinal[id] = firebase.firestore.FieldValue.increment(oldBatchBookedUpdates[id]); });
-                            if(Object.keys(oldFinal).length > 0) await db.collection("inventory").doc("batches").set({ [oldBatchId]: { booked: oldFinal } }, { merge: true });
-                        }
-                        if (newBatchId) {
-                            let newFinal = {}; Object.keys(newBatchBookedUpdates).forEach(id => { if(newBatchBookedUpdates[id] !== 0) newFinal[id] = firebase.firestore.FieldValue.increment(newBatchBookedUpdates[id]); });
-                            if(Object.keys(newFinal).length > 0) await db.collection("inventory").doc("batches").set({ [newBatchId]: { booked: newFinal } }, { merge: true });
-                        }
-                    }
-                }
-
-                closeModal('edit-order-modal');
-            } catch(e) { alert("حدث خطأ أثناء حفظ التعديلات!"); console.log(e); }
-            btn.innerHTML = origHtml; btn.disabled = false;
-        };
-
-    </script>
-</body>
-</html>
+                        <button onclick="changeEditQty('${pId}', 1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class
