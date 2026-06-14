@@ -144,21 +144,24 @@
                         <div><p class="text-xs font-bold text-slate-400 mb-1">إجمالي الطلبات</p><h3 id="dash-orders-total" class="text-3xl font-black text-slate-800">0</h3></div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-shadow relative overflow-hidden">
+                    <div onclick="openFinanceReport('day')" class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-all relative overflow-hidden cursor-pointer hover:scale-[1.02]">
                         <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 rounded-full opacity-50"></div>
                         <div class="flex justify-between items-start mb-4 relative z-10">
                             <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg"><i class="fa-solid fa-wallet"></i></div>
+                            <span class="text-[10px] bg-slate-50 text-slate-400 px-2 py-1 rounded-lg font-bold border border-slate-100">التفاصيل <i class="fa-solid fa-chevron-left ml-1"></i></span>
                         </div>
-                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">مبيعات اليوم</p><h3 id="dash-sales-day" class="text-3xl font-black text-brand-primary">0 <span class="text-sm text-slate-400">ج</span></h3></div>
+                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">مبيعات اليوم (مكتمل فقط)</p><h3 id="dash-sales-day" class="text-3xl font-black text-brand-primary">0 <span class="text-sm text-slate-400">ج</span></h3></div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-shadow relative overflow-hidden">
+                    <div onclick="openFinanceReport('month')" class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-all relative overflow-hidden cursor-pointer hover:scale-[1.02]">
                         <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-50 rounded-full opacity-50"></div>
                         <div class="flex justify-between items-start mb-4 relative z-10">
                             <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg"><i class="fa-solid fa-chart-line"></i></div>
+                            <span class="text-[10px] bg-slate-50 text-slate-400 px-2 py-1 rounded-lg font-bold border border-slate-100">التفاصيل <i class="fa-solid fa-chevron-left ml-1"></i></span>
                         </div>
-                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">مبيعات الشهر</p><h3 id="dash-sales-month" class="text-3xl font-black text-amber-600">0 <span class="text-sm text-slate-400">ج</span></h3></div>
+                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">مبيعات الشهر (مكتمل فقط)</p><h3 id="dash-sales-month" class="text-3xl font-black text-amber-600">0 <span class="text-sm text-slate-400">ج</span></h3></div>
                     </div>
+
                 </div>
             </div>
 
@@ -717,8 +720,9 @@
                     allOrdersRaw.push({id, ...o});
                     let orderDateObj = o.createdAt ? new Date(o.createdAt.toMillis()) : new Date();
                     
-                    if (orderDateObj.toLocaleDateString('en-US') === nowStr && stat !== 'canceled') dSales += Number(o.total) || 0;
-                    if (orderDateObj.getMonth() === currentMonth && stat !== 'canceled') mSales += Number(o.total) || 0;
+                    if (orderDateObj.toLocaleDateString('en-US') === nowStr && stat === 'completed') dSales += Number(o.total) || 0;
+                    if (orderDateObj.getMonth() === currentMonth && stat === 'completed') mSales += Number(o.total) || 0;
+
                     if (stat === 'processing') dispatchOrdersRaw.push({id, ...o}); 
                     if(counts[stat] !== undefined) counts[stat]++;
                 });
@@ -2521,6 +2525,107 @@
         });
 
         
+        // ==========================================
+        // التقرير المالي التفصيلي للطلبات المكتملة
+        // ==========================================
+        window.openFinanceReport = (period) => {
+            const nowStr = new Date().toLocaleDateString('en-US');
+            const currentMonth = new Date().getMonth();
+            
+            let filteredOrders = allOrdersRaw.filter(o => {
+                if(o.status !== 'completed') return false; // فلترة صارمة: مكتمل فقط
+                
+                let orderDateObj = o.createdAt ? new Date(o.createdAt.toMillis()) : new Date();
+                if(period === 'day') {
+                    return orderDateObj.toLocaleDateString('en-US') === nowStr;
+                } else if (period === 'month') {
+                    return orderDateObj.getMonth() === currentMonth;
+                }
+                return false;
+            });
+
+            document.getElementById('finance-report-title').innerText = period === 'day' ? 'اليوم' : 'هذا الشهر';
+            
+            let totalRevenue = 0;
+            let totalDelivery = 0;
+            let totalItemsCount = 0;
+            let tbodyHtml = '';
+
+            filteredOrders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)).forEach(o => {
+                totalRevenue += Number(o.total) || 0;
+                totalDelivery += Number(o.deliveryFee) || 0;
+                
+                let itemsStr = '';
+                if(o.items && Array.isArray(o.items)) {
+                    itemsStr = o.items.map(i => {
+                        totalItemsCount += i.quantity;
+                        return `<span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold inline-block m-0.5 border border-emerald-100">${i.quantity}x ${i.name}</span>`;
+                    }).join('');
+                }
+
+                tbodyHtml += `
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="py-3 px-4">
+                        <div class="font-black text-slate-800">${o.customerName || 'بدون اسم'}</div>
+                        <div class="text-[10px] font-bold text-slate-400" dir="ltr">${o.customerPhone || ''}</div>
+                    </td>
+                    <td class="py-3 px-4 text-center whitespace-normal min-w-[200px] leading-loose">${itemsStr || '-'}</td>
+                    <td class="py-3 px-4 text-center font-black text-indigo-500">${o.deliveryFee || 0} ج</td>
+                    <td class="py-3 px-4 text-center font-black text-emerald-600 text-lg">${o.total} ج</td>
+                </tr>`;
+            });
+
+            if(filteredOrders.length === 0) {
+                tbodyHtml = `<tr><td colspan="4" class="text-center py-10 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد طلبات (مكتملة) في هذه الفترة.</td></tr>`;
+            }
+
+            document.getElementById('finance-summary-cards').innerHTML = `
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
+                    <p class="text-[10px] font-bold text-slate-500 mb-1">الطلبات المسلمة</p>
+                    <p class="text-2xl font-black text-blue-600">${filteredOrders.length}</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
+                    <p class="text-[10px] font-bold text-slate-500 mb-1">إجمالي المنتجات</p>
+                    <p class="text-2xl font-black text-amber-500">${totalItemsCount}</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm text-center">
+                    <p class="text-[10px] font-bold text-slate-500 mb-1">إجمالي التوصيل</p>
+                    <p class="text-2xl font-black text-indigo-500">${totalDelivery.toLocaleString()} ج</p>
+                </div>
+                <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 shadow-sm text-center">
+                    <p class="text-[10px] font-bold text-emerald-600 mb-1">الصافي الكلي</p>
+                    <p class="text-2xl font-black text-emerald-700">${totalRevenue.toLocaleString()} ج</p>
+                </div>
+            `;
+
+            document.getElementById('finance-report-tbody').innerHTML = tbodyHtml;
+            openModal('finance-report-modal');
+        };
+    <div id="finance-report-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-xl font-black text-emerald-700"><i class="fa-solid fa-file-invoice-dollar text-emerald-500 mr-2"></i> تقرير المبيعات المكتملة: <span id="finance-report-title" class="text-slate-700"></span></h3>
+                <button onclick="closeModal('finance-report-modal')" class="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/80">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="finance-summary-cards">
+                    </div>
+                <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                    <table class="w-full text-right text-sm whitespace-nowrap">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
+                            <tr>
+                                <th class="py-3 px-4 font-black">العميل</th>
+                                <th class="py-3 px-4 font-black text-center">الأصناف اللي استلمها</th>
+                                <th class="py-3 px-4 font-black text-center">رسوم التوصيل</th>
+                                <th class="py-3 px-4 font-black text-center">إجمالي التحصيل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="finance-report-tbody" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     </script>
