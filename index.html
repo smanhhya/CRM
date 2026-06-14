@@ -584,7 +584,35 @@
         </div>
     </div>
 
+    <div id="finance-report-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-xl font-black text-emerald-700"><i class="fa-solid fa-file-invoice-dollar text-emerald-500 mr-2"></i> تقرير المبيعات المكتملة: <span id="finance-report-title" class="text-slate-700"></span></h3>
+                <button onclick="closeModal('finance-report-modal')" class="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/80">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="finance-summary-cards">
+                    </div>
+                <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+                    <table class="w-full text-right text-sm whitespace-nowrap">
+                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
+                            <tr>
+                                <th class="py-3 px-4 font-black">العميل</th>
+                                <th class="py-3 px-4 font-black text-center">الأصناف اللي استلمها</th>
+                                <th class="py-3 px-4 font-black text-center">رسوم التوصيل</th>
+                                <th class="py-3 px-4 font-black text-center">إجمالي التحصيل</th>
+                            </tr>
+                        </thead>
+                        <tbody id="finance-report-tbody" class="divide-y divide-slate-50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script>
+
 
         // === 1. متغيرات النظام ===
         let storeSettings = { deliveryZones: [], drivers: [], promoCodes: [], storeOpen: true };
@@ -2601,31 +2629,6 @@
             document.getElementById('finance-report-tbody').innerHTML = tbodyHtml;
             openModal('finance-report-modal');
         };
-    <div id="finance-report-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[95vh]">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
-                <h3 class="text-xl font-black text-emerald-700"><i class="fa-solid fa-file-invoice-dollar text-emerald-500 mr-2"></i> تقرير المبيعات المكتملة: <span id="finance-report-title" class="text-slate-700"></span></h3>
-                <button onclick="closeModal('finance-report-modal')" class="w-8 h-8 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/80">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="finance-summary-cards">
-                    </div>
-                <div class="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-                    <table class="w-full text-right text-sm whitespace-nowrap">
-                        <thead class="bg-slate-50 text-slate-500 border-b border-slate-100">
-                            <tr>
-                                <th class="py-3 px-4 font-black">العميل</th>
-                                <th class="py-3 px-4 font-black text-center">الأصناف اللي استلمها</th>
-                                <th class="py-3 px-4 font-black text-center">رسوم التوصيل</th>
-                                <th class="py-3 px-4 font-black text-center">إجمالي التحصيل</th>
-                            </tr>
-                        </thead>
-                        <tbody id="finance-report-tbody" class="divide-y divide-slate-50"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
 
 
     </script>
