@@ -879,15 +879,27 @@
                 }
             });
 
-            // الدالة السحرية اللي بتاخد الكلمة، تقفل النافذة، وتفلتر الأوردرات
+            // الدالة السحرية (الذكية التراكمية) لتركيب الفلاتر
             window.filterOrdersFromAnalysis = (keyword) => {
                 closeModal('analysis-modal');
                 let searchBox = document.getElementById('search-order');
                 if(searchBox) {
-                    searchBox.value = keyword === "أوردرات عادية" ? "" : keyword;
+                    if (keyword === "أوردرات عادية" || keyword === "مسح") {
+                        searchBox.value = "";
+                    } else {
+                        let currentVal = searchBox.value.trim();
+                        // لو ضغطت على فلتر موجود أصلاً.. هيشيله (عشان لو حبيت تتراجع)
+                        if (currentVal.includes(keyword)) {
+                            searchBox.value = currentVal.replace(keyword, '').replace(/\s+/g, ' ').trim();
+                        } else {
+                            // لو فلتر جديد، هيحطه جنب القديم ويدمجهم!
+                            searchBox.value = currentVal ? currentVal + " " + keyword : keyword;
+                        }
+                    }
                     renderOrdersList();
                 }
             };
+
 
             if(totalOrders === 0) {
                 panel.innerHTML = `<div class="w-full text-center py-12 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-2xl">لا توجد طلبات حية للتحليل حالياً.</div>`;
