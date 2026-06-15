@@ -998,6 +998,38 @@
         };
 
 
+        // ==========================================
+        // دوال مساعدة لإنشاء سجل الملاحظات (Log System)
+        // ==========================================
+        window.formatTags = (txt) => txt ? txt.replace(/#(\S+)/g, `<span onclick="document.getElementById('search-order').value='$1'; renderOrdersList();" class="text-purple-600 bg-purple-50 px-1 rounded cursor-pointer hover:bg-purple-500 hover:text-white transition-colors border border-purple-100 shadow-sm mx-0.5" title="فلترة بهذا الهاشتاج">#$1</span>`) : '';
+
+        window.renderStructuredNotes = (rawText, orderId, field, emptyColorClass) => {
+            if (!rawText) return `<span class="${emptyColorClass}">اضغط لإضافة ملاحظة...</span>`;
+            // بنفصل الملاحظات عن بعضها
+            let chunks = rawText.split('\n---\n').filter(c => c.trim() !== '');
+            return chunks.map((chunk, idx) => {
+                let dateHtml = '';
+                let textHtml = chunk;
+                let match = chunk.match(/^\[(.*?)\]\s*(.*)/s); // سحب التاريخ
+                if(match) {
+                    dateHtml = `<span class="block text-[9px] opacity-60 mb-0.5 font-black">${match[1]}</span>`;
+                    textHtml = match[2];
+                }
+                return `
+                <div class="relative group p-2 hover:bg-white/60 rounded-lg mb-1.5 border border-transparent hover:border-black/10 transition-colors text-[11px] font-bold text-slate-700 whitespace-pre-wrap leading-relaxed shadow-sm">
+                    ${dateHtml}
+                    ${formatTags(textHtml)}
+                    <div class="absolute top-1 left-1 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded shadow-sm px-1.5 py-1 z-10 border border-slate-100" dir="ltr">
+                        <button onclick="event.stopPropagation(); deleteNoteChunk('${orderId}', '${field}', ${idx})" class="text-red-500 hover:text-red-700" title="حذف"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                        <button onclick="event.stopPropagation(); editNoteChunk('${orderId}', '${field}', ${idx})" class="text-blue-500 hover:text-blue-700" title="تعديل"><i class="fa-solid fa-pen text-[9px]"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        // ==========================================
+        // دالة رسم كروت الأوردرات (مُحدثة بالملاحظات الجديدة)
+        // ==========================================
         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
@@ -1029,7 +1061,6 @@
                 container.innerHTML = '<div class="text-center text-slate-400 py-16 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لا توجد طلبات في هذا القسم.</div>'; 
                 return; 
             }
-            const formatTags = (txt) => txt ? txt.replace(/#(\S+)/g, `<span onclick="document.getElementById('search-order').value='$1'; renderOrdersList();" class="text-purple-600 bg-purple-50 px-1 rounded cursor-pointer hover:bg-purple-500 hover:text-white transition-colors border border-purple-100 shadow-sm mx-0.5" title="فلترة بهذا الهاشتاج">#$1</span>`) : '';
 
             container.innerHTML = filtered.map(o => {
                 let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
@@ -1078,20 +1109,20 @@
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                        <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50 transition-all hover:bg-amber-100/50 cursor-pointer hover:shadow-sm group" onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية (سرية)')" title="اضغط لتعديل الملاحظات براحتك">
-                            <div class="flex justify-between items-center mb-1.5">
-                                <p class="text-[9px] font-black text-amber-600"><i class="fa-solid fa-lock"></i> إداري (سري)</p>
-                                <i class="fa-solid fa-pen-to-square text-[9px] text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        <div class="bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50 transition-all hover:bg-amber-100/50 cursor-pointer shadow-sm group" onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية')" title="اضغط لإضافة ملاحظة جديدة">
+                            <div class="flex justify-between items-center mb-2 px-1">
+                                <p class="text-[10px] font-black text-amber-700"><i class="fa-solid fa-lock"></i> إداري (سري)</p>
+                                <span class="text-[9px] font-black bg-amber-200 text-amber-800 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>
                             </div>
-                            <div class="text-[11px] text-amber-800 font-bold whitespace-pre-wrap max-h-20 overflow-y-auto custom-scroll leading-relaxed">${formatTags(o.adminNote) || '<span class="text-amber-600/50">اضغط هنا لإضافة ملاحظة...</span>'}</div>
+                            <div class="max-h-28 overflow-y-auto custom-scroll pr-1">${renderStructuredNotes(o.adminNote, o.id, 'adminNote', 'text-amber-600/50')}</div>
                         </div>
                         
-                        <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100/50 transition-all hover:bg-blue-100/50 cursor-pointer hover:shadow-sm group" onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" title="اضغط لتعديل الملاحظات براحتك">
-                            <div class="flex justify-between items-center mb-1.5">
-                                <p class="text-[9px] font-black text-blue-600"><i class="fa-solid fa-motorcycle"></i> للمندوب</p>
-                                <i class="fa-solid fa-pen-to-square text-[9px] text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                        <div class="bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50 transition-all hover:bg-blue-100/50 cursor-pointer shadow-sm group" onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" title="اضغط لإضافة ملاحظة جديدة">
+                            <div class="flex justify-between items-center mb-2 px-1">
+                                <p class="text-[10px] font-black text-blue-700"><i class="fa-solid fa-motorcycle"></i> للمندوب</p>
+                                <span class="text-[9px] font-black bg-blue-200 text-blue-800 px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>
                             </div>
-                            <div class="text-[11px] text-blue-800 font-bold whitespace-pre-wrap max-h-20 overflow-y-auto custom-scroll leading-relaxed">${formatTags(o.driverNote) || '<span class="text-blue-600/50">اضغط هنا لإضافة ملاحظة...</span>'}</div>
+                            <div class="max-h-28 overflow-y-auto custom-scroll pr-1">${renderStructuredNotes(o.driverNote, o.id, 'driverNote', 'text-blue-600/50')}</div>
                         </div>
                     </div>
 
@@ -1116,6 +1147,7 @@
             }).join('');
         };
 
+            
 
 
                     
@@ -2680,6 +2712,95 @@
             setTimeout(() => {
                 document.getElementById('action-prompt-text').value = currentText;
             }, 50);
+        };
+        // ==========================================
+        // النظام الحديث لإدارة سجل الملاحظات (Log System)
+        // ==========================================
+        
+        // 1. إضافة ملاحظة جديدة (دائماً تفتح فارغة وتضيف تحت)
+        window.openModernNoteEditor = (orderId, field, title) => {
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            if(!order) return;
+            
+            let quickTags = field === 'driverNote' ? 
+                ['موعد التسليم غداً', 'العميل هينزل يستلم', 'الدفع كاش', 'اتصل قبل الوصول'] : 
+                ['مستعجل', 'تأجيل', 'تم التواصل', 'رقم خاطئ', 'حسابات'];
+
+            openActionPrompt(
+                `<i class="fa-solid fa-plus text-brand-primary mr-2"></i> إضافة ${title}`,
+                quickTags, 
+                'اكتب الملاحظة الجديدة هنا...', 
+                async (newNote) => {
+                    if(!newNote.trim()) return; // لو معملش حاجة ميحفظش
+                    
+                    let btn = document.getElementById('action-prompt-confirm');
+                    let origText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+                    btn.disabled = true;
+                    
+                    try {
+                        let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+                        let formattedNote = `[${dateStr}] ${newNote.trim()}`;
+                        
+                        let currentText = order[field] || '';
+                        // بنلزق الملاحظة الجديدة تحت القديم بعلامة فاصلة
+                        let updatedText = currentText ? currentText + '\n---\n' + formattedNote : formattedNote;
+
+                        let updateData = {};
+                        updateData[field] = updatedText;
+                        await db.collection('orders').doc(orderId).update(updateData);
+                    } catch(e) {
+                        alert("خطأ في حفظ الملاحظة!");
+                    }
+                    btn.innerHTML = origText;
+                    btn.disabled = false;
+                }
+            );
+            
+            // بنفضي الشاشة عشان يكتب ملاحظة جديدة (مش يمسح القديم)
+            setTimeout(() => { document.getElementById('action-prompt-text').value = ''; }, 50);
+        };
+
+        // 2. حذف ملاحظة معينة من السجل (زرار الـ X)
+        window.deleteNoteChunk = async (orderId, field, chunkIndex) => {
+            if(!confirm("هل أنت متأكد من مسح هذه الملاحظة نهائياً؟")) return;
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            if(!order) return;
+            
+            let chunks = (order[field] || '').split('\n---\n').filter(c => c.trim() !== '');
+            chunks.splice(chunkIndex, 1); // بنمسح الملاحظة دي بس
+            
+            try {
+                let updateData = {};
+                updateData[field] = chunks.join('\n---\n');
+                await db.collection('orders').doc(orderId).update(updateData);
+            } catch(e) { alert("خطأ في الحذف!"); }
+        };
+
+        // 3. تعديل نص ملاحظة معينة (زرار القلم)
+        window.editNoteChunk = (orderId, field, chunkIndex) => {
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            if(!order) return;
+            
+            let chunks = (order[field] || '').split('\n---\n').filter(c => c.trim() !== '');
+            let chunkToEdit = chunks[chunkIndex];
+            
+            // بنفصل التاريخ عشان منخليهوش يمسحه بالغلط وهو بيعدل
+            let textToEdit = chunkToEdit;
+            let datePrefix = '';
+            let match = chunkToEdit.match(/^(\[.*?\])\s*(.*)/s);
+            if(match) {
+                datePrefix = match[1] + ' ';
+                textToEdit = match[2];
+            }
+
+            let newText = prompt("تعديل نص الملاحظة:", textToEdit);
+            if(newText !== null && newText.trim() !== "") {
+                chunks[chunkIndex] = datePrefix + newText.trim();
+                let updateData = {};
+                updateData[field] = chunks.join('\n---\n');
+                db.collection('orders').doc(orderId).update(updateData).catch(()=>alert("حدث خطأ!"));
+            }
         };
 
     </script>
