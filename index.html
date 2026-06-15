@@ -1080,7 +1080,13 @@
             container.innerHTML = filtered.map(o => {
                 let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
                 // حماية الكارت نفسه من الشاشة البيضاء لو الداتا القديمة ناقصة
-                let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `${i.quantity}x ${i.name}`).join('، ') : 'لا يوجد تفاصيل';
+                let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map((i, idx) => 
+                    `<span class="bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs shadow-sm flex items-center gap-1.5 hover:border-brand-primary transition-colors">
+                        <span class="font-black text-slate-800">${i.quantity}x ${i.name}</span>
+                        <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded cursor-pointer border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-colors" ondblclick="editItemPrice('${o.id}', ${idx})" title="اضغط مرتين لتعديل السعر (لعمل واجب)">(بـ ${i.price}ج)</span>
+                    </span>`
+                ).join('') : '<span class="text-slate-400 text-xs font-bold">لا يوجد تفاصيل</span>';
+
                 
                 let sBadge = o.status==='new' ? '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جديد</span>' : 
                             (o.status==='processing' ? '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جاري التجهيز</span>' : 
@@ -1119,9 +1125,10 @@
                         </div>
                     </div>
                     
-                    <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-100/50 mb-3">
-                        <p class="text-sm font-black text-slate-700 leading-relaxed">${itemsStr}</p>
+                    <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-100/50 mb-3 flex flex-wrap gap-2">
+                        ${itemsStr}
                     </div>
+
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                         <div class="bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/50 transition-all hover:bg-amber-100/50 cursor-pointer shadow-sm group" onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية')" title="اضغط لإضافة ملاحظة جديدة">
@@ -2899,6 +2906,57 @@
             printWindow.document.close();
         };
 
+        // ==========================================
+        // تعديل سعر صنف محدد لعمل واجب (حماية صارمة)
+        // ==========================================
+        window.editItemPrice = async (orderId, itemIndex) => {
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            if (!order || !order.items || !order.items[itemIndex]) return;
+            
+            // حماية رقم 1: منع التعديل في أوردرات اتقفلت حسابياً
+            if (['completed', 'canceled', 'trash'].includes(order.status)) {
+                alert("⛔ لا يمكن تعديل الأسعار لطلب مكتمل أو ملغي حفاظاً على دقة الحسابات والتقارير المالية!");
+                return;
+            }
+
+            let item = order.items[itemIndex];
+            
+            // حماية رقم 2: دبل كليك بيفتح رسالة واضحة
+            let newPrice = prompt(`🎁 عمل واجب مع العميل في صنف (${item.name})\n\nالسعر الحالي المُسجل: ${item.price} ج\nأدخل السعر الجديد للطبق الواحد:`, item.price);
+            
+            if (newPrice !== null && newPrice.trim() !== "") {
+                let parsedPrice = parseInt(newPrice);
+                
+                // حماية رقم 3: التأكد من إن الإدخال رقم سليم
+                if (isNaN(parsedPrice) || parsedPrice < 0) {
+                    alert("⛔ برجاء إدخال رقم صحيح!");
+                    return;
+                }
+                
+                if (parsedPrice === item.price) return; // لو مغيرش حاجة
+
+                if (!confirm(`سيتم تغيير سعر (${item.name}) من ${item.price} ج إلى ${parsedPrice} ج.\nهل أنت متأكد؟`)) return;
+
+                // تحديث السعر
+                order.items[itemIndex].price = parsedPrice;
+                
+                // إعادة الحساب التلقائي للإجمالي وتحديثه
+                let newSubtotal = 0;
+                order.items.forEach(i => newSubtotal += (i.quantity * i.price));
+                let newTotal = newSubtotal + (Number(order.deliveryFee) || 0) - (Number(order.discount) || 0);
+                if (newTotal < 0) newTotal = 0;
+
+                try {
+                    await db.collection('orders').doc(orderId).update({
+                        items: order.items,
+                        subtotal: newSubtotal,
+                        total: newTotal
+                    });
+                } catch(e) {
+                    alert("حدث خطأ أثناء تعديل السعر بقاعدة البيانات!");
+                }
+            }
+        };
         
     </script>
 </body>
