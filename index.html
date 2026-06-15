@@ -1024,8 +1024,7 @@
                 }
 
                 return matchTab && matchSearch && matchSmart;
-            });
-
+            });             
             if(filtered.length === 0) { 
                 container.innerHTML = '<div class="text-center text-slate-400 py-16 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لا توجد طلبات في هذا القسم.</div>'; 
                 return; 
@@ -1048,8 +1047,7 @@
 
                 let phone2Html = o.customerPhone2 ? `<span class="text-[10px] text-purple-400 font-bold border border-purple-100 bg-purple-50 px-1.5 rounded ml-1 cursor-pointer hover:border-purple-300 border-dashed transition-colors" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone2')" title="اضغط مرتين للتعديل الطاير"><i class="fa-solid fa-phone text-[8px]"></i> ${o.customerPhone2}</span>` : '';
 
-                return `
-                <div data-id="${o.id}" class="order-card bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5 relative group">
+                return `                <div data-id="${o.id}" class="order-card bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5 relative group">
                     <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-5 left-4 w-5 h-5 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
                     <div class="flex justify-between items-start mb-3 pl-8">
                         <div>
@@ -1080,13 +1078,20 @@
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                        <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50">
-                            <p class="text-[9px] font-black text-amber-600 mb-1.5"><i class="fa-solid fa-lock"></i> إداري (سري)</p>
-                            <div class="text-[11px] text-amber-800 font-bold whitespace-pre-wrap max-h-16 overflow-y-auto custom-scroll leading-relaxed cursor-pointer border-b border-transparent hover:border-amber-300 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'adminNote')" title="اضغط مرتين للتعديل السريع">${formatTags(o.adminNote) || '<span class="text-amber-600/50">لا توجد...</span>'}</div>
+                        <div class="bg-amber-50/50 p-3 rounded-xl border border-amber-100/50 transition-all hover:bg-amber-100/50 cursor-pointer hover:shadow-sm group" onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية (سرية)')" title="اضغط لتعديل الملاحظات براحتك">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <p class="text-[9px] font-black text-amber-600"><i class="fa-solid fa-lock"></i> إداري (سري)</p>
+                                <i class="fa-solid fa-pen-to-square text-[9px] text-amber-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </div>
+                            <div class="text-[11px] text-amber-800 font-bold whitespace-pre-wrap max-h-20 overflow-y-auto custom-scroll leading-relaxed">${formatTags(o.adminNote) || '<span class="text-amber-600/50">اضغط هنا لإضافة ملاحظة...</span>'}</div>
                         </div>
-                        <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100/50">
-                            <p class="text-[9px] font-black text-blue-600 mb-1.5"><i class="fa-solid fa-motorcycle"></i> للمندوب</p>
-                            <div class="text-[11px] text-blue-800 font-bold whitespace-pre-wrap max-h-16 overflow-y-auto custom-scroll leading-relaxed cursor-pointer border-b border-transparent hover:border-blue-300 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'driverNote')" title="اضغط مرتين للتعديل السريع">${formatTags(o.driverNote) || '<span class="text-blue-600/50">لا توجد...</span>'}</div>
+                        
+                        <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100/50 transition-all hover:bg-blue-100/50 cursor-pointer hover:shadow-sm group" onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" title="اضغط لتعديل الملاحظات براحتك">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <p class="text-[9px] font-black text-blue-600"><i class="fa-solid fa-motorcycle"></i> للمندوب</p>
+                                <i class="fa-solid fa-pen-to-square text-[9px] text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                            </div>
+                            <div class="text-[11px] text-blue-800 font-bold whitespace-pre-wrap max-h-20 overflow-y-auto custom-scroll leading-relaxed">${formatTags(o.driverNote) || '<span class="text-blue-600/50">اضغط هنا لإضافة ملاحظة...</span>'}</div>
                         </div>
                     </div>
 
@@ -1110,6 +1115,7 @@
                 </div>`;
             }).join('');
         };
+
 
 
                     
@@ -2635,6 +2641,46 @@
             openModal('finance-report-modal');
         };
 
+        // ==========================================
+        // التعديل الحديث للملاحظات (Modern Note Editor)
+        // ==========================================
+        window.openModernNoteEditor = (orderId, field, title) => {
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            if(!order) return;
+            
+            let currentText = order[field] || '';
+            
+            // الكلمات السريعة بتتغير حسب نوع الملاحظة
+            let quickTags = field === 'driverNote' ? 
+                ['موعد التسليم غداً', 'العميل هينزل يستلم', 'الدفع كاش', 'اتصل قبل الوصول'] : 
+                ['مستعجل', 'تأجيل', 'تم التواصل', 'رقم خاطئ', 'حسابات'];
+
+            openActionPrompt(
+                `<i class="fa-solid fa-pen-to-square text-brand-primary mr-2"></i> تعديل ${title}`,
+                quickTags, 
+                'اكتب ملاحظاتك براحتك هنا...', 
+                async (newNote) => {
+                    let btn = document.getElementById('action-prompt-confirm');
+                    let origText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+                    btn.disabled = true;
+                    try {
+                        let updateData = {};
+                        updateData[field] = newNote.trim();
+                        await db.collection('orders').doc(orderId).update(updateData);
+                    } catch(e) {
+                        alert("خطأ في حفظ الملاحظة!");
+                    }
+                    btn.innerHTML = origText;
+                    btn.disabled = false;
+                }
+            );
+
+            // خدعة برمجية بسيطة عشان نكتب الكلام القديم جوه النافذة بعد ما تفتح
+            setTimeout(() => {
+                document.getElementById('action-prompt-text').value = currentText;
+            }, 50);
+        };
 
     </script>
 </body>
