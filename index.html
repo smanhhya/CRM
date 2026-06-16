@@ -2931,18 +2931,30 @@
 
             try {
                 let batchProcess = db.batch();
+                
                 // 1. حفظ في الأرشيف
                 let newArchiveRef = db.collection('archived_batches').doc();
                 batchProcess.set(newArchiveRef, archiveData);
-                // 2. مسح من الدفعات الحية
+                
+                // 2. مسح من الدفعات الحية (الطريقة الأصح والأكثر أماناً لفايربيس)
                 let batchRef = db.collection('inventory').doc('batches');
-                delete storeBatches[bId];
-                batchProcess.set(batchRef, storeBatches);
+                batchProcess.update(batchRef, {
+                    [bId]: firebase.firestore.FieldValue.delete()
+                });
                 
                 await batchProcess.commit();
+                
+                // تنظيف المتغير المحلي عشان الواجهة تتحدث صح
+                delete storeBatches[bId];
+                renderBatchesUI();
+                
                 alert("تم إغلاق الدفعة وترحيلها للأرشيف بنجاح! 🚀📊");
-            } catch(e) { alert("حدث خطأ أثناء الأرشفة!"); }
+            } catch(e) { 
+                console.error("Firebase Error:", e);
+                alert("حدث خطأ أثناء الأرشفة! (السبب غالباً من قواعد حماية فايربيس، راجع الشرح)"); 
+            }
         };
+
 
         // رسم شاشة الأرشيف
         window.renderArchiveUI = () => {
