@@ -1125,9 +1125,19 @@
                         </div>
                     </div>
                     
-                    <div class="bg-slate-50/80 p-3 rounded-xl border border-slate-100/50 mb-3 flex flex-wrap gap-2">
-                        ${itemsStr}
-                    </div>
+<div class="bg-slate-50/80 p-3 rounded-xl border border-slate-100/50 mb-3 flex flex-wrap gap-2">
+    ${itemsStr}
+    
+    <!-- هنا الجزء الجديد اللي هيظهر آخر ملاحظة -->
+    ${(o.adminNote || o.driverNote) ? `
+    <div class="w-full mt-2 pt-2 border-t border-slate-200/50">
+        <p class="text-[10px] font-black text-slate-500 mb-0.5">آخر ملاحظة:</p>
+        <p class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 italic">
+            ${o.adminNote ? o.adminNote.split('\n---\n').pop().substring(0, 45) + (o.adminNote.length > 45 ? '...' : '') : o.driverNote.split('\n---\n').pop().substring(0, 45) + '...'}
+        </p>
+    </div>` : ''}
+</div>
+
 
                     
                     <div class="flex flex-wrap gap-2 mb-3">
