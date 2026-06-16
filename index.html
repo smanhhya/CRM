@@ -792,7 +792,7 @@
                 document.getElementById('dash-sales-day').innerHTML = `${dSales.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
                 document.getElementById('dash-sales-month').innerHTML = `${mSales.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
                 
-                ['new', 'processing', 'no_answer', 'completed'].forEach(s => { let b = document.getElementById(`badge-${s}`); if(b) b.innerText = counts[s]; });
+                ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { let b = document.getElementById(`badge-${s}`); if(b) b.innerText = counts[s]; });
                 
                 scheduleSystemRender();
             });
