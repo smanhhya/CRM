@@ -1806,6 +1806,9 @@
             cbs.forEach(cb => cb.checked = !allChecked); 
         };
 
+        // متغير سري لحفظ بيانات التوجيه عشان تتحدث في الداتا بيز بعد الإرسال
+        window.pendingDispatchData = null; 
+
         window.previewDispatchMessage = () => {
             const selectElement = document.getElementById('dispatch-driver-select'); 
             const phone = selectElement.value; 
@@ -1826,6 +1829,7 @@
                 totalOrders++; 
             });            
             
+            // كودك الأصلي للرسالة (لم يتم المساس به)
             let dispatchTemplate = storeSettings.dispatchTemplate || "📦 طلب من {اسم_العميل}\n📱 {رقم_العميل}\n📍 {المنطقة} - {العنوان}\n🛒 الطلبات:\n{تفاصيل_الطلبات}\n💰 الإجمالي: {الإجمالي_النهائي} ج.م";
 
             let msg = `*🗺️ خريطة تسليمات المندوب: ${driverName}*\n📦 إجمالي الأوردرات: ${totalOrders}\n💰 إجمالي التحصيل: ${totalMoneyToCollect} ج\n---------------------\n\n`;
@@ -1851,74 +1855,61 @@
                 msg += `\n➖➖➖➖➖➖➖➖\n\n`; 
             });
             
-            document.getElementById('dispatch-final-msg').value = msg;
-            document.getElementById('dispatch-preview-section').classList.remove('hidden');
-            document.getElementById('btn-generate-dispatch').classList.add('hidden');
-            document.getElementById('btn-send-dispatch').classList.remove('hidden');
-            
-            // إظهار زرار القراءة الجديد
-            let printBtn = document.getElementById('btn-print-dispatch');
-            if(printBtn) printBtn.classList.remove('hidden');
-        };
-
-        window.confirmAndSendDispatch = async () => {
-            const phone = document.getElementById('dispatch-driver-select').value; 
-            const driverName = document.getElementById('dispatch-driver-select').options[document.getElementById('dispatch-driver-select').selectedIndex].text;
-            let selectedIds = Array.from(document.querySelectorAll('.disp-cb:checked')).map(cb => cb.value); 
-            
-            let finalMessage = document.getElementById('dispatch-final-msg').value;
-            let btn = document.getElementById('btn-send-dispatch'); 
-            let origHtml = btn.innerHTML; 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التوجيه...';
-            
-            for (let id of selectedIds) { 
-                try { await db.collection('orders').doc(id).update({ driverName: driverName, status: 'processing' }); } catch(e) { } 
-            }
-            
-            btn.innerHTML = origHtml;             
-            
-            // التعديل: فتح الواتساب في صفحة جديدة عشان السيستم ميفصلش
+            // تجهيز البيانات للتحديث في الداتابيز
             let cleanPhone = (phone || '').toString().trim();
             let waNumber = cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone;
-            window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(finalMessage)}`, '_blank'); 
             
-            document.getElementById('dispatch-preview-section').classList.add('hidden');
-            document.getElementById('btn-generate-dispatch').classList.remove('hidden');
-            document.getElementById('btn-send-dispatch').classList.add('hidden');
+            window.pendingDispatchData = {
+                driverName: driverName,
+                selectedIds: selectedIds
+            };
             
-            // إخفاء زرار القراءة تاني
-            let printBtn = document.getElementById('btn-print-dispatch');
-            if(printBtn) printBtn.classList.add('hidden');
-            
-            closeModal('dispatch-modal');
-        };
-
-        // الدالة الجديدة: بتفتح الرسالة في صفحة بيضاء للقراءة براحتك
-        window.printDispatchList = () => {
-            let msg = document.getElementById('dispatch-final-msg').value;
-            if(!msg) return;
-            
-            // تظبيط شكل الكلام عشان يبقى مقروء وواضح
+            // تظبيط شكل الكلام للقراءة بوضوح في الصفحة الجديدة
             let formattedMsg = msg.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/<strong>/g, '<strong class="text-indigo-700">');
             
-            let printWindow = window.open('', '', 'width=800,height=900');
-            printWindow.document.write(`
+            // سحر الـ UX: فتح صفحة مراجعة مستقلة بالرسالة وزرار الواتساب والطباعة
+            let reviewWindow = window.open('', '', 'width=800,height=900');
+            reviewWindow.document.write(`
                 <html lang="ar" dir="rtl">
                 <head>
-                    <title>قراءة خط سير المندوب</title>
+                    <title>مراجعة رسالة المندوب</title>
                     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
                     <style>
-                        body { font-family: 'Cairo', sans-serif; padding: 30px; color: #1e293b; background: #f8fafc; font-size: 18px; line-height: 1.8; }
-                        .content { background: #fff; border: 2px dashed #cbd5e1; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+                        body { font-family: 'Cairo', sans-serif; padding: 30px; color: #1e293b; background: #f8fafc; font-size: 18px; line-height: 1.8; margin: 0; }
+                        .container { max-width: 800px; margin: auto; padding-bottom: 50px; }
+                        .header { text-align: center; margin-bottom: 20px; color: #1e293b; font-weight: 900; }
+                        .content { background: #fff; border: 2px dashed #cbd5e1; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;}
                         .text-indigo-700 { color: #4338ca; font-size: 20px;}
+                        .btn-wa { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; font-size: 20px; cursor: pointer; background: #25D366; color: white; font-weight: 900; border: none; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); font-family: 'Cairo', sans-serif; transition: 0.3s;}
+                        .btn-wa:hover { background: #1ebd57; transform: translateY(-2px); }
+                        .btn-print { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 15px; font-size: 16px; cursor: pointer; background: #1e293b; color: white; font-weight: bold; border: none; border-radius: 12px; margin-bottom: 15px; font-family: 'Cairo', sans-serif;}
+                        @media print { .btn-wa, .btn-print { display: none; } .content { border: 2px solid #000; box-shadow: none; } }
                     </style>
                 </head>
                 <body>
-                    <div class="content">${formattedMsg}</div>
+                    <div class="container">
+                        <h2 class="header">مراجعة رسالة توجيه المندوب (${driverName})</h2>
+                        <button class="btn-print" onclick="window.print()">🖨️ طباعة الورقة للمندوب (بدون إرسال)</button>
+                        <div class="content">${formattedMsg}</div>
+                        <button class="btn-wa" onclick="window.opener.executeDispatchUpdates(); window.location.href='https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}';">✅ تأكيد التوجيه وإرسال عبر واتساب</button>
+                    </div>
                 </body>
                 </html>
             `);
-            printWindow.document.close();
+            reviewWindow.document.close();
+            
+            // قفل نافذة التوجيه في السيستم الأساسي عشان متبقاش زحمة
+            closeModal('dispatch-modal');
+        };
+
+        // دالة مخفية بتشتغل لما تدوس على زرار الواتساب في الصفحة الجديدة عشان تحدث الداتا
+        window.executeDispatchUpdates = async () => {
+            if(!window.pendingDispatchData) return;
+            let data = window.pendingDispatchData;
+            for (let id of data.selectedIds) { 
+                try { await db.collection('orders').doc(id).update({ driverName: data.driverName, status: 'processing' }); } catch(e) { } 
+            }
+            window.pendingDispatchData = null; // تفريغ البيانات بعد التنفيذ
         };
 
 
