@@ -3055,7 +3055,7 @@
                     if(Object.keys(finalStockUpdates).length > 0) { await db.collection("inventory").doc("stock").set(finalStockUpdates, { merge: true }); }
 
                     // 🧊 تحديث الفريزر لو عدلنا طلب بيتم تجهيزه 🧊
-                    if (['processing', 'completed'].includes(editingOrderData.status)) {
+                    if (['processing', 'completed', 'deferred'].includes(editingOrderData.status)) {
                         let freezerEditUpdates = {};
                         oldItems.forEach(i => { freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) + i.quantity; }); 
                         newItems.forEach(i => { freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) - i.quantity; }); 
