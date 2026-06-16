@@ -1101,9 +1101,10 @@
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
             
-            let filtered = allOrdersRaw.filter(o => {
-                let matchTab = (currentOrderTab === 'all' && o.status !== 'trash') || (o.status === currentOrderTab);
-                
+            // 💡 التعديل السحري: عداد ذكي بيحسب فقط الطلبات اللي بتطابق البحث
+            let dynamicCounts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+
+            let filteredBase = allOrdersRaw.filter(o => {
                 // الحماية من الداتا القديمة وتجهيز نص البحث للتحليل العميق
                 let itemsString = (o.items && Array.isArray(o.items)) ? o.items.map(i => i.name).join(' ') : '';
                 let bNameSearch = o.batchName ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
@@ -1113,7 +1114,7 @@
                 let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => searchStr.includes(word));
 
-                // سحر الفلاتر الذكية 👑💸
+                // سحر الفلاتر الذكية
                 let matchSmart = true;
                 if(currentSmartFilter === 'vip') {
                     let c = customersData.find(x => x.phone === o.customerPhone || x.phone === '0'+o.customerPhone);
@@ -1122,12 +1123,30 @@
                     matchSmart = Number(o.total) >= 500; 
                 }
 
-                return matchTab && matchSearch && matchSmart;
-            });             
+                // لو الأوردر طابق البحث (يعني مثلا من ههيا)، زوده في العداد بتاعه
+                if (matchSearch && matchSmart && o.status !== 'trash') {
+                    if (dynamicCounts[o.status] !== undefined) dynamicCounts[o.status]++;
+                    return true;
+                }
+                return false;
+            });
+
+            // 💡 تحديث الأرقام (البادجات) اللي على الزراير فوراً بالعدد المفلتر الحقيقي
+            ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { 
+                let b = document.getElementById(`badge-${s}`); 
+                if(b) b.innerText = dynamicCounts[s]; 
+            });
+
+            // تطبيق فلتر التبويب نفسه (عشان يعرض "جديد" بس أو "الكل" بس)
+            let filtered = filteredBase.filter(o => {
+                return (currentOrderTab === 'all') || (o.status === currentOrderTab);
+            });
+
             if(filtered.length === 0) { 
                 container.innerHTML = '<div class="text-center text-slate-400 py-16 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لا توجد طلبات في هذا القسم.</div>'; 
                 return; 
             }
+
 
             container.innerHTML = filtered.map(o => {
                 let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
