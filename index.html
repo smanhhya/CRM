@@ -918,7 +918,9 @@
             let summary = {};
             
             allOrdersRaw.forEach(o => {
-                if(o.status !== 'trash' && o.status !== 'canceled') {
+                // 💡 السر هنا: الشاشة هتقرأ الطلبات الحية فقط! (المكتمل والملغي هيختفوا عشان الشاشة تنظف نفسها)
+                if(['new', 'processing', 'deferred', 'no_answer'].includes(o.status)) {
+                    
                     totalOrders++;
                     totalRevenue += Number(o.total) || 0;
                     totalDelivery += Number(o.deliveryFee) || 0;
@@ -941,6 +943,7 @@
                     }
                 }
             });
+
 
             // الدالة السحرية (الذكية التراكمية) لتركيب الفلاتر
             window.filterOrdersFromAnalysis = (keyword) => {
@@ -985,9 +988,10 @@
                     <p class="text-2xl font-black text-blue-600">${totalOrders}</p>
                 </div>
                 <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
-                    <p class="text-[10px] font-bold text-slate-500 mb-1">إجمالي التحصيل</p>
+                    <p class="text-[10px] font-bold text-slate-500 mb-1">التحصيل المتوقع (لم يُسلم)</p>
                     <p class="text-2xl font-black text-emerald-600">${totalRevenue.toLocaleString()} <span class="text-xs">ج</span></p>
                 </div>
+
                 <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
                     <p class="text-[10px] font-bold text-slate-500 mb-1">التوصيل المتوقع</p>
                     <p class="text-2xl font-black text-amber-500">${totalDelivery.toLocaleString()} <span class="text-xs">ج</span></p>
