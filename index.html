@@ -3309,11 +3309,11 @@
             } catch(e) { alert("حدث خطأ أثناء حفظ التعديلات!"); console.log(e); }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
-        // دالة إلغاء الأرشفة واستعادة الدفعة للحي
+        // ↩️ دالة إلغاء الأرشفة واستعادة الدفعة للوضع الحي بالكامل ↩️
         window.unarchiveBatch = async (arId) => {
             let a = archivedBatchesData.find(x => x.id === arId); if(!a) return;
             
-            if(!confirm(`↩️ هل أنت متأكد من إلغاء أرشفة دفعة (${a.batchName})؟\nسيتم حذف التقرير المالي وإعادتها فوراً لشاشة "إدارة الدفعات" الحية.`)) return;
+            if(!confirm(`↩️ هل أنت متأكد من استعادة دفعة (${a.batchName}) لشاشة الدفعات الحية؟\nسيتم حذف هذا التقرير المالي وإعادتها فوراً للتشغيل.`)) return;
             
             let btn = document.getElementById('btn-unarchive');
             let origHtml = btn.innerHTML;
@@ -3327,30 +3327,30 @@
                 let archiveRef = db.collection('archived_batches').doc(arId);
                 batchProcess.delete(archiveRef);
                 
-                // 2. إعادة الدفعة الحية ببياناتها الأساسية (وهترجع تقرأ حجوزاتها أوتوماتيك)
+                // 2. إعادة الدفعة الحية بكافة أرقام مخزنها ومحجوزاتها (تم التعديل لـ set مع merge لتجنب أخطاء فايربيس)
                 let batchRef = db.collection('inventory').doc('batches');
-                
-                // بنسترجع البيانات الأساسية، ولو الدفعة دي كان متسجل لها مخزن قديم في الأرشيف هيرجع، وإلا هتنزل فارغة
                 let restoredBatch = {
                     name: a.batchName,
-                    isOpen: false, // بنرجعها مقفولة حجز افتراضياً عشان تراجعها الأول براحتك
+                    isOpen: false, // بنرجعها مقفولة حجز افتراضياً عشان تراجعها براحتك
                     stock: a.rawStock || {},
                     booked: a.rawBooked || {}
                 };
                 
-                batchProcess.update(batchRef, {
+                // 💡 التعديل هنا: استخدام set بدل update 💡
+                batchProcess.set(batchRef, {
                     [a.originalBatchId]: restoredBatch
-                });
+                }, { merge: true });
                 
                 await batchProcess.commit();
                 closeModal('archive-report-modal');
                 alert("تم إلغاء الأرشفة بنجاح وعادت الدفعة للتشغيل الحي! ↩️📊");
             } catch(e) { 
                 console.error(e);
-                alert("حدث خطأ أثناء إلغاء الأرشفة! تأكد من اتصال الإنترنت وقواعد الحماية."); 
+                alert("حدث خطأ أثناء الاستعادة! تأكد من قواعد حماية فايربيس."); 
             }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
+
         
     </script>
 </body>
