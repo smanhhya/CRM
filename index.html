@@ -773,7 +773,7 @@
             });
 
             db.collection('orders').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
-                let dSales = 0, mSales = 0, counts = { new: 0, processing: 0, no_answer: 0, completed: 0, canceled: 0 };
+                let dSales = 0, mSales = 0, counts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
                 allOrdersRaw = []; dispatchOrdersRaw = [];
                 const currentMonth = new Date().getMonth();
 
@@ -2906,7 +2906,8 @@
                 await db.collection('orders').doc(id).update(updateData); 
                 
                 // 🧊 سحر الفريزر: الخصم والإرجاع الأوتوماتيك 🧊
-                let deductingStates = ['processing', 'completed'];
+                // 💡 التعديل هنا: ضفنا 'deferred' عشان تتخصم، ولو نقلنا من deferred لـ processing مش هيخصم تاني!
+                let deductingStates = ['processing', 'completed', 'deferred'];
                 let wasInFreezer = deductingStates.includes(oldStatus);
                 let isNowInFreezer = deductingStates.includes(s);
 
@@ -2962,11 +2963,11 @@
                     let ref = db.collection('orders').doc(id);
                     dbBatch.update(ref, { status: newStatus });
 
-                    // 🧊 حساب الفريزر المجمع 🧊
                     let o = allOrdersRaw.find(x => x.id === id);
                     if(o && o.items) {
-                        let wasIn = ['processing', 'completed'].includes(o.status);
-                        let isNowIn = ['processing', 'completed'].includes(newStatus);
+                        // 💡 التعديل هنا برضو
+                        let wasIn = ['processing', 'completed', 'deferred'].includes(o.status);
+                        let isNowIn = ['processing', 'completed', 'deferred'].includes(newStatus);
                         
                         if (!wasIn && isNowIn) {
                             o.items.forEach(i => fzBulkUpdates[i.id] = (fzBulkUpdates[i.id] || 0) - i.quantity);
@@ -2992,6 +2993,8 @@
                 bar.innerHTML = originalHtml;
             }
         };
+
+
 
         window.saveEditedOrder = async () => {
             if(!editingOrderData) return;
