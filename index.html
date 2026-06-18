@@ -1657,7 +1657,8 @@
                     subtotal += (q * price); 
                     if(batchId) batchUpdates[id] = q;
                     
-                    ticktickItemsStr += `▪️ ${q}x ${pName}\n`; 
+                    ticktickItemsStr += `[ ${q} ] ${pName} = ${q * price} ج.م\n`; 
+ 
                     ticktickItemsTitleArr.push(`${q} ${pName}`);
                     autoHashtags.push('#' + pName.replace(/\s+/g, '_'));
                 }
@@ -1719,12 +1720,21 @@
                 if (storeSettings.batchHashtag) autoHashtags.push(storeSettings.batchHashtag);
                 
                 let finalHashtagsStr = [...new Set(autoHashtags)].join(' ');
-                let template = storeSettings.ticktickTemplate || "🧾 **تفاصيل الأوردر:**\n👤 {اسم_العميل}\n📱 {الموبايل}\n📍 {المنطقة}\n{العنوان}\n----------------\n🛒 الطلبات:\n{تفاصيل_الطلبات}----------------\n💰 الإجمالي: {الاجمالي} ج.م\n{ملاحظات}\n\n🏷️ الهاشتاجات:\n{الهاشتاجات}";
+
+                // 💡 التنسيق الفاخر بتاع تيك تيك اللي جبناه من الموقع 💡
+                let batchTickTickLine = batchName ? `\n\n📌 **حجز تبع: ${batchName}**\n` : '';
+                let defaultTickTick = "🧾 **تفاصيل الأوردر كاملة:**" + batchTickTickLine + "\n👤 الاسم: {اسم_العميل}\n📱 الموبايل: {الموبايل}\n📍 المنطقة: {المنطقة}\n{العنوان}\n🕒 الوقت: {الوقت}\n--------------------------------\n🛒 الطلبات:\n{تفاصيل_الطلبات}--------------------------------\n📦 قيمة الطلبات: {قيمة_الطلبات} ج.م\n{الخصم}🚚 رسوم التوصيل: {التوصيل}\n💰 الإجمالي النهائي: {الاجمالي} ج.م\n{ملاحظات}\n\n🏷️ الهاشتاجات:\n{الهاشتاجات}";
+
+                let template = storeSettings.ticktickTemplate || defaultTickTick;
 
                 let addressStr = address ? `🏠 العنوان: ${address}` : '';
                 let timeStr = new Date().toLocaleString('ar-EG', {hour: '2-digit', minute:'2-digit', hour12: true});
-                let discountStr = discount > 0 ? `🎁 خصم: ${discount} ج.م\n` : '';
-                let notesStr = notes ? `📝 ملاحظات: ${notes}\n` : '';
+                let discountStr = discount > 0 ? `🎁 الخصم: -${discount} ج.م\n` : '';
+                
+                // دمج الملاحظات عشان تظهر واضحة في تيك تيك
+                let notesStr = "";
+                if(notes) notesStr += `📝 إداري: ${notes}\n`;
+                if(driverNotes) notesStr += `🛵 للمندوب: ${driverNotes}\n`;
 
                 let ticktickMessage = template
                     .replace(/{اسم_العميل}/g, name)
