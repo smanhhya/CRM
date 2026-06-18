@@ -2260,12 +2260,33 @@
         };
 
 
-        window.deleteProductUI = (id) => { 
-            if(confirm("حذف المنتج من المتجر تماماً؟")) { 
-                delete storeProducts[id]; delete storePrices[id]; delete storeStock[id]; 
-                renderInventoryUI(); generateDynamicOrderInputs(); 
-            } 
-        };
+window.deleteProductUI = async (id) => { 
+    if(confirm("حذف المنتج من المتجر تماماً؟")) { 
+        // 1. الحذف من الشاشة قدامك
+        delete storeProducts[id]; 
+        delete storePrices[id]; 
+        delete storeStock[id]; 
+        
+        // 2. أمر صارم لفايربيس بالحذف النهائي من الجذور
+        try {
+            await db.collection("inventory").doc("settings").update({
+                [`productsData.${id}`]: firebase.firestore.FieldValue.delete()
+            });
+            await db.collection("inventory").doc("prices").update({
+                [id]: firebase.firestore.FieldValue.delete()
+            });
+            await db.collection("inventory").doc("stock").update({
+                [id]: firebase.firestore.FieldValue.delete()
+            });
+        } catch(e) {
+            console.log("تم الحذف محلياً");
+        }
+
+        renderInventoryUI(); 
+        generateDynamicOrderInputs(); 
+    } 
+};
+
 
         function renderSettingsUI() { 
             document.getElementById('st-name').value = storeSettings.storeName || ''; 
