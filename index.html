@@ -1778,9 +1778,11 @@
         };
         
         window.submitNewOrder = async () => {
-            let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, '');
-            let phone2 = document.getElementById('no-phone-2') ? document.getElementById('no-phone-2').value.trim() : '';
+            // تفعيل الدالة السحرية عشان تقبل أرقام عربي، إنجليزي، مسافات، وكود الدولة
+            let phone = window.normalizePhone(document.getElementById('no-phone').value);
+            let phone2 = window.normalizePhone(document.getElementById('no-phone-2') ? document.getElementById('no-phone-2').value : '');
             let name = document.getElementById('no-name').value.trim();
+
             let zone = document.getElementById('no-zone').value;
             let address = document.getElementById('no-address').value.trim();
             
