@@ -1211,12 +1211,16 @@
         // ==========================================
         let globalSearchTimeout;
         window.scheduleGlobalSearch = (val) => {
+            let inputEl = document.getElementById('global-emergency-search');
+            let converted = val.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
+            if (val !== converted) inputEl.value = converted; // تحويل فوري للإنجليزي
+
             clearTimeout(globalSearchTimeout);
-            // السيستم هيستنى 300 ملي ثانية (تلت ثانية) بعد آخر حرف كتبته عشان يبحث
             globalSearchTimeout = setTimeout(() => {
-                runGlobalSearch(val);
+                runGlobalSearch(converted);
             }, 300); 
         };
+
 
         // ==========================================
         // 🚨 كشاف الطوارئ (البحث الشامل الحي) 🚨
@@ -1631,17 +1635,19 @@
         };
 
         window.filterCustomers = () => { 
-            let rawFilter = document.getElementById('search-customer').value.toLowerCase().trim(); 
-            // قسمنا النص المكتوب لمجموعة كلمات عشان لو كاتب (محمد 010)
+            let inputEl = document.getElementById('search-customer');
+            let original = inputEl.value;
+            let converted = original.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
+            if (original !== converted) inputEl.value = converted; // تحويل فوري للإنجليزي
+
+            let rawFilter = converted.toLowerCase().trim(); 
             let filterWords = rawFilter.split(' ').filter(w => w.trim() !== '');
 
             document.querySelectorAll('.customer-row').forEach(row => { 
                 let searchData = row.getAttribute('data-search').toLowerCase(); 
                 
-                // التعديل هنا: شيلنا شرط الـ 3 أرقام، وبدل ما يبحث بالنص كله حتة واحدة، بيبحث بكل كلمة لوحدها
                 let isMatch = filterWords.length === 0 ? true : filterWords.every(word => {
                     let normWord = window.normalizePhone(word);
-                    // لو الكلمة موجودة زي ما هي (كإسم) أو موجودة كرقم بعد ما اتنظفت (عربي أو إنجليزي)
                     return searchData.includes(word) || (normWord !== '' && searchData.includes(normWord));
                 });
                 
@@ -2338,7 +2344,7 @@
             
             const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الفحص والدمج بذكاء...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الفلترة والدمج بذكاء...';
             btn.disabled = true;
 
             const reader = new FileReader();
@@ -2352,13 +2358,13 @@
                     complete: function(results) {
                         let smartCustomersMap = {}; 
                         
-                        // 🔮 مفرمة الأرقام: تحويل كل الأرقام العربي والفارسي لإنجليزي
+                        // مفرمة الأرقام
                         const convertNumerals = str => str
                             .replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660)
                             .replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
 
-                        // كلمات بتكشف إن النص ده أوردر مش اسم شخص
-                        const orderKeywords = /(سوبر|جامبو|سبشيال|فرخ|جوز|طبق|بيض|كتكوت|كتاكيت|وزن|كيلو|صاحي|سعر|اوردر|طلب|دفعة)/i;
+                        // 🎯 دي الكلمات اللي هنمسحها من التايتل عشان يتبقى الاسم الصافي
+                        const orderKeywords = /سوبر|جامبو|سبشيال|فرخات|فراخ|فرخ|اجواز|جوز|طبق|بيض|كتاكيت|كتكوت|وزن|كيلو|صاحي|سعر|اوردر|طلب|دفعة|علي|حساب|بدون/gi;
 
                         results.data.forEach(row => {
                             let title = row['Title'] || '';
@@ -2366,11 +2372,9 @@
                             let zone = (row['Column Name'] && row['Column Name'] !== 'nan') ? row['Column Name'] : (row['List Name'] || '');
                             if(!title && !content) return;
                             
-                            // 1. تنظيف النص بالكامل وتحويل أرقامه لإنجليزي
                             let rawText = convertNumerals(title + " \n " + content);
                             let textForRegex = rawText.replace(/[-+()\s]/g, '');
                             
-                            // 2. صائد الأرقام
                             let phone = '';
                             let perfectMatch = textForRegex.match(/(00201|201|01|1)[0125][0-9]{8}/);
                             if (perfectMatch) {
@@ -2385,24 +2389,22 @@
 
                             if(!phone || phone.length < 9) return; 
 
-                            // 3. صائد العناوين الذكي
                             let address = '';
                             let addrMatch = content.match(/(العنوان|شارع|بجوار|خلف|امام|عند|محل|صيدلية|مستشفى|موقف|عزبة|قرية)[^-\n\r]*/);
                             if(addrMatch) address = addrMatch[0].replace(/العنوان\s*[:：]\s*/g, '').trim();
 
-                            // 4. صائد الأسماء (استبعاد الأوردرات)
-                            let cleanName = title.replace(/[0-9]/g, '').replace(/[-+()]/g, '').trim();
-                            if(orderKeywords.test(cleanName) || cleanName.length < 2) {
+                            // 🎯 السحر هنا: بيمسح الأرقام وكلمات الأوردر من التايتل، ويسيب الاسم
+                            let cleanName = title.replace(orderKeywords, '').replace(/[٠-٩0-9۰-۹]/g, '').replace(/[-+()]/g, '').trim();
+                            
+                            if(cleanName.replace(/\s/g, '').length < 2) {
                                 let nameMatch = content.match(/الاسم\s*[:：]\s*([^\n\r]+)/);
-                                cleanName = nameMatch ? nameMatch[1].replace(/[0-9]/g, '').trim() : 'عميل غير محدد';
+                                cleanName = nameMatch ? nameMatch[1].replace(orderKeywords, '').replace(/[٠-٩0-9۰-۹]/g, '').trim() : 'عميل غير محدد';
                             }
 
-                            // 5. تظبيط السجل الزمني والملاحظات
                             let taskDate = row['Created Time'] || row['Created Date'] || row['Start Date'] || '';
                             let datePrefix = taskDate ? `[أوردر قديم: ${taskDate.split('T')[0]}] ` : '';
                             let notes = datePrefix + (title + " | " + content).replace(/\n/g, ' - ').replace(/\r/g, ' ').trim();
 
-                            // 6. عملية الدمج الكبرى للمتكررين
                             if(smartCustomersMap[phone]) {
                                 smartCustomersMap[phone].ordersCount += 1;
                                 smartCustomersMap[phone].adminNotes += `\n\n${notes}`;
@@ -2412,27 +2414,17 @@
                                 }
                             } else {
                                 smartCustomersMap[phone] = { 
-                                    name: cleanName, 
-                                    phone: phone, 
-                                    zone: zone, 
-                                    address: address, 
-                                    adminNotes: notes,
-                                    ordersCount: 1 
+                                    name: cleanName, phone: phone, zone: zone, address: address, adminNotes: notes, ordersCount: 1 
                                 };
                             }
                         });
                         
                         let finalCustomersList = Object.values(smartCustomersMap);
-                        
                         btn.innerHTML = originalHtml; btn.disabled = false;
                         document.getElementById('ticktick-file').value = ''; 
                         
-                        if(finalCustomersList.length === 0) {
-                            alert("لم يتم العثور على أرقام هواتف صالحة في الملف!");
-                            return;
-                        }
-                        
-                        if(confirm(`تم فلترة ودمج الداتا بذكاء! 🚀\nالنتيجة: [ ${finalCustomersList.length} ] عميل صافي بعد دمج طلباتهم.\nهل تريد رفعهم لأرشيف السيستم الآن؟`)) {
+                        if(finalCustomersList.length === 0) return alert("لم يتم العثور على أرقام!");
+                        if(confirm(`تم فلترة ودمج الداتا بذكاء! 🚀\nالنتيجة: [ ${finalCustomersList.length} ] عميل صافي.\nهل تريد رفعهم لأرشيف السيستم الآن؟`)) {
                             uploadTickTickToFirebase(finalCustomersList);
                         }
                     }
@@ -2440,6 +2432,7 @@
             };
             reader.readAsText(file);
         };
+
 
 
 
@@ -3238,15 +3231,21 @@ window.deleteProductUI = async (id) => {
         
         // 1. فرامل البحث: بتستنى 300 ملي ثانية بعد آخر حرف بتكتبه عشان ترسم الشاشة مرة واحدة
         let searchTimeout;
+        let searchTimeout;
         window.scheduleSearch = () => {
+            let inputEl = document.getElementById('search-order');
+            if(inputEl) {
+                let original = inputEl.value;
+                let converted = original.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
+                if (original !== converted) inputEl.value = converted; // تحويل فوري للإنجليزي جوه المربع
+            }
+
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 renderOrdersList();
             }, 300);
         };
 
-        // 2. فرامل السيرفر: بتجمع تحديثات الداتا بيز السريعة وترسمها مرة واحدة بس
-        let renderTimeout;
         window.scheduleSystemRender = () => {
             clearTimeout(renderTimeout);
             renderTimeout = setTimeout(() => {
