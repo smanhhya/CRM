@@ -154,15 +154,39 @@
                         <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">إيرادات التوصيل (اليوم)</p><h3 id="dash-delivery-today" class="text-3xl font-black text-indigo-600">0 <span class="text-sm text-slate-400">ج</span></h3></div>
                     </div>
 
-                    <div onclick="openFinanceReport('month')" class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-all relative overflow-hidden cursor-pointer hover:scale-[1.02]">
+                    <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-all relative overflow-hidden">
                         <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-50 rounded-full opacity-50 pointer-events-none"></div>
                         <div class="flex justify-between items-start mb-4 relative z-10">
-                            <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg"><i class="fa-solid fa-chart-line"></i></div>
-                            <span class="text-[10px] bg-slate-50 text-slate-400 px-2 py-1 rounded-lg font-bold border border-slate-100">تفاصيل الشهر <i class="fa-solid fa-chevron-left ml-1"></i></span>
+                            <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg"><i class="fa-solid fa-wallet"></i></div>
+                            <span class="text-[10px] bg-slate-50 text-slate-400 px-2 py-1 rounded-lg font-bold border border-slate-100">الصافي الكلي للدرج</span>
                         </div>
-                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">إجمالي المحصل الكلي (الشهر)</p><h3 id="dash-sales-month" class="text-3xl font-black text-amber-600">0 <span class="text-sm text-slate-400">ج</span></h3></div>
+                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">إجمالي تحصيل اليوم</p><h3 id="dash-total-today" class="text-3xl font-black text-amber-600">0 <span class="text-sm text-slate-400">ج</span></h3></div>
                     </div>
                 </div>
+                
+                <div class="w-full bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft mt-2">
+                    <h4 class="text-sm font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-boxes-packing text-brand-primary mr-2"></i> إجمالي المنتجات المسلمة اليوم</h4>
+                    <div id="dash-items-today" class="grid grid-cols-2 md:grid-cols-6 gap-3"></div>
+                </div>
+
+                <div class="w-full bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft mt-2 mb-6">
+                    <h4 class="text-sm font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-list-check text-indigo-500 mr-2"></i> سجل تسليمات اليوم التفصيلي (من استلم اليوم؟)</h4>
+                    <div class="overflow-x-auto custom-scroll">
+                        <table class="w-full text-right text-sm whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-500">
+                                <tr>
+                                    <th class="py-3 px-4 font-black rounded-r-xl">العميل</th>
+                                    <th class="py-3 px-4 font-black text-center">المنتجات التي استلمها</th>
+                                    <th class="py-3 px-4 font-black text-center">تاريخ الطلب الأصلي</th>
+                                    <th class="py-3 px-4 font-black text-center rounded-l-xl">المدفوع</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dash-today-orders-tbody" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
                 
                 <!-- سيكشن المنتجات اللي اتباعت النهاردة -->
                 <div class="w-full bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft mt-6">
@@ -807,57 +831,97 @@
             });
 
             db.collection('orders').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
-                let mSales = 0, counts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+                // --- 1. الأساسيات اللي السيستم كله قايم عليها (ممنوع المساس بيها) ---
+                let counts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+                allOrdersRaw = []; 
+                dispatchOrdersRaw = [];
                 
-                // متغيرات لوحة القيادة الجديدة
-                let todayCompletedOrders = 0;
+                // --- 2. متغيرات لوحة القيادة الجديدة المخصصة لليوم الفعلي ---
+                let todayCompletedOrdersCount = 0;
                 let todayProductsRevenue = 0;
                 let todayDeliveryRevenue = 0;
-                let todayItemsSold = {}; // لتجميع المنتجات
+                let todayTotalRevenue = 0;
+                let todayItemsSold = {}; 
+                let todayOrdersList = []; // السجل التفصيلي لعملاء اليوم
 
-                allOrdersRaw = []; dispatchOrdersRaw = [];
-                const currentMonth = new Date().getMonth();
-                const nowStr = new Date().toLocaleDateString('en-US'); // للتأكد إن المتغير ده مقروء هنا
+                const nowStr = new Date().toLocaleDateString('en-US'); 
 
                 snap.forEach(doc => {
-                    const o = doc.data(); const id = doc.id; const stat = o.status || 'new';
-                    allOrdersRaw.push({id, ...o});
-                    let orderDateObj = o.createdAt ? new Date(o.createdAt.toMillis()) : new Date();
+                    const o = doc.data(); 
+                    const id = doc.id; 
+                    const stat = o.status || 'new';
                     
-                    // حسابات الشهر (التحصيل الكلي)
-                    if (orderDateObj.getMonth() === currentMonth && stat === 'completed') mSales += Number(o.total) || 0;
+                    // تغذية الأساسيات (لشاشات الطلبات والتوجيه)
+                    allOrdersRaw.push({id, ...o});
+                    if (stat === 'processing') dispatchOrdersRaw.push({id, ...o}); 
+                    if (counts[stat] !== undefined) counts[stat]++;
 
-                    // حسابات اليوم المعتمدة على تاريخ "التسليم" الفعلي
+                    // حسابات لوحة القيادة (مبنية على تاريخ الاكتمال الفعلي)
                     if (stat === 'completed' && o.completedAtStr === nowStr) {
-                        todayCompletedOrders++;
-                        todayProductsRevenue += Number(o.subtotal) || 0; // المنتجات بس
-                        todayDeliveryRevenue += Number(o.deliveryFee) || 0; // التوصيل بس
+                        todayCompletedOrdersCount++;
+                        todayProductsRevenue += Number(o.subtotal) || 0; 
+                        todayDeliveryRevenue += Number(o.deliveryFee) || 0; 
+                        todayTotalRevenue += Number(o.total) || 0;
                         
-                        // تجميع المنتجات اللي اتسلمت
+                        // تجميع المنتجات
                         if(o.items && Array.isArray(o.items)){
                             o.items.forEach(i => {
                                 todayItemsSold[i.name] = (todayItemsSold[i.name] || 0) + i.quantity;
                             });
                         }
+                        
+                        // إضافة الأوردر للقائمة عشان الجدول التفصيلي
+                        todayOrdersList.push(o); 
                     }
-
-                    if (stat === 'processing') dispatchOrdersRaw.push({id, ...o}); 
-                    if(counts[stat] !== undefined) counts[stat]++;
                 });
 
-                // تحديث واجهة لوحة القيادة
-                document.getElementById('dash-completed-today').innerText = todayCompletedOrders;
-                document.getElementById('dash-products-today').innerHTML = `${todayProductsRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
-                document.getElementById('dash-delivery-today').innerHTML = `${todayDeliveryRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
-                document.getElementById('dash-sales-month').innerHTML = `${mSales.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                // --- 3. تحديث واجهة لوحة القيادة (Dashboard UI) ---
                 
-                // رسم المنتجات المباعة اليوم في لوحة القيادة
+                // الكروت العلوية الأربعة (استخدمت if checks كحماية إضافية للأساسيات)
+                let elCompleted = document.getElementById('dash-completed-today');
+                if(elCompleted) elCompleted.innerText = todayCompletedOrdersCount;
+                
+                let elProducts = document.getElementById('dash-products-today');
+                if(elProducts) elProducts.innerHTML = `${todayProductsRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                
+                let elDelivery = document.getElementById('dash-delivery-today');
+                if(elDelivery) elDelivery.innerHTML = `${todayDeliveryRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                
+                let elTotal = document.getElementById('dash-total-today');
+                if(elTotal) elTotal.innerHTML = `${todayTotalRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                
+                // تفصيل المنتجات المجمعة
                 let itemsHtml = Object.keys(todayItemsSold).sort((a,b) => todayItemsSold[b] - todayItemsSold[a]).map(itemName => 
                     `<div class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-lg font-black text-brand-primary">${todayItemsSold[itemName]}</span></div>`
                 ).join('');
-                document.getElementById('dash-items-today').innerHTML = itemsHtml || '<div class="col-span-full text-center text-slate-400 text-xs font-bold mt-4">لم يتم تسليم منتجات اليوم حتى الآن.</div>';
+                let dashItems = document.getElementById('dash-items-today');
+                if(dashItems) dashItems.innerHTML = itemsHtml || '<div class="col-span-full text-center text-slate-400 text-xs font-bold mt-4">لم يتم تسليم منتجات اليوم حتى الآن.</div>';
 
-                ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { let b = document.getElementById(`badge-${s}`); if(b) b.innerText = counts[s]; });
+                // الجدول التفصيلي (مين استلم إيه النهاردة)
+                let tableBodyHtml = todayOrdersList.map(o => {
+                    let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `<span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold inline-block m-0.5 border border-emerald-100">${i.quantity}x ${i.name}</span>`).join('') : '-';
+                    return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 px-4 border-b border-slate-50">
+                            <div class="font-black text-slate-800">${o.customerName || 'بدون اسم'}</div>
+                            <div class="text-[10px] font-bold text-slate-400" dir="ltr">${o.customerPhone || ''}</div>
+                        </td>
+                        <td class="py-3 px-4 border-b border-slate-50 text-center whitespace-normal min-w-[200px] leading-loose">${itemsStr}</td>
+                        <td class="py-3 px-4 border-b border-slate-50 text-center font-bold text-slate-500 text-xs">${o.orderDate || 'غير محدد'}</td>
+                        <td class="py-3 px-4 border-b border-slate-50 text-center font-black text-brand-primary text-base">${o.total} ج</td>
+                    </tr>`;
+                }).join('');
+                
+                let tbodyEl = document.getElementById('dash-today-orders-tbody');
+                if(tbodyEl) {
+                    tbodyEl.innerHTML = tableBodyHtml || `<tr><td colspan="4" class="text-center py-8 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد طلبات تم تسليمها اليوم.</td></tr>`;
+                }
+
+                // --- 4. تحديث الأساسيات (أرقام التبويبات الحية) ---
+                ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { 
+                    let b = document.getElementById(`badge-${s}`); 
+                    if(b) b.innerText = counts[s]; 
+                });
                 
                 scheduleSystemRender();
             });
