@@ -187,15 +187,7 @@
                 </div>
             </div>
 
-                
-                <!-- سيكشن المنتجات اللي اتباعت النهاردة -->
-                <div class="w-full bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft mt-6">
-                    <h4 class="text-sm font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-boxes-packing text-brand-primary mr-2"></i> تفصيل المنتجات التي تم تسليمها اليوم</h4>
-                    <div id="dash-items-today" class="grid grid-cols-2 md:grid-cols-6 gap-3">
-                        <!-- هيتم ملؤها برمجياً -->
-                    </div>
-                </div>
-            </div>
+            
 
 
             <div id="view-orders" class="page-view h-full flex flex-col max-w-7xl mx-auto">
@@ -735,6 +727,25 @@
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const auth = firebase.auth(); 
         const db = firebase.firestore();
+        // ==========================================
+        // 🔮 دالة سحرية لتوحيد أرقام الهواتف للبحث (Normalization) 🔮
+        // ==========================================
+        window.normalizePhone = (phone) => {
+            if (!phone) return '';
+            // 1. تحويل الأرقام العربي/الفارسي (٠-٩) إلى إنجليزي (0-9)
+            let normalized = phone.toString().replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660);
+            // 2. إزالة أي مسافات، أقواس، شرطات، أو علامة +
+            normalized = normalized.replace(/\D/g, '');
+            // 3. توحيد كود الدولة لمصر (عشان لو متسجل 00201 أو 201 أو +201)
+            if (normalized.startsWith('0020')) {
+                normalized = '0' + normalized.substring(4);
+            } else if (normalized.startsWith('201')) {
+                normalized = '0' + normalized.substring(2);
+            } else if (normalized.length === 10 && normalized.startsWith('1')) {
+                normalized = '0' + normalized;
+            }
+            return normalized;
+        };
 
         // === 2. التحكم في الواجهة ===
         function toggleSidebar() {
@@ -939,9 +950,12 @@
                     let location = c.zone || '';
                     if(c.address) location += ' - ' + c.address;
                     let details = c.notebook ? `<div class="text-[10px] text-amber-600 font-bold mt-1.5 max-w-[180px] truncate mx-auto bg-amber-50 px-2 py-1 rounded" title="${c.notebook}"><i class="fa-solid fa-book"></i> نوت: ${c.notebook}</div>` : '';
+                    
+                    // السطر ده بينظف رقم العميل عشان البحث يلقطه بأي شكل
+                    let normPhone = window.normalizePhone(c.phone);
 
                     tbody += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${location}">
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location}">
                         <td class="py-4 px-6">
                             <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div>
                             <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone || ''}</div>
@@ -957,6 +971,7 @@
                         </td>
                     </tr>`;
                 });
+
                 document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="5" class="text-center p-12 text-slate-400 font-bold text-sm">لا يوجد عملاء حتى الآن</td></tr>`;
                 
                 // تحديث البحث فورا لو اليوزر كاتب حاجة
@@ -1228,28 +1243,37 @@
                 // الحماية من الداتا القديمة وتجهيز نص البحث للتحليل العميق
                 let itemsString = (o.items && Array.isArray(o.items)) ? o.items.map(i => i.name).join(' ') : '';
                 let bNameSearch = o.batchName ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
-                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${bNameSearch} ${o.zone || ''} ${itemsString}`.toLowerCase();
                 
-                // الفلترة متعددة الكلمات
+                // --- التعديل هنا: تنظيف أرقام العميل عشان البحث يلقطها ---
+                let normPhone1 = window.normalizePhone(o.customerPhone);
+                let normPhone2 = window.normalizePhone(o.customerPhone2);
+
+                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString}`.toLowerCase();
+                
+                // الفلترة متعددة الكلمات مع تنظيف البحث نفسه
                 let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
-                let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => searchStr.includes(word));
+                let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => {
+                    let normWord = window.normalizePhone(word);
+                    // بيبحث بالكلمة العادية، أو برقم التليفون المنظف لو اليوزر بيبحث برقم
+                    return searchStr.includes(word) || (normWord.length > 3 && searchStr.includes(normWord));
+                });
 
                 // سحر الفلاتر الذكية
                 let matchSmart = true;
                 if(currentSmartFilter === 'vip') {
-                    let c = customersData.find(x => x.phone === o.customerPhone || x.phone === '0'+o.customerPhone);
+                    let c = customersData.find(x => window.normalizePhone(x.phone) === normPhone1);
                     matchSmart = c && (c.ordersCount >= 3 || c.totalSpent >= 1500); 
                 } else if(currentSmartFilter === 'high_value') {
                     matchSmart = Number(o.total) >= 500; 
                 }
 
-                // لو الأوردر طابق البحث (يعني مثلا من ههيا)، زوده في العداد بتاعه
                 if (matchSearch && matchSmart && o.status !== 'trash') {
                     if (dynamicCounts[o.status] !== undefined) dynamicCounts[o.status]++;
                     return true;
                 }
                 return false;
             });
+
 
             // 💡 تحديث الأرقام (البادجات) اللي على الزراير فوراً بالعدد المفلتر الحقيقي
             ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { 
@@ -1379,10 +1403,7 @@
                 </div>`;
             }).join('');
         };
-
-
-
-            
+           
 
         window.openNoteOptions = (id) => {
             currentOrderNoteId = id;
@@ -1498,11 +1519,16 @@
 
         // === 6. أرشيف العملاء والكشكول ===
         window.filterCustomers = () => { 
-            let filter = document.getElementById('search-customer').value.toLowerCase(); 
+            let rawFilter = document.getElementById('search-customer').value.toLowerCase(); 
+            let normFilter = window.normalizePhone(rawFilter);
+
             document.querySelectorAll('.customer-row').forEach(row => { 
-                row.style.display = row.getAttribute('data-search').toLowerCase().includes(filter) ? '' : 'none'; 
+                let searchData = row.getAttribute('data-search').toLowerCase(); 
+                let isMatch = searchData.includes(rawFilter) || (normFilter.length > 3 && searchData.includes(normFilter));
+                row.style.display = isMatch ? '' : 'none'; 
             }); 
         };
+
         
         window.openCustomerCard = async (phone) => {
             let c = customersData.find(x => x.phone === phone); if(!c) return;
@@ -1718,12 +1744,14 @@
         };
         
         window.checkCustomerExists = async () => { 
-            let phone = document.getElementById('no-phone').value.trim().replace(/\D/g, ''); 
+        window.checkCustomerExists = async () => { 
+            let inputVal = document.getElementById('no-phone').value;
+            let phone = window.normalizePhone(inputVal); // تنظيف الرقم اللي بيتكتب دلوقتي
             if(!phone || phone.length < 10) return; 
             
-            let c = customersData.find(x => x.phone === phone || x.phone === '0'+phone); 
+            // البحث عن الرقم المنظف جوه الداتا بيز بعد ما ينظف أرقامها كمان
+            let c = customersData.find(x => window.normalizePhone(x.phone) === phone); 
             
-            // اللمسة السحرية: لو العميل مش في الشاشة، هنخبط على الداتابيز نجيبه مباشرة
             if(!c) {
                 let cleanPhone = phone.startsWith('0') ? phone : '0' + phone;
                 try {
@@ -1739,6 +1767,7 @@
                 autoSetDeliveryPrice(); 
             } 
         };
+
 
 
         window.autoSetDeliveryPrice = () => { 
