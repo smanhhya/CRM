@@ -1744,7 +1744,6 @@
         };
         
         window.checkCustomerExists = async () => { 
-        window.checkCustomerExists = async () => { 
             let inputVal = document.getElementById('no-phone').value;
             let phone = window.normalizePhone(inputVal); // تنظيف الرقم اللي بيتكتب دلوقتي
             if(!phone || phone.length < 10) return; 
