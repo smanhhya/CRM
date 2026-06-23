@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>سمان ههيا | الإدارة المركزية (CRM)</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#166534">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -3595,5 +3597,16 @@ window.deleteProductUI = async (id) => {
 
         
     </script>
+    <script>
+        // تسجيل الـ Service Worker عشان الموبايل يلقط إنه تطبيق PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('PWA Ready!'))
+                    .catch(err => console.log('PWA Error: ', err));
+            });
+        }
+    </script>
+
 </body>
 </html>
