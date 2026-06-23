@@ -133,38 +133,46 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-6">
                     <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-shadow">
                         <div class="flex justify-between items-start mb-4">
-                            <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-lg"><i class="fa-solid fa-users"></i></div>
+                            <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center text-lg"><i class="fa-solid fa-check-double"></i></div>
                         </div>
-                        <div><p class="text-xs font-bold text-slate-400 mb-1">إجمالي العملاء</p><h3 id="dash-customers" class="text-3xl font-black text-slate-800">0</h3></div>
+                        <div><p class="text-xs font-bold text-slate-400 mb-1">تم تسليمه اليوم</p><h3 id="dash-completed-today" class="text-3xl font-black text-slate-800">0</h3></div>
                     </div>
                     
-                    <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-shadow">
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center text-lg"><i class="fa-solid fa-box-open"></i></div>
+                    <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-shadow relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 rounded-full opacity-50 pointer-events-none"></div>
+                        <div class="flex justify-between items-start mb-4 relative z-10">
+                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg"><i class="fa-solid fa-sack-dollar"></i></div>
                         </div>
-                        <div><p class="text-xs font-bold text-slate-400 mb-1">إجمالي الطلبات</p><h3 id="dash-orders-total" class="text-3xl font-black text-slate-800">0</h3></div>
+                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">إجمالي المنتجات (بدون توصيل)</p><h3 id="dash-products-today" class="text-3xl font-black text-brand-primary">0 <span class="text-sm text-slate-400">ج</span></h3></div>
                     </div>
 
-                    <div onclick="openFinanceReport('day')" class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-all relative overflow-hidden cursor-pointer hover:scale-[1.02]">
-                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 rounded-full opacity-50"></div>
+                    <div class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-shadow relative overflow-hidden">
+                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-indigo-50 rounded-full opacity-50 pointer-events-none"></div>
                         <div class="flex justify-between items-start mb-4 relative z-10">
-                            <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg"><i class="fa-solid fa-wallet"></i></div>
-                            <span class="text-[10px] bg-slate-50 text-slate-400 px-2 py-1 rounded-lg font-bold border border-slate-100">التفاصيل <i class="fa-solid fa-chevron-left ml-1"></i></span>
+                            <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg"><i class="fa-solid fa-motorcycle"></i></div>
                         </div>
-                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">مبيعات اليوم (مكتمل فقط)</p><h3 id="dash-sales-day" class="text-3xl font-black text-brand-primary">0 <span class="text-sm text-slate-400">ج</span></h3></div>
+                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">إيرادات التوصيل (اليوم)</p><h3 id="dash-delivery-today" class="text-3xl font-black text-indigo-600">0 <span class="text-sm text-slate-400">ج</span></h3></div>
                     </div>
 
                     <div onclick="openFinanceReport('month')" class="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft flex flex-col justify-between hover:shadow-card transition-all relative overflow-hidden cursor-pointer hover:scale-[1.02]">
-                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-50 rounded-full opacity-50"></div>
+                        <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-50 rounded-full opacity-50 pointer-events-none"></div>
                         <div class="flex justify-between items-start mb-4 relative z-10">
                             <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-lg"><i class="fa-solid fa-chart-line"></i></div>
-                            <span class="text-[10px] bg-slate-50 text-slate-400 px-2 py-1 rounded-lg font-bold border border-slate-100">التفاصيل <i class="fa-solid fa-chevron-left ml-1"></i></span>
+                            <span class="text-[10px] bg-slate-50 text-slate-400 px-2 py-1 rounded-lg font-bold border border-slate-100">تفاصيل الشهر <i class="fa-solid fa-chevron-left ml-1"></i></span>
                         </div>
-                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">مبيعات الشهر (مكتمل فقط)</p><h3 id="dash-sales-month" class="text-3xl font-black text-amber-600">0 <span class="text-sm text-slate-400">ج</span></h3></div>
+                        <div class="relative z-10"><p class="text-xs font-bold text-slate-500 mb-1">إجمالي المحصل الكلي (الشهر)</p><h3 id="dash-sales-month" class="text-3xl font-black text-amber-600">0 <span class="text-sm text-slate-400">ج</span></h3></div>
                     </div>
-
+                </div>
+                
+                <!-- سيكشن المنتجات اللي اتباعت النهاردة -->
+                <div class="w-full bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft mt-6">
+                    <h4 class="text-sm font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-boxes-packing text-brand-primary mr-2"></i> تفصيل المنتجات التي تم تسليمها اليوم</h4>
+                    <div id="dash-items-today" class="grid grid-cols-2 md:grid-cols-6 gap-3">
+                        <!-- هيتم ملؤها برمجياً -->
+                    </div>
                 </div>
             </div>
+
 
             <div id="view-orders" class="page-view h-full flex flex-col max-w-7xl mx-auto">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white p-2 md:p-3 rounded-2xl shadow-soft border border-slate-100">
@@ -799,29 +807,61 @@
             });
 
             db.collection('orders').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
-                let dSales = 0, mSales = 0, counts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+                let mSales = 0, counts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+                
+                // متغيرات لوحة القيادة الجديدة
+                let todayCompletedOrders = 0;
+                let todayProductsRevenue = 0;
+                let todayDeliveryRevenue = 0;
+                let todayItemsSold = {}; // لتجميع المنتجات
+
                 allOrdersRaw = []; dispatchOrdersRaw = [];
                 const currentMonth = new Date().getMonth();
+                const nowStr = new Date().toLocaleDateString('en-US'); // للتأكد إن المتغير ده مقروء هنا
 
                 snap.forEach(doc => {
                     const o = doc.data(); const id = doc.id; const stat = o.status || 'new';
                     allOrdersRaw.push({id, ...o});
                     let orderDateObj = o.createdAt ? new Date(o.createdAt.toMillis()) : new Date();
                     
-                    if (orderDateObj.toLocaleDateString('en-US') === nowStr && stat === 'completed') dSales += Number(o.total) || 0;
+                    // حسابات الشهر (التحصيل الكلي)
                     if (orderDateObj.getMonth() === currentMonth && stat === 'completed') mSales += Number(o.total) || 0;
+
+                    // حسابات اليوم المعتمدة على تاريخ "التسليم" الفعلي
+                    if (stat === 'completed' && o.completedAtStr === nowStr) {
+                        todayCompletedOrders++;
+                        todayProductsRevenue += Number(o.subtotal) || 0; // المنتجات بس
+                        todayDeliveryRevenue += Number(o.deliveryFee) || 0; // التوصيل بس
+                        
+                        // تجميع المنتجات اللي اتسلمت
+                        if(o.items && Array.isArray(o.items)){
+                            o.items.forEach(i => {
+                                todayItemsSold[i.name] = (todayItemsSold[i.name] || 0) + i.quantity;
+                            });
+                        }
+                    }
 
                     if (stat === 'processing') dispatchOrdersRaw.push({id, ...o}); 
                     if(counts[stat] !== undefined) counts[stat]++;
                 });
-                document.getElementById('dash-orders-total').innerText = snap.size;
-                document.getElementById('dash-sales-day').innerHTML = `${dSales.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+
+                // تحديث واجهة لوحة القيادة
+                document.getElementById('dash-completed-today').innerText = todayCompletedOrders;
+                document.getElementById('dash-products-today').innerHTML = `${todayProductsRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                document.getElementById('dash-delivery-today').innerHTML = `${todayDeliveryRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
                 document.getElementById('dash-sales-month').innerHTML = `${mSales.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
                 
+                // رسم المنتجات المباعة اليوم في لوحة القيادة
+                let itemsHtml = Object.keys(todayItemsSold).sort((a,b) => todayItemsSold[b] - todayItemsSold[a]).map(itemName => 
+                    `<div class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-lg font-black text-brand-primary">${todayItemsSold[itemName]}</span></div>`
+                ).join('');
+                document.getElementById('dash-items-today').innerHTML = itemsHtml || '<div class="col-span-full text-center text-slate-400 text-xs font-bold mt-4">لم يتم تسليم منتجات اليوم حتى الآن.</div>';
+
                 ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { let b = document.getElementById(`badge-${s}`); if(b) b.innerText = counts[s]; });
                 
                 scheduleSystemRender();
             });
+
 
             db.collection('customers').onSnapshot(snap => {
                 customersData = [];
@@ -910,6 +950,18 @@
             }
         };
 
+        window.sendFollowUpWhatsApp = (phone, name) => {
+            let msg = `أهلاً يا ${name || 'فندم'}،\nيارب تكون بخير 🌹\nاستلمت أوردر "سمان ههيا"، ياريت تشاركنا رأيك بعد التجربة أو لو عندك أي ملحوظة، عشان رأيك يهمنا جداً في تطوير الجودة.\nبالهنا والشفا مقدماً! 🍽️`;
+            
+            let cleanPhone = (phone || '').toString().trim();
+            let waNumber = cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone;
+            
+            if(waNumber) {
+                window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+            } else {
+                alert("لا يوجد رقم هاتف مسجل للعميل!");
+            }
+        };
 
 
         window.updateBatchSummary = () => {
@@ -1229,9 +1281,14 @@
 
                     <div class="flex flex-col sm:flex-row justify-between items-center pt-3 border-t border-slate-100 gap-4 mt-1">
                         <div class="flex gap-2 w-full sm:w-auto">
-                            <button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-xs bg-[#25D366] hover:bg-[#1ebd57] text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>
+                            ${o.status === 'completed' ? 
+                            `<button onclick="sendFollowUpWhatsApp('${o.customerPhone}', '${o.customerName}')" class="flex-1 sm:flex-none text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm shadow-indigo-500/30 flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-heart-circle-check"></i> متابعة العميل</button>` 
+                            : 
+                            `<button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-xs bg-[#25D366] hover:bg-[#1ebd57] text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`
+                            }
                             <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-xs bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-pen text-[10px]"></i> تعديل</button>
                         </div>
+
                         <div class="flex items-center justify-between w-full sm:w-auto gap-5">
                             <span class="font-black text-brand-primary text-2xl tracking-tight">${o.total || 0} <span class="text-sm text-slate-400">ج</span></span>
                             <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
@@ -3170,6 +3227,12 @@ window.deleteProductUI = async (id) => {
             try { 
                 let updateData = { status: s };
                 if (s === 'trash') updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
+                
+                // 💡 التعديل الجديد عشان نحسب مبيعات اليوم الفعلي وقت التسليم 💡
+                if (s === 'completed') {
+                    updateData.completedAtStr = new Date().toLocaleDateString('en-US');
+                }
+
                 await db.collection('orders').doc(id).update(updateData); 
                 
                 // 🧊 سحر الفريزر: الخصم والإرجاع الأوتوماتيك 🧊
@@ -3210,6 +3273,7 @@ window.deleteProductUI = async (id) => {
                 }
             } catch(e) { alert("حدث خطأ أثناء تغيير الحالة!"); }
         };
+
 
         window.bulkChangeStatus = async (newStatus) => {
             let checked = Array.from(document.querySelectorAll('.bulk-order-cb:checked')).map(cb => cb.value);
