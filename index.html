@@ -968,7 +968,7 @@
                     let normPhone = window.normalizePhone(c.phone);
 
                     tbody += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location}">
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location} ${c.notebook || ''}">
                         <td class="py-4 px-6">
                             <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div>
                             <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone || ''}</div>
@@ -1194,13 +1194,8 @@
                 let rawVal = input.value.trim();
                 if(!rawVal) return;
                 
-                // تنظيف الرقم تماماً
-                const arabicToEnglish = str => str.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660);
-                let phone = arabicToEnglish(rawVal).replace(/\D/g, '');
-                if (phone.startsWith('002')) phone = phone.substring(3);
-                else if (phone.startsWith('201')) phone = phone.substring(2);
-                else if (phone.length === 10 && phone.startsWith('1')) phone = '0' + phone;
-                else if (phone.length > 11 && phone.startsWith('2')) phone = phone.substring(1);
+                // التعديل هنا: استخدمنا "المفرمة" المركزية بتاعتنا بدل الكود المكرر
+                let phone = window.normalizePhone(rawVal);
 
                 input.value = ''; // تفريغ الكشاف بعد السحب
                 
@@ -1211,6 +1206,7 @@
                 document.getElementById('no-name').focus();
             }
         };
+
 
 
         // ==========================================
