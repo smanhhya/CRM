@@ -1224,9 +1224,15 @@
                 let customTagHtml = o.customTag ? `<span onclick="document.getElementById('search-order').value='${o.customTag}'; renderOrdersList();" class="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-purple-500 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه المجموعة"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
                 let batchTagHtml = o.batchName ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
 
-                let phone2Html = o.customerPhone2 ? `<span class="text-[10px] text-purple-400 font-bold border border-purple-100 bg-purple-50 px-1.5 rounded ml-1 cursor-pointer hover:border-purple-300 border-dashed transition-colors" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone2')" title="اضغط مرتين للتعديل الطاير"><i class="fa-solid fa-phone text-[8px]"></i> ${o.customerPhone2}</span>` : '';
+                let phone2Html = o.customerPhone2 ? `
+                    <span class="flex items-center gap-1.5 bg-purple-50 px-2 py-1 rounded-lg border border-purple-100 ml-1">
+                        <span class="text-[9px] font-black text-purple-500">بديل:</span>
+                        <span class="text-[11px] text-slate-600 font-bold cursor-pointer border-b border-transparent hover:border-purple-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone2')" title="تعديل الرقم البديل">${o.customerPhone2}</span>
+                        <a href="tel:${o.customerPhone2}" class="text-purple-500 hover:text-white hover:bg-purple-500 w-5 h-5 flex items-center justify-center bg-purple-100 rounded-full transition-colors" title="اتصال بالرقم البديل"><i class="fa-solid fa-phone text-[8px]"></i></a>
+                    </span>` : '';
 
-                return `                <div data-id="${o.id}" class="order-card bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5 relative group">
+                return `
+                <div data-id="${o.id}" class="order-card bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5 relative group">
                     <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-5 left-4 w-5 h-5 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
                     <div class="flex justify-between items-start mb-3 pl-8">
                         <div>
@@ -1236,6 +1242,7 @@
                                 <span class="text-[11px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
                                 ${phone2Html}
                             </h5>
+
                             <p class="text-xs text-slate-500 font-bold mb-2.5 flex items-center gap-1 flex-wrap">
                                 <i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> 
                                 <span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'zone')" title="تعديل المنطقة السريع">${o.zone || 'غير مسجل'}</span> 
@@ -1290,7 +1297,20 @@
                         </div>
 
                         <div class="flex items-center justify-between w-full sm:w-auto gap-5">
-                            <span class="font-black text-brand-primary text-2xl tracking-tight">${o.total || 0} <span class="text-sm text-slate-400">ج</span></span>
+                            <div class="flex flex-col items-end">
+                                ${o.discount > 0 ? `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded text-[10px] font-black mb-1 animate-pulse"><i class="fa-solid fa-gift mr-1"></i> خصم: ${o.discount} ج</span>` : ''}
+                                <span class="font-black text-brand-primary text-2xl tracking-tight">${o.total || 0} <span class="text-sm text-slate-400">ج</span></span>
+                            </div>
+                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
+                                <option value="new" ${o.status==='new'?'selected':''}>الآن: جديد</option>
+                                <option value="processing" ${o.status==='processing'?'selected':''}>تحويل لتجهيز</option>
+                                <option value="deferred" ${o.status==='deferred'?'selected':''}>حجز مؤجل ⏳</option>
+                                <option value="no_answer" ${o.status==='no_answer'?'selected':''}>لم يتم الرد 📴</option>
+                                <option value="completed" ${o.status==='completed'?'selected':''}>تأكيد مكتمل</option>
+                                <option value="canceled" ${o.status==='canceled'?'selected':''}>إلغاء الطلب ❌</option>
+                                <option value="trash" class="text-red-500 font-black bg-red-50">حذف للسلة 🗑️</option>
+                            </select>
+                        </div>
                             <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
                                 <option value="new" ${o.status==='new'?'selected':''}>الآن: جديد</option>
                                 <option value="processing" ${o.status==='processing'?'selected':''}>تحويل لتجهيز</option>
@@ -1756,8 +1776,8 @@
                 await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(total), orders: firebase.firestore.FieldValue.increment(1) });
                 
                 let cleanPhoneForDB = phone.startsWith('0') ? phone : '0'+phone;
-                await db.collection('customers').doc(cleanPhoneForDB).set({ name: name, phone: cleanPhoneForDB, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-                
+                await db.collection('customers').doc(cleanPhoneForDB).set({ name: name, phone: cleanPhoneForDB, phone2: phone2, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+
                 if(batchId) {
                     let bookedUpdates = {};
                     Object.keys(batchUpdates).forEach(pId => { 
@@ -2533,14 +2553,16 @@ window.deleteProductUI = async (id) => {
                 await db.collection('orders').doc(orderId).update(updateData);
                 
                 let o = allOrdersRaw.find(x => x.id === orderId);
-                if(o && o.customerPhone && (field === 'customerName' || field === 'zone' || field === 'customerAddress')) {
+                if(o && o.customerPhone && (field === 'customerName' || field === 'zone' || field === 'customerAddress' || field === 'customerPhone2')) {
                     let cleanPhone = o.customerPhone.startsWith('0') ? o.customerPhone : '0' + o.customerPhone;
                     let custUpdate = {};
                     if(field === 'customerName') custUpdate.name = newVal;
                     if(field === 'zone') custUpdate.zone = newVal;
                     if(field === 'customerAddress') custUpdate.address = newVal;
+                    if(field === 'customerPhone2') custUpdate.phone2 = newVal;
                     await db.collection('customers').doc(cleanPhone).update(custUpdate).catch(()=>console.log("Customer doc might not exist"));
                 }
+
             } catch(e) {
                 alert("خطأ في حفظ التعديل الطاير!");
                 cancelInlineEdit(input, originalText, el);
