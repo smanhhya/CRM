@@ -941,9 +941,12 @@
             db.collection('customers').onSnapshot(snap => {
                 customersData = [];
                 snap.forEach(doc => customersData.push(doc.data()));
-                document.getElementById('dash-customers').innerText = customersData.length;
+                
+                let dashCust = document.getElementById('dash-customers');
+                if(dashCust) dashCust.innerText = customersData.length;
                 
                 customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0));
+
                 
                 let tbody = '';
                 customersData.forEach(c => {
