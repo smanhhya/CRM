@@ -1311,20 +1311,11 @@
                                 <option value="trash" class="text-red-500 font-black bg-red-50">حذف للسلة 🗑️</option>
                             </select>
                         </div>
-                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
-                                <option value="new" ${o.status==='new'?'selected':''}>الآن: جديد</option>
-                                <option value="processing" ${o.status==='processing'?'selected':''}>تحويل لتجهيز</option>
-                                <option value="deferred" ${o.status==='deferred'?'selected':''}>حجز مؤجل ⏳</option>
-                                <option value="no_answer" ${o.status==='no_answer'?'selected':''}>لم يتم الرد 📴</option>
-                                <option value="completed" ${o.status==='completed'?'selected':''}>تأكيد مكتمل</option>
-                                <option value="canceled" ${o.status==='canceled'?'selected':''}>إلغاء الطلب ❌</option>
-                                <option value="trash" class="text-red-500 font-black bg-red-50">حذف للسلة 🗑️</option>
-                            </select>
-                        </div>
                     </div>
                 </div>`;
             }).join('');
         };
+
 
             
 
