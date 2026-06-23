@@ -732,20 +732,30 @@
         // ==========================================
         window.normalizePhone = (phone) => {
             if (!phone) return '';
-            // 1. تحويل الأرقام العربي/الفارسي (٠-٩) إلى إنجليزي (0-9)
-            let normalized = phone.toString().replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660);
+            
+            // 1. تحويل الأرقام العربي (٠-٩) والفارسي (۰-۹) إلى إنجليزي (0-9)
+            let normalized = phone.toString()
+                .replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660)
+                .replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0); // إضافة الفارسي عشان لو كيبورد العميل مختلف
+            
             // 2. إزالة أي مسافات، أقواس، شرطات، أو علامة +
             normalized = normalized.replace(/\D/g, '');
-            // 3. توحيد كود الدولة لمصر (عشان لو متسجل 00201 أو 201 أو +201)
-            if (normalized.startsWith('0020')) {
-                normalized = '0' + normalized.substring(4);
-            } else if (normalized.startsWith('201')) {
-                normalized = '0' + normalized.substring(2);
-            } else if (normalized.length === 10 && normalized.startsWith('1')) {
-                normalized = '0' + normalized;
+            
+            // 3. توحيد كود الدولة لمصر 
+            // (ضفنا شرط الطول >= 10 عشان لو بتبحث بـ 3 أرقام بس زي "201" السيستم ميقصهاش ويعتبرها كود دولة)
+            if (normalized.length >= 10) {
+                if (normalized.startsWith('0020')) {
+                    normalized = '0' + normalized.substring(4);
+                } else if (normalized.startsWith('201')) {
+                    normalized = '0' + normalized.substring(2);
+                } else if (normalized.length === 10 && normalized.startsWith('1')) {
+                    normalized = '0' + normalized;
+                }
             }
+            
             return normalized;
         };
+
 
         // === 2. التحكم في الواجهة ===
         function toggleSidebar() {
@@ -1251,7 +1261,8 @@
                 let normPhone1 = window.normalizePhone(o.customerPhone);
                 let normPhone2 = window.normalizePhone(o.customerPhone2);
 
-                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString}`.toLowerCase();
+                // --- الإضافة هنا: زودنا (o.adminNote) و (o.driverNote) عشان يبحث جواهم ---
+                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString} ${o.adminNote || ''} ${o.driverNote || ''}`.toLowerCase();
                 
                 // الفلترة متعددة الكلمات مع تنظيف البحث نفسه
                 let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
@@ -1276,6 +1287,7 @@
                 }
                 return false;
             });
+
 
 
             // 💡 تحديث الأرقام (البادجات) اللي على الزراير فوراً بالعدد المفلتر الحقيقي
@@ -1522,15 +1534,23 @@
 
         window.filterCustomers = () => { 
             let rawFilter = document.getElementById('search-customer').value.toLowerCase().trim(); 
-            let normFilter = window.normalizePhone(rawFilter);
+            // قسمنا النص المكتوب لمجموعة كلمات عشان لو كاتب (محمد 010)
+            let filterWords = rawFilter.split(' ').filter(w => w.trim() !== '');
 
             document.querySelectorAll('.customer-row').forEach(row => { 
                 let searchData = row.getAttribute('data-search').toLowerCase(); 
-                // التعديل هنا: شيلنا شرط الـ 3 أرقام عشان يبحث بذكاء من أول ضغطة
-                let isMatch = searchData.includes(rawFilter) || (normFilter !== '' && searchData.includes(normFilter));
+                
+                // التعديل هنا: شيلنا شرط الـ 3 أرقام، وبدل ما يبحث بالنص كله حتة واحدة، بيبحث بكل كلمة لوحدها
+                let isMatch = filterWords.length === 0 ? true : filterWords.every(word => {
+                    let normWord = window.normalizePhone(word);
+                    // لو الكلمة موجودة زي ما هي (كإسم) أو موجودة كرقم بعد ما اتنظفت (عربي أو إنجليزي)
+                    return searchData.includes(word) || (normWord !== '' && searchData.includes(normWord));
+                });
+                
                 row.style.display = isMatch ? '' : 'none'; 
             }); 
         };
+
 
 
         
