@@ -1254,8 +1254,8 @@
                 let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => {
                     let normWord = window.normalizePhone(word);
-                    // بيبحث بالكلمة العادية، أو برقم التليفون المنظف لو اليوزر بيبحث برقم
-                    return searchStr.includes(word) || (normWord.length > 3 && searchStr.includes(normWord));
+                    // التعديل هنا: شيلنا شرط الـ 3 أرقام عشان يبحث بذكاء من أول ضغطة
+                    return searchStr.includes(word) || (normWord !== '' && searchStr.includes(normWord));
                 });
 
                 // سحر الفلاتر الذكية
@@ -1517,17 +1517,18 @@
             } catch(e) { alert("خطأ في الحذف النهائي!"); } 
         };
 
-        // === 6. أرشيف العملاء والكشكول ===
         window.filterCustomers = () => { 
-            let rawFilter = document.getElementById('search-customer').value.toLowerCase(); 
+            let rawFilter = document.getElementById('search-customer').value.toLowerCase().trim(); 
             let normFilter = window.normalizePhone(rawFilter);
 
             document.querySelectorAll('.customer-row').forEach(row => { 
                 let searchData = row.getAttribute('data-search').toLowerCase(); 
-                let isMatch = searchData.includes(rawFilter) || (normFilter.length > 3 && searchData.includes(normFilter));
+                // التعديل هنا: شيلنا شرط الـ 3 أرقام عشان يبحث بذكاء من أول ضغطة
+                let isMatch = searchData.includes(rawFilter) || (normFilter !== '' && searchData.includes(normFilter));
                 row.style.display = isMatch ? '' : 'none'; 
             }); 
         };
+
 
         
         window.openCustomerCard = async (phone) => {
