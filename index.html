@@ -2338,7 +2338,7 @@
             
             const btn = document.querySelector('button[onclick="document.getElementById(\'ticktick-file\').click()"]');
             const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري القراءة والفلترة بذكاء...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الفحص والدمج بذكاء...';
             btn.disabled = true;
 
             const reader = new FileReader();
@@ -2350,86 +2350,97 @@
                 Papa.parse(text, {
                     header: true, skipEmptyLines: true,
                     complete: function(results) {
-                        let parsedCustomers = [];
-                        const arabicToEnglish = str => str.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660);
+                        let smartCustomersMap = {}; 
+                        
+                        // 🔮 مفرمة الأرقام: تحويل كل الأرقام العربي والفارسي لإنجليزي
+                        const convertNumerals = str => str
+                            .replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660)
+                            .replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
+
+                        // كلمات بتكشف إن النص ده أوردر مش اسم شخص
+                        const orderKeywords = /(سوبر|جامبو|سبشيال|فرخ|جوز|طبق|بيض|كتكوت|كتاكيت|وزن|كيلو|صاحي|سعر|اوردر|طلب|دفعة)/i;
 
                         results.data.forEach(row => {
                             let title = row['Title'] || '';
                             let content = row['Content'] || '';
                             let zone = (row['Column Name'] && row['Column Name'] !== 'nan') ? row['Column Name'] : (row['List Name'] || '');
-                            if(!title) return;
+                            if(!title && !content) return;
                             
-                            let rawText = arabicToEnglish(title + " " + content);
-                            
-                            // بنشيل المسافات والشرطات والأقواس الأول عشان نجمع الرقم على بعضه لو متفرق
+                            // 1. تنظيف النص بالكامل وتحويل أرقامه لإنجليزي
+                            let rawText = convertNumerals(title + " \n " + content);
                             let textForRegex = rawText.replace(/[-+()\s]/g, '');
                             
+                            // 2. صائد الأرقام
                             let phone = '';
-                            let needsReview = false;
-
-                            // المحاولة الأولى: التقاط رقم مصري سليم (حتى لو فيه 0020 أو 20)
                             let perfectMatch = textForRegex.match(/(00201|201|01|1)[0125][0-9]{8}/);
-                            
                             if (perfectMatch) {
                                 phone = perfectMatch[0];
                                 if (phone.startsWith('0020')) phone = '0' + phone.substring(4);
                                 else if (phone.startsWith('20')) phone = '0' + phone.substring(2);
                                 else if (phone.length === 10 && phone.startsWith('1')) phone = '0' + phone;
                             } else {
-                                // المحاولة التانية: التقاط أي سلسلة أرقام متصلة طولها من 9 لـ 15 (عشان الأرقام المتلخبطة)
                                 let roughMatch = textForRegex.match(/\d{9,15}/);
-                                if (roughMatch) {
-                                    phone = roughMatch[0];
-                                    needsReview = true; // بنعلم عليه إنه محتاج مراجعة
-                                }
+                                if (roughMatch) phone = roughMatch[0];
                             }
 
+                            if(!phone || phone.length < 9) return; 
+
+                            // 3. صائد العناوين الذكي
                             let address = '';
-                            let addrMatch = content.match(/العنوان\s*[:：]\s*(.*?)(?=\n|$)/);
-                            if(addrMatch) address = addrMatch[1].trim();
-                            
-                            // التعديل الجديد: سحب تاريخ المهمة الأصلي من تيك تيك
-                            let taskDate = row['Created Time'] || row['Created Date'] || row['Start Date'] || '';
-                            let datePrefix = taskDate ? `[تاريخ الطلب القديم: ${taskDate.split('T')[0]}] ` : '';
-                            
-                            let notes = content.replace(/\n/g, ' | ').trim();
-                            notes = datePrefix + notes; // لزق التاريخ في أول الملاحظة
+                            let addrMatch = content.match(/(العنوان|شارع|بجوار|خلف|امام|عند|محل|صيدلية|مستشفى|موقف|عزبة|قرية)[^-\n\r]*/);
+                            if(addrMatch) address = addrMatch[0].replace(/العنوان\s*[:：]\s*/g, '').trim();
 
-                            if (needsReview) {
-                                notes = "⚠️ [محتاج تدقيق الرقم] | " + notes;
+                            // 4. صائد الأسماء (استبعاد الأوردرات)
+                            let cleanName = title.replace(/[0-9]/g, '').replace(/[-+()]/g, '').trim();
+                            if(orderKeywords.test(cleanName) || cleanName.length < 2) {
+                                let nameMatch = content.match(/الاسم\s*[:：]\s*([^\n\r]+)/);
+                                cleanName = nameMatch ? nameMatch[1].replace(/[0-9]/g, '').trim() : 'عميل غير محدد';
                             }
-                            
-                            // الحفظ لو لقينا أي رقم طوله من 9 لـ 15
-                            if(phone && phone.length >= 9 && phone.length <= 15) {
-                                // تنظيف اسم العميل من الأرقام الطويلة عشان الاسم يكون نضيف
-                                let cleanName = title.replace(/[٠-٩]/g, '').replace(/\d{9,15}/g, '').replace(/[-+()]/g, '').trim();
-                                
-                                parsedCustomers.push({ 
-                                    name: cleanName || 'عميل مستورد', 
+
+                            // 5. تظبيط السجل الزمني والملاحظات
+                            let taskDate = row['Created Time'] || row['Created Date'] || row['Start Date'] || '';
+                            let datePrefix = taskDate ? `[أوردر قديم: ${taskDate.split('T')[0]}] ` : '';
+                            let notes = datePrefix + (title + " | " + content).replace(/\n/g, ' - ').replace(/\r/g, ' ').trim();
+
+                            // 6. عملية الدمج الكبرى للمتكررين
+                            if(smartCustomersMap[phone]) {
+                                smartCustomersMap[phone].ordersCount += 1;
+                                smartCustomersMap[phone].adminNotes += `\n\n${notes}`;
+                                if(!smartCustomersMap[phone].address && address) smartCustomersMap[phone].address = address;
+                                if(smartCustomersMap[phone].name === 'عميل غير محدد' && cleanName !== 'عميل غير محدد') {
+                                    smartCustomersMap[phone].name = cleanName;
+                                }
+                            } else {
+                                smartCustomersMap[phone] = { 
+                                    name: cleanName, 
                                     phone: phone, 
                                     zone: zone, 
                                     address: address, 
-                                    adminNotes: notes 
-                                });
+                                    adminNotes: notes,
+                                    ordersCount: 1 
+                                };
                             }
                         });
+                        
+                        let finalCustomersList = Object.values(smartCustomersMap);
                         
                         btn.innerHTML = originalHtml; btn.disabled = false;
                         document.getElementById('ticktick-file').value = ''; 
                         
-                        if(parsedCustomers.length === 0) {
-                            alert("لم يتم العثور على أرقام هواتف صالحة في الملف نهائياً!");
+                        if(finalCustomersList.length === 0) {
+                            alert("لم يتم العثور على أرقام هواتف صالحة في الملف!");
                             return;
                         }
                         
-                        if(confirm(`تم استخراج وفلترة [ ${parsedCustomers.length} ] عميل بنجاح!\nالأرقام السليمة، الأرقام اللي محتاجة تدقيق، وتواريخ الطلبات القديمة كلها اتجمعت.\n\nهل تريد حفظهم في أرشيف الموقع على فايربيس الآن؟`)) {
-                            uploadTickTickToFirebase(parsedCustomers);
+                        if(confirm(`تم فلترة ودمج الداتا بذكاء! 🚀\nالنتيجة: [ ${finalCustomersList.length} ] عميل صافي بعد دمج طلباتهم.\nهل تريد رفعهم لأرشيف السيستم الآن؟`)) {
+                            uploadTickTickToFirebase(finalCustomersList);
                         }
                     }
                 });
             };
             reader.readAsText(file);
         };
+
 
 
         window.uploadTickTickToFirebase = async (customers) => {
