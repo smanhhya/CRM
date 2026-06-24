@@ -3259,6 +3259,7 @@ window.deleteProductUI = async (id) => {
             }, 300);
         };
 
+        let renderTimeout;
         window.scheduleSystemRender = () => {
             clearTimeout(renderTimeout);
             renderTimeout = setTimeout(() => {
@@ -3270,6 +3271,14 @@ window.deleteProductUI = async (id) => {
         // 📦 نظام أرشيف الدفعات والتقارير الختامية 📦
         // ==========================================
         let archivedBatchesData = [];
+        
+        // استدعاء الأرشيف من قاعدة البيانات
+        db.collection('archived_batches').orderBy('archivedAt', 'desc').onSnapshot(snap => {
+            archivedBatchesData = [];
+            snap.forEach(doc => archivedBatchesData.push({id: doc.id, ...doc.data()}));
+            renderArchiveUI();
+        });
+
         
         // استدعاء الأرشيف من قاعدة البيانات
         db.collection('archived_batches').orderBy('archivedAt', 'desc').onSnapshot(snap => {
