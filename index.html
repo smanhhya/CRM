@@ -1839,6 +1839,97 @@
                 } catch(e) { alert("خطأ في التعديل"); }
             }
         };
+        // ==========================================
+        // إدارة الأرقام الإضافية للعملاء
+        // ==========================================
+        let currentViewedCustomerPhone = null; 
+
+        window.addAltPhoneToCustomer = async () => {
+            if(!currentViewedCustomerPhone) return alert("برجاء فتح ملف العميل أولاً.");
+            
+            const input = document.getElementById('new-alt-phone');
+            let newPhone = input.value.trim();
+            
+            // تنظيف الرقم لتوحيد الصيغة
+            newPhone = window.normalizePhone(newPhone);
+            if(!newPhone || newPhone.length < 10) {
+                alert("برجاء إدخال رقم موبايل صحيح (10 أرقام على الأقل).");
+                return;
+            }
+
+            let btn = document.querySelector('button[onclick="addAltPhoneToCustomer()"]');
+            let originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; btn.disabled = true;
+
+            try {
+                let cleanPhoneDb = currentViewedCustomerPhone.startsWith('0') ? currentViewedCustomerPhone : '0' + currentViewedCustomerPhone;
+                const customerRef = db.collection('customers').doc(cleanPhoneDb);
+                
+                // إضافة الرقم للمصفوفة (arrayUnion تمنع التكرار)
+                await customerRef.update({
+                    altPhones: firebase.firestore.FieldValue.arrayUnion(newPhone)
+                });
+                
+                input.value = '';
+                renderAltPhonesList(currentViewedCustomerPhone); // تحديث فوري
+            } catch (error) {
+                console.error(error);
+                alert("حدث خطأ أثناء حفظ الرقم!");
+            }
+            btn.innerHTML = originalText; btn.disabled = false;
+        };
+
+        window.removeAltPhone = async (phoneToRemove) => {
+            if(!currentViewedCustomerPhone) return;
+            if(!confirm(`هل أنت متأكد من حذف الرقم ${phoneToRemove}؟`)) return;
+
+            try {
+                let cleanPhoneDb = currentViewedCustomerPhone.startsWith('0') ? currentViewedCustomerPhone : '0' + currentViewedCustomerPhone;
+                const customerRef = db.collection('customers').doc(cleanPhoneDb);
+                
+                await customerRef.update({
+                    altPhones: firebase.firestore.FieldValue.arrayRemove(phoneToRemove)
+                });
+                renderAltPhonesList(currentViewedCustomerPhone); // تحديث فوري
+            } catch (error) {
+                alert("حدث خطأ أثناء الحذف!");
+            }
+        };
+
+        window.renderAltPhonesList = async (customerPhone) => {
+            currentViewedCustomerPhone = customerPhone; 
+            const list = document.getElementById('alt-phones-list');
+            list.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-slate-300 text-xs"></i>';
+            
+            try {
+                let cleanPhoneDb = customerPhone.startsWith('0') ? customerPhone : '0' + customerPhone;
+                const doc = await db.collection('customers').doc(cleanPhoneDb).get();
+                
+                if(doc.exists) {
+                    const data = doc.data();
+                    const altPhonesArray = data.altPhones || [];
+                    
+                    if(altPhonesArray.length === 0) {
+                        list.innerHTML = '<span class="text-[10px] text-slate-400 font-bold">لا يوجد أرقام إضافية مسجلة حالياً.</span>';
+                        return;
+                    }
+
+                    list.innerHTML = altPhonesArray.map(phone => `
+                        <div class="flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 pl-1 pr-3 py-1 rounded-lg shadow-sm">
+                            <a href="tel:${phone}" class="text-[11px] font-black text-indigo-700 tracking-widest hover:text-indigo-900 transition-colors" dir="ltr">${phone}</a>
+                            <div class="w-px h-3 bg-indigo-200 mx-0.5"></div>
+                            <button onclick="removeAltPhone('${phone}')" class="text-indigo-300 hover:text-red-500 w-5 h-5 flex items-center justify-center rounded hover:bg-white transition-colors" title="حذف">
+                                <i class="fa-solid fa-xmark text-[10px]"></i>
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    list.innerHTML = '<span class="text-[10px] text-slate-400 font-bold">لم يتم العثور على بيانات العميل.</span>';
+                }
+            } catch(e) {
+                list.innerHTML = '<span class="text-[10px] text-red-400 font-bold">خطأ في التحميل!</span>';
+            }
+        };
 
         // === 7. إنشاء طلب جديد (الخصم الصارم للدفعة والمخزن) ===
         window.generateDynamicOrderInputs = () => {
