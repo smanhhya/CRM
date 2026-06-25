@@ -3388,12 +3388,6 @@ window.deleteProductUI = async (id) => {
         });
 
         
-        // استدعاء الأرشيف من قاعدة البيانات
-        db.collection('archived_batches').orderBy('archivedAt', 'desc').onSnapshot(snap => {
-            archivedBatchesData = [];
-            snap.forEach(doc => archivedBatchesData.push({id: doc.id, ...doc.data()}));
-            renderArchiveUI();
-        });
 
         // دالة الترحيل للأرشيف
         window.archiveBatch = async (bId) => {
