@@ -1767,7 +1767,12 @@
                         }
                     }).join('');
                 }
+                }
             } catch(e) { tlDiv.innerHTML = '<p class="text-xs text-red-500 text-center font-bold">حدث خطأ في جلب الأرشيف!</p>'; }
+            
+            // السطر الجديد لجلب الأرقام الإضافية
+            renderAltPhonesList(c.phone); 
+
             openModal('customer-modal');
         };
 
