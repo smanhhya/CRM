@@ -1057,8 +1057,14 @@
                     if(c.address) location += ' - ' + c.address;
                     let details = c.notebook ? `<div class="text-[10px] text-amber-600 font-bold mt-1.5 max-w-[180px] truncate mx-auto bg-amber-50 px-2 py-1 rounded" title="${c.notebook}"><i class="fa-solid fa-book"></i> نوت: ${c.notebook}</div>` : '';
                     
-                    // السطر ده بينظف رقم العميل عشان البحث يلقطه بأي شكل
+                    // السطر ده بينظف الأرقام كلها عشان البحث يلقطها
                     let normPhone = window.normalizePhone(c.phone);
+                    let normPhone2 = window.normalizePhone(c.phone2 || '');
+                    let altPhonesStr = (c.altPhones || []).join(' ');
+
+                    tbody += `
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${c.phone2 || ''} ${normPhone2} ${altPhonesStr} ${location} ${c.notebook || ''}">
+
 
                     tbody += `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location} ${c.notebook || ''}">
@@ -1356,7 +1362,9 @@
                 
                 let c = customersData[i];
                 let normPhone = window.normalizePhone(c.phone);
-                let fullString = `${c.name || ''} ${c.phone || ''} ${normPhone}`.toLowerCase();
+                let normPhone2 = window.normalizePhone(c.phone2 || '');
+                let altPhonesStr = (c.altPhones || []).join(' ');
+                let fullString = `${c.name || ''} ${c.phone || ''} ${normPhone} ${c.phone2 || ''} ${normPhone2} ${altPhonesStr}`.toLowerCase();
                 
                 if (fullString.includes(searchWord) || (normWordNum !== '' && fullString.includes(normWordNum))) {
                     foundMatch = true;
@@ -3002,7 +3010,10 @@ window.deleteProductUI = async (id) => {
 
         window.saveInlineEdit = async (input, orderId, field, originalText, el) => {
             let newVal = input.value.trim();
+            if(field === 'customerPhone' || field === 'customerPhone2') newVal = window.normalizePhone(newVal);
+
             if (newVal === originalText || newVal === '') {
+
                 cancelInlineEdit(input, originalText, el);
                 return;
             }
