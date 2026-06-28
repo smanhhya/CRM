@@ -229,6 +229,8 @@
                     <button onclick="setOrderTab('all')" id="tab-all" class="order-tab active whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-slate-800 text-white transition-all shadow-sm">الكل</button>
                     <button onclick="setOrderTab('new')" id="tab-new" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">جديد <span id="badge-new" class="ml-1.5 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
                     <button onclick="setOrderTab('processing')" id="tab-processing" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">قيد التجهيز <span id="badge-processing" class="ml-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
+                    <button onclick="setOrderTab('dispatched')" id="tab-dispatched" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">في الطريق 🛵 <span id="badge-dispatched" class="ml-1.5 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
+
                     <button onclick="setOrderTab('deferred')" id="tab-deferred" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مؤجل ⏳ <span id="badge-deferred" class="ml-1.5 bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>                  
                     <button onclick="setOrderTab('no_answer')" id="tab-no_answer" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">لم يتم الرد 📴 <span id="badge-no_answer" class="ml-1.5 bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
                     <button onclick="setOrderTab('completed')" id="tab-completed" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مكتمل <span id="badge-completed" class="ml-1.5 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
@@ -946,9 +948,10 @@
 
             db.collection('orders').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
                 // --- 1. الأساسيات اللي السيستم كله قايم عليها (ممنوع المساس بيها) ---
-                let counts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+                let counts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
                 allOrdersRaw = []; 
                 dispatchOrdersRaw = [];
+
                 
                 // --- 2. متغيرات لوحة القيادة الجديدة المخصصة لليوم الفعلي ---
                 let todayCompletedOrdersCount = 0;
@@ -1032,13 +1035,14 @@
                 }
 
                 // --- 4. تحديث الأساسيات (أرقام التبويبات الحية) ---
-                ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { 
+                ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed'].forEach(s => { 
                     let b = document.getElementById(`badge-${s}`); 
                     if(b) b.innerText = counts[s]; 
                 });
                 
                 scheduleSystemRender();
             });
+
 
 
             db.collection('customers').onSnapshot(snap => {
@@ -1163,7 +1167,8 @@
             
             allOrdersRaw.forEach(o => {
                 // 💡 السر هنا: الشاشة هتقرأ الطلبات الحية فقط! (المكتمل والملغي هيختفوا عشان الشاشة تنظف نفسها)
-                if(['new', 'processing', 'deferred', 'no_answer'].includes(o.status)) {
+                if(['new', 'processing', 'dispatched', 'deferred', 'no_answer'].includes(o.status)) {
+
                     
                     totalOrders++;
                     totalRevenue += Number(o.total) || 0;
@@ -1514,9 +1519,10 @@
                 
                 let sBadge = o.status==='new' ? '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جديد</span>' : 
                             (o.status==='processing' ? '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جاري التجهيز</span>' : 
+                            (o.status==='dispatched' ? '<span class="bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-lg text-[10px] font-black"><i class="fa-solid fa-motorcycle mr-1"></i> في الطريق</span>' : 
                             (o.status==='no_answer' ? '<span class="bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-lg text-[10px] font-black"><i class="fa-solid fa-phone-slash mr-1"></i> لم يتم الرد</span>' : 
                             (o.status==='completed' ? '<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-lg text-[10px] font-black">مكتمل</span>' : 
-                            '<span class="bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black">ملغي</span>')));
+                            '<span class="bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black">ملغي</span>'))));
                 
                 let customTagHtml = o.customTag ? `<span onclick="document.getElementById('search-order').value='${o.customTag}'; renderOrdersList();" class="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-purple-500 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه المجموعة"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
                 let batchTagHtml = o.batchName ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
@@ -1600,6 +1606,8 @@
                             </div>
                             <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
                                 <option value="new" ${o.status==='new'?'selected':''}>الآن: جديد</option>
+                                <option value="dispatched" ${o.status==='dispatched'?'selected':''}>في الطريق 🛵</option>
+
                                 <option value="processing" ${o.status==='processing'?'selected':''}>تحويل لتجهيز</option>
                                 <option value="deferred" ${o.status==='deferred'?'selected':''}>حجز مؤجل ⏳</option>
                                 <option value="no_answer" ${o.status==='no_answer'?'selected':''}>لم يتم الرد 📴</option>
@@ -2429,18 +2437,10 @@
             if(!window.pendingDispatchData) return;
             let data = window.pendingDispatchData;
             for (let id of data.selectedIds) { 
-                try { await db.collection('orders').doc(id).update({ driverName: data.driverName, status: 'processing' }); } catch(e) { } 
+                try { await db.collection('orders').doc(id).update({ driverName: data.driverName, status: 'dispatched' }); } catch(e) { } 
             }
             window.pendingDispatchData = null; // تفريغ البيانات بعد التنفيذ
         };
-
-
-
-
-            
-
-
-
 
         window.toggleOrderDetails = (detailsId, iconId) => { 
             const detailsDiv = document.getElementById(detailsId); 
@@ -3736,7 +3736,7 @@ window.deleteProductUI = async (id) => {
                 
                 // 🧊 سحر الفريزر: الخصم والإرجاع الأوتوماتيك 🧊
                 // 💡 التعديل هنا: ضفنا 'deferred' عشان تتخصم، ولو نقلنا من deferred لـ processing مش هيخصم تاني!
-                let deductingStates = ['processing', 'completed', 'deferred'];
+                let deductingStates = ['processing', 'dispatched', 'completed', 'deferred'];
                 let wasInFreezer = deductingStates.includes(oldStatus);
                 let isNowInFreezer = deductingStates.includes(s);
 
@@ -3796,8 +3796,9 @@ window.deleteProductUI = async (id) => {
                     let o = allOrdersRaw.find(x => x.id === id);
                     if(o && o.items) {
                         // 💡 التعديل هنا برضو
-                        let wasIn = ['processing', 'completed', 'deferred'].includes(o.status);
-                        let isNowIn = ['processing', 'completed', 'deferred'].includes(newStatus);
+                        let wasIn = ['processing', 'dispatched', 'completed', 'deferred'].includes(o.status);
+                        let isNowIn = ['processing', 'dispatched', 'completed', 'deferred'].includes(newStatus);
+
                         
                         if (!wasIn && isNowIn) {
                             o.items.forEach(i => fzBulkUpdates[i.id] = (fzBulkUpdates[i.id] || 0) - i.quantity);
