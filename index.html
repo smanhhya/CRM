@@ -414,6 +414,30 @@
 
         </div>
     </main>
+    <div id="order-tracking-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-route text-brand-primary mr-2"></i> رحلة وتفاصيل الطلب</h3>
+                <button onclick="closeModal('order-tracking-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/50">
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm mb-6">
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 id="trk-cust-name" class="font-black text-slate-800 text-sm">اسم العميل</h4>
+                        <span id="trk-total" class="font-black text-brand-primary text-lg">0 ج</span>
+                    </div>
+                    <p id="trk-cust-phone" class="text-xs font-bold text-slate-500 mb-1" dir="ltr"></p>
+                    <p id="trk-address" class="text-[11px] text-slate-500 font-bold leading-relaxed"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> <span id="trk-address-text"></span></p>
+                    <div id="trk-items" class="mt-3 pt-3 border-t border-slate-50 flex flex-wrap gap-1.5"></div>
+                </div>
+
+                <h4 class="font-black text-sm text-slate-800 mb-4"><i class="fa-solid fa-clock-rotate-left text-slate-400 mr-2"></i> السجل الزمني للحالة</h4>
+                <div id="trk-timeline" class="space-y-4 pl-2 border-r-2 border-slate-200/50 pr-4">
+                    </div>
+            </div>
+        </div>
+    </div>
 
     <div id="edit-order-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[75] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
@@ -1645,7 +1669,9 @@
                             `<button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`
                             }
                             <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-pen"></i> تعديل</button>
+                            <button onclick="openOrderTracking('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 px-3 py-1.5 rounded-lg font-bold border border-sky-200 transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-route"></i> تتبع</button>
                         </div>
+
 
                         <div class="flex items-center justify-between w-full sm:w-auto gap-3">
                             <div class="flex flex-col items-end">
@@ -2960,6 +2986,60 @@ window.deleteProductUI = async (id) => {
 
         // === 12. دوال نافذة (تعديل الطلب) ===
         let editingOrderData = null;
+        window.openOrderTracking = (orderId) => {
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            if (!order) {
+                alert("لم يتم العثور على تفاصيل هذا الطلب حالياً.");
+                return;
+            }
+
+            document.getElementById('trk-cust-name').innerText = order.customerName || 'بدون اسم';
+            document.getElementById('trk-cust-phone').innerText = order.customerPhone || '';
+            document.getElementById('trk-address-text').innerText = (order.zone || '') + ' - ' + (order.customerAddress || '');
+            document.getElementById('trk-total').innerText = `${order.total} ج`;
+
+            let itemsHtml = order.items ? order.items.map(i => `<span class="bg-slate-100 px-2 py-1 rounded text-[10px] font-black text-slate-600 border border-slate-200">${i.quantity}x ${i.name}</span>`).join('') : '';
+            document.getElementById('trk-items').innerHTML = itemsHtml;
+
+            let timelineHtml = '';
+            
+            // 1. تاريخ الإنشاء
+            let createdAtStr = order.createdAt ? new Date(order.createdAt.toMillis()).toLocaleString('ar-EG', { hour12: true, hour: 'numeric', minute: 'numeric', month: 'numeric', day: 'numeric' }) : order.orderDate;
+            timelineHtml += createTimelineNode('fa-cart-plus', 'text-blue-500', 'bg-blue-50', 'border-blue-200', 'تم إنشاء الطلب', createdAtStr, 'بواسطة النظام الإداري');
+
+            // 2. خروج للتوصيل
+            if (order.dispatchedAt) {
+                let dispatchStr = new Date(order.dispatchedAt.toMillis()).toLocaleString('ar-EG', { hour12: true, hour: 'numeric', minute: 'numeric', month: 'numeric', day: 'numeric' });
+                let driverInfo = order.driverName ? `مع المندوب: <span class="text-indigo-700">${order.driverName}</span>` : 'تم التوجيه للمندوب';
+                timelineHtml += createTimelineNode('fa-motorcycle', 'text-indigo-500', 'bg-indigo-50', 'border-indigo-200', 'في الطريق للعميل', dispatchStr, driverInfo);
+            }
+
+            // 3. الاكتمال أو الإلغاء
+            if (order.status === 'completed' && order.completedAt) {
+                let completeStr = new Date(order.completedAt.toMillis()).toLocaleString('ar-EG', { hour12: true, hour: 'numeric', minute: 'numeric', month: 'numeric', day: 'numeric' });
+                timelineHtml += createTimelineNode('fa-check-double', 'text-emerald-500', 'bg-emerald-50', 'border-emerald-200', 'تم التسليم والتحصيل', completeStr, 'تم إغلاق الأوردر بنجاح');
+            } else if (order.status === 'canceled' && order.canceledAt) {
+                let cancelStr = new Date(order.canceledAt.toMillis()).toLocaleString('ar-EG', { hour12: true, hour: 'numeric', minute: 'numeric', month: 'numeric', day: 'numeric' });
+                timelineHtml += createTimelineNode('fa-ban', 'text-red-500', 'bg-red-50', 'border-red-200', 'تم إلغاء الطلب', cancelStr, order.adminNote || 'بدون تفاصيل إضافية');
+            }
+
+            document.getElementById('trk-timeline').innerHTML = timelineHtml;
+            openModal('order-tracking-modal');
+        };
+
+        function createTimelineNode(icon, iconColor, bgColor, borderColor, title, time, details) {
+            return `
+            <div class="relative mb-5 pl-4">
+                <span class="absolute -right-[23px] top-1 w-4 h-4 ${bgColor} border-4 border-white rounded-full shadow-sm"></span>
+                <div class="bg-white border ${borderColor} p-3 rounded-xl shadow-sm">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-xs font-black text-slate-800"><i class="fa-solid ${icon} ${iconColor} mr-1"></i> ${title}</span>
+                        <span class="text-[9px] text-slate-400 font-bold" dir="ltr">${time}</span>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-600 mt-1">${details}</p>
+                </div>
+            </div>`;
+        }
 
         window.openEditOrderModal = (id) => {
             editingOrderData = allOrdersRaw.find(o => o.id === id); if(!editingOrderData) return;
