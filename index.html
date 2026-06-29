@@ -3844,7 +3844,7 @@ window.deleteProductUI = async (id) => {
             } catch(e) { console.log("خطأ في تحديث الفريزر"); }
         };
 
-        // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر 🌟
+        // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر مع توثيق السجل الزمني 🌟
         window.updateOrderStatus = async (id, s) => { 
             let o = allOrdersRaw.find(x => x.id === id);
             if(!o) return;
@@ -3855,12 +3855,18 @@ window.deleteProductUI = async (id) => {
             
             try { 
                 let updateData = { status: s };
-                if (s === 'trash') updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
                 
-                // 💡 التعديل الجديد عشان نحسب مبيعات اليوم الفعلي وقت التسليم 💡
+                // --- الإضافات الجديدة: تسجيل الوقت الدقيق للخط الزمني بدقة السيرفر ---
+                if (s === 'trash') updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
+                if (s === 'dispatched') updateData.dispatchedAt = firebase.firestore.FieldValue.serverTimestamp();
+                if (s === 'canceled') updateData.canceledAt = firebase.firestore.FieldValue.serverTimestamp();
+                
+                // 💡 حساب مبيعات اليوم الفعلي وقت التسليم + توثيق وقت التسليم للخط الزمني 💡
                 if (s === 'completed') {
                     updateData.completedAtStr = new Date().toLocaleDateString('en-US');
+                    updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
                 }
+                // ---------------------------------------------------------
 
                 await db.collection('orders').doc(id).update(updateData); 
                 
@@ -3902,6 +3908,7 @@ window.deleteProductUI = async (id) => {
                 }
             } catch(e) { alert("حدث خطأ أثناء تغيير الحالة!"); }
         };
+
 
 
         window.bulkChangeStatus = async (newStatus) => {
