@@ -233,47 +233,62 @@
             
 
 
-            <div id="view-orders" class="page-view h-full flex flex-col max-w-7xl mx-auto">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-white p-2 md:p-3 rounded-2xl shadow-soft border border-slate-100">
-                    <div class="relative w-full md:flex-1">
-                        <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
-                        <input type="search" id="search-order" onkeyup="scheduleSearch()" placeholder="بحث بالاسم، الموبايل، الهاشتاج أو الأصناف..." class="w-full pl-4 pr-11 py-2.5 rounded-xl border-none outline-none text-sm font-bold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-primary/20 transition-all">
-                    </div>
-                    <div class="flex gap-2 w-full md:w-auto shrink-0">
-                        <button onclick="openFreezerModal()" class="flex-1 md:flex-none bg-cyan-50 text-cyan-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-cyan-100 transition-colors flex items-center justify-center gap-2 border border-cyan-100 shadow-sm"><i class="fa-solid fa-snowflake"></i> <span class="hidden md:inline">الفريزر</span></button>
-                        <button onclick="openPackingListModal()" class="flex-1 md:flex-none bg-amber-50 text-amber-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 border border-amber-100 shadow-sm"><i class="fa-solid fa-box-open"></i> <span class="hidden md:inline">ورقة التحضير</span></button>
-                        <button onclick="openModal('analysis-modal')" class="flex-1 md:flex-none bg-indigo-50 text-indigo-600 px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2 border border-indigo-100"><i class="fa-solid fa-chart-pie"></i> <span class="hidden md:inline">التحليل</span></button>
-                        <button onclick="openDispatchModal()" class="flex-1 md:flex-none bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-motorcycle"></i> <span class="hidden md:inline">التوجيه</span></button>
-                    </div>
-
-                </div>
-
-                <div class="flex gap-2 overflow-x-auto custom-scroll pb-3 mb-2 shrink-0 px-1">
-                    <button onclick="setOrderTab('all')" id="tab-all" class="order-tab active whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-slate-800 text-white transition-all shadow-sm">الكل</button>
-                    <button onclick="setOrderTab('new')" id="tab-new" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">جديد <span id="badge-new" class="ml-1.5 bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
-                    <button onclick="setOrderTab('processing')" id="tab-processing" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">قيد التجهيز <span id="badge-processing" class="ml-1.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
-                    <button onclick="setOrderTab('dispatched')" id="tab-dispatched" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">في الطريق 🛵 <span id="badge-dispatched" class="ml-1.5 bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
-
-                    <button onclick="setOrderTab('deferred')" id="tab-deferred" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مؤجل ⏳ <span id="badge-deferred" class="ml-1.5 bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>                  
-                    <button onclick="setOrderTab('no_answer')" id="tab-no_answer" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">لم يتم الرد 📴 <span id="badge-no_answer" class="ml-1.5 bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
-                    <button onclick="setOrderTab('completed')" id="tab-completed" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مكتمل <span id="badge-completed" class="ml-1.5 bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[10px]">0</span></button>
-                    <button onclick="setOrderTab('canceled')" id="tab-canceled" class="order-tab whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">ملغي</button>
-                </div>
-
+            <div id="view-orders" class="page-view h-full flex flex-col max-w-7xl mx-auto relative">
                 
-                <div id="bulk-actions-bar" class="hidden bg-slate-800 text-white p-3 rounded-2xl mb-4 shadow-lg flex justify-between items-center transition-all">
-                    <div class="text-sm font-bold flex items-center gap-2">
-                        <span id="bulk-count" class="bg-brand-primary px-2.5 py-0.5 rounded-lg text-xs">0</span> طلب محدد
+                <div class="sticky top-[-1rem] lg:top-[-2rem] z-40 bg-[#f1f5f9]/95 backdrop-blur-md pt-4 pb-3 -mx-4 px-4 lg:-mx-8 lg:px-8 border-b border-slate-200/60 shadow-sm mb-4">
+                    
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-3 mb-3">
+                        <div class="relative w-full md:flex-1">
+                            <div class="absolute right-3 top-2.5 w-7 h-7 bg-brand-primary/10 rounded-lg flex items-center justify-center pointer-events-none">
+                                <i class="fa-solid fa-search text-brand-primary text-xs"></i>
+                            </div>
+                            <button onclick="document.getElementById('search-order').value=''; scheduleSearch();" class="absolute left-3 top-2.5 w-7 h-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center transition-colors">
+                                <i class="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                            <input type="search" id="search-order" onkeyup="scheduleSearch()" placeholder="بحث سريع في الطلبات (اسم، موبايل، صنف)..." class="w-full pr-12 pl-12 py-3 rounded-xl border border-slate-200 outline-none text-sm font-black bg-white focus:ring-2 focus:ring-brand-primary/30 transition-all shadow-sm">
+                        </div>
+                        
+                        <div class="relative w-full md:w-auto shrink-0 group">
+                            <button class="w-full md:w-auto bg-slate-800 text-white px-5 py-3 rounded-xl text-sm font-bold shadow-md hover:bg-slate-900 transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-toolbox text-amber-400"></i> أدوات التشغيل <i class="fa-solid fa-chevron-down text-[10px] ml-1 opacity-70"></i>
+                            </button>
+                            <div class="hidden group-hover:flex flex-col absolute left-0 top-full mt-1 w-full md:w-56 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50">
+                                <button onclick="openDispatchModal()" class="flex items-center gap-2 px-4 py-3 hover:bg-blue-50 text-slate-700 font-bold text-sm text-right transition-colors border-b border-slate-50"><i class="fa-solid fa-motorcycle text-blue-500 w-5 text-center"></i> التوجيه للمندوب</button>
+                                <button onclick="openPackingListModal()" class="flex items-center gap-2 px-4 py-3 hover:bg-amber-50 text-slate-700 font-bold text-sm text-right transition-colors border-b border-slate-50"><i class="fa-solid fa-box-open text-amber-500 w-5 text-center"></i> ورقة التحضير</button>
+                                <button onclick="openFreezerModal()" class="flex items-center gap-2 px-4 py-3 hover:bg-cyan-50 text-slate-700 font-bold text-sm text-right transition-colors border-b border-slate-50"><i class="fa-solid fa-snowflake text-cyan-500 w-5 text-center"></i> مخزن الفريزر</button>
+                                <button onclick="openModal('analysis-modal')" class="flex items-center gap-2 px-4 py-3 hover:bg-indigo-50 text-slate-700 font-bold text-sm text-right transition-colors"><i class="fa-solid fa-chart-pie text-indigo-500 w-5 text-center"></i> التحليل التفصيلي</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="bulkChangeStatus('processing')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-xl text-xs font-black transition-colors">تحويل لتجهيز</button>
-                        <button onclick="bulkChangeStatus('no_answer')" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-xl text-xs font-black transition-colors">لم يتم الرد</button>
-                        <button onclick="bulkChangeStatus('completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-black transition-colors">تأكيد مكتمل</button>
+
+                    <div class="flex gap-2 overflow-x-auto custom-scroll pb-1 shrink-0 px-1">
+                        <button onclick="setOrderTab('all')" id="tab-all" class="order-tab active whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-slate-800 text-white transition-all shadow-sm">الكل</button>
+                        <button onclick="setOrderTab('new')" id="tab-new" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">جديد <span id="badge-new" class="ml-1 bg-blue-100 text-blue-700 px-1.5 rounded-full text-[10px]">0</span></button>
+                        <button onclick="setOrderTab('processing')" id="tab-processing" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">تجهيز <span id="badge-processing" class="ml-1 bg-amber-100 text-amber-700 px-1.5 rounded-full text-[10px]">0</span></button>
+                        <button onclick="setOrderTab('dispatched')" id="tab-dispatched" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">في الطريق <span id="badge-dispatched" class="ml-1 bg-indigo-100 text-indigo-700 px-1.5 rounded-full text-[10px]">0</span></button>
+                        <button onclick="setOrderTab('deferred')" id="tab-deferred" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مؤجل <span id="badge-deferred" class="ml-1 bg-orange-100 text-orange-700 px-1.5 rounded-full text-[10px]">0</span></button>                  
+                        <button onclick="setOrderTab('no_answer')" id="tab-no_answer" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">لم يرد <span id="badge-no_answer" class="ml-1 bg-purple-100 text-purple-700 px-1.5 rounded-full text-[10px]">0</span></button>
+                        <button onclick="setOrderTab('completed')" id="tab-completed" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مكتمل <span id="badge-completed" class="ml-1 bg-emerald-100 text-emerald-700 px-1.5 rounded-full text-[10px]">0</span></button>
+                        <button onclick="setOrderTab('canceled')" id="tab-canceled" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">ملغي</button>
+                    </div>
+
+                    <div id="bulk-actions-bar" class="hidden bg-slate-800 text-white p-2 rounded-xl mt-3 shadow-lg flex justify-between items-center transition-all border border-slate-700">
+                        <div class="text-[11px] font-bold flex items-center gap-2 pl-2">
+                            <span id="bulk-count" class="bg-brand-primary px-2 py-0.5 rounded text-[10px]">0</span> محدد
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button onclick="bulkChangeStatus('processing')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm">لتجهيز</button>
+                            <button onclick="bulkChangeStatus('no_answer')" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm">لم يرد</button>
+                            <button onclick="bulkChangeStatus('completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm">مكتمل</button>
+                            <div class="w-px h-6 bg-slate-600 mx-0.5 hidden sm:block"></div>
+                            <button onclick="bulkChangeStatus('trash')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm"><i class="fa-solid fa-trash"></i> للسلة</button>
+                        </div>
                     </div>
                 </div>
 
-                <div id="orders-list-vertical" class="flex-1 overflow-y-auto custom-scroll space-y-4 pr-1 pb-4"></div>
+                <div id="orders-list-vertical" class="flex-1 space-y-3 pr-1 pb-4"></div>
             </div>
+
 
             <div id="view-customers" class="page-view h-full flex flex-col max-w-7xl mx-auto">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 w-full bg-white p-3 rounded-2xl shadow-soft border border-slate-100">
@@ -972,101 +987,113 @@
                 renderBatchesUI();
             });
 
-            db.collection('orders').orderBy('createdAt', 'desc').limit(150).onSnapshot(snap => {
-                // --- 1. الأساسيات اللي السيستم كله قايم عليها (ممنوع المساس بيها) ---
-                let counts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
-                allOrdersRaw = []; 
-                dispatchOrdersRaw = [];
+            // 💡 جلب الطلبات بذكاء: هنجيب آخر 150 طلب (للمكتمل والملغي)، وكل الطلبات الحية (عشان مفيش أوردر قديم يضيع)
+            const recentOrdersQuery = db.collection('orders').orderBy('createdAt', 'desc').limit(150);
+            const activeOrdersQuery = db.collection('orders').where('status', 'in', ['new', 'processing', 'dispatched', 'deferred', 'no_answer']);
 
-                
-                // --- 2. متغيرات لوحة القيادة الجديدة المخصصة لليوم الفعلي ---
-                let todayCompletedOrdersCount = 0;
-                let todayProductsRevenue = 0;
-                let todayDeliveryRevenue = 0;
-                let todayTotalRevenue = 0;
-                let todayItemsSold = {}; 
-                let todayOrdersList = []; // السجل التفصيلي لعملاء اليوم
+            recentOrdersQuery.onSnapshot(recentSnap => {
+                activeOrdersQuery.onSnapshot(activeSnap => {
+                    // --- 1. الأساسيات اللي السيستم كله قايم عليها (ممنوع المساس بيها) ---
+                    let counts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+                    allOrdersRaw = []; 
+                    dispatchOrdersRaw = [];
 
-                const nowStr = new Date().toLocaleDateString('en-US'); 
-
-                snap.forEach(doc => {
-                    const o = doc.data(); 
-                    const id = doc.id; 
-                    const stat = o.status || 'new';
+                    // دمج الاستعلامين مع منع التكرار
+                    let ordersMap = {};
+                    recentSnap.forEach(doc => ordersMap[doc.id] = {id: doc.id, ...doc.data()});
+                    activeSnap.forEach(doc => ordersMap[doc.id] = {id: doc.id, ...doc.data()});
                     
-                    // تغذية الأساسيات (لشاشات الطلبات والتوجيه)
-                    allOrdersRaw.push({id, ...o});
-                    if (stat === 'processing') dispatchOrdersRaw.push({id, ...o}); 
-                    if (counts[stat] !== undefined) counts[stat]++;
+                    let mergedOrders = Object.values(ordersMap);
+                    // ترتيب الأوردرات من الأحدث للأقدم زي ما السيستم متعود
+                    mergedOrders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
-                    // حسابات لوحة القيادة (مبنية على تاريخ الاكتمال الفعلي)
-                    if (stat === 'completed' && o.completedAtStr === nowStr) {
-                        todayCompletedOrdersCount++;
-                        todayProductsRevenue += Number(o.subtotal) || 0; 
-                        todayDeliveryRevenue += Number(o.deliveryFee) || 0; 
-                        todayTotalRevenue += Number(o.total) || 0;
+                    // --- 2. متغيرات لوحة القيادة الجديدة المخصصة لليوم الفعلي ---
+                    let todayCompletedOrdersCount = 0;
+                    let todayProductsRevenue = 0;
+                    let todayDeliveryRevenue = 0;
+                    let todayTotalRevenue = 0;
+                    let todayItemsSold = {}; 
+                    let todayOrdersList = []; // السجل التفصيلي لعملاء اليوم
+
+                    const nowStr = new Date().toLocaleDateString('en-US'); 
+
+                    mergedOrders.forEach(o => {
+                        const stat = o.status || 'new';
                         
-                        // تجميع المنتجات
-                        if(o.items && Array.isArray(o.items)){
-                            o.items.forEach(i => {
-                                todayItemsSold[i.name] = (todayItemsSold[i.name] || 0) + i.quantity;
-                            });
+                        // تغذية الأساسيات (لشاشات الطلبات والتوجيه)
+                        allOrdersRaw.push(o);
+                        if (stat === 'processing') dispatchOrdersRaw.push(o); 
+                        if (counts[stat] !== undefined) counts[stat]++;
+
+                        // حسابات لوحة القيادة (مبنية على تاريخ الاكتمال الفعلي)
+                        if (stat === 'completed' && o.completedAtStr === nowStr) {
+                            todayCompletedOrdersCount++;
+                            todayProductsRevenue += Number(o.subtotal) || 0; 
+                            todayDeliveryRevenue += Number(o.deliveryFee) || 0; 
+                            todayTotalRevenue += Number(o.total) || 0;
+                            
+                            // تجميع المنتجات
+                            if(o.items && Array.isArray(o.items)){
+                                o.items.forEach(i => {
+                                    todayItemsSold[i.name] = (todayItemsSold[i.name] || 0) + i.quantity;
+                                });
+                            }
+                            
+                            // إضافة الأوردر للقائمة عشان الجدول التفصيلي
+                            todayOrdersList.push(o); 
                         }
-                        
-                        // إضافة الأوردر للقائمة عشان الجدول التفصيلي
-                        todayOrdersList.push(o); 
+                    });
+
+                    // --- 3. تحديث واجهة لوحة القيادة (Dashboard UI) ---
+                    
+                    // الكروت العلوية الأربعة (استخدمت if checks كحماية إضافية للأساسيات)
+                    let elCompleted = document.getElementById('dash-completed-today');
+                    if(elCompleted) elCompleted.innerText = todayCompletedOrdersCount;
+                    
+                    let elProducts = document.getElementById('dash-products-today');
+                    if(elProducts) elProducts.innerHTML = `${todayProductsRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                    
+                    let elDelivery = document.getElementById('dash-delivery-today');
+                    if(elDelivery) elDelivery.innerHTML = `${todayDeliveryRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                    
+                    let elTotal = document.getElementById('dash-total-today');
+                    if(elTotal) elTotal.innerHTML = `${todayTotalRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                    
+                    // تفصيل المنتجات المجمعة
+                    let itemsHtml = Object.keys(todayItemsSold).sort((a,b) => todayItemsSold[b] - todayItemsSold[a]).map(itemName => 
+                        `<div class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-lg font-black text-brand-primary">${todayItemsSold[itemName]}</span></div>`
+                    ).join('');
+                    let dashItems = document.getElementById('dash-items-today');
+                    if(dashItems) dashItems.innerHTML = itemsHtml || '<div class="col-span-full text-center text-slate-400 text-xs font-bold mt-4">لم يتم تسليم منتجات اليوم حتى الآن.</div>';
+
+                    // الجدول التفصيلي (مين استلم إيه النهاردة)
+                    let tableBodyHtml = todayOrdersList.map(o => {
+                        let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `<span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold inline-block m-0.5 border border-emerald-100">${i.quantity}x ${i.name}</span>`).join('') : '-';
+                        return `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 border-b border-slate-50">
+                                <div class="font-black text-slate-800">${o.customerName || 'بدون اسم'}</div>
+                                <div class="text-[10px] font-bold text-slate-400" dir="ltr">${o.customerPhone || ''}</div>
+                            </td>
+                            <td class="py-3 px-4 border-b border-slate-50 text-center whitespace-normal min-w-[200px] leading-loose">${itemsStr}</td>
+                            <td class="py-3 px-4 border-b border-slate-50 text-center font-bold text-slate-500 text-xs">${o.orderDate || 'غير محدد'}</td>
+                            <td class="py-3 px-4 border-b border-slate-50 text-center font-black text-brand-primary text-base">${o.total} ج</td>
+                        </tr>`;
+                    }).join('');
+                    
+                    let tbodyEl = document.getElementById('dash-today-orders-tbody');
+                    if(tbodyEl) {
+                        tbodyEl.innerHTML = tableBodyHtml || `<tr><td colspan="4" class="text-center py-8 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد طلبات تم تسليمها اليوم.</td></tr>`;
                     }
+
+                    // --- 4. تحديث الأساسيات (أرقام التبويبات الحية) ---
+                    ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed'].forEach(s => { 
+                        let b = document.getElementById(`badge-${s}`); 
+                        if(b) b.innerText = counts[s]; 
+                    });
+                    
+                    scheduleSystemRender();
                 });
-
-                // --- 3. تحديث واجهة لوحة القيادة (Dashboard UI) ---
-                
-                // الكروت العلوية الأربعة (استخدمت if checks كحماية إضافية للأساسيات)
-                let elCompleted = document.getElementById('dash-completed-today');
-                if(elCompleted) elCompleted.innerText = todayCompletedOrdersCount;
-                
-                let elProducts = document.getElementById('dash-products-today');
-                if(elProducts) elProducts.innerHTML = `${todayProductsRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
-                
-                let elDelivery = document.getElementById('dash-delivery-today');
-                if(elDelivery) elDelivery.innerHTML = `${todayDeliveryRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
-                
-                let elTotal = document.getElementById('dash-total-today');
-                if(elTotal) elTotal.innerHTML = `${todayTotalRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
-                
-                // تفصيل المنتجات المجمعة
-                let itemsHtml = Object.keys(todayItemsSold).sort((a,b) => todayItemsSold[b] - todayItemsSold[a]).map(itemName => 
-                    `<div class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-lg font-black text-brand-primary">${todayItemsSold[itemName]}</span></div>`
-                ).join('');
-                let dashItems = document.getElementById('dash-items-today');
-                if(dashItems) dashItems.innerHTML = itemsHtml || '<div class="col-span-full text-center text-slate-400 text-xs font-bold mt-4">لم يتم تسليم منتجات اليوم حتى الآن.</div>';
-
-                // الجدول التفصيلي (مين استلم إيه النهاردة)
-                let tableBodyHtml = todayOrdersList.map(o => {
-                    let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `<span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold inline-block m-0.5 border border-emerald-100">${i.quantity}x ${i.name}</span>`).join('') : '-';
-                    return `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="py-3 px-4 border-b border-slate-50">
-                            <div class="font-black text-slate-800">${o.customerName || 'بدون اسم'}</div>
-                            <div class="text-[10px] font-bold text-slate-400" dir="ltr">${o.customerPhone || ''}</div>
-                        </td>
-                        <td class="py-3 px-4 border-b border-slate-50 text-center whitespace-normal min-w-[200px] leading-loose">${itemsStr}</td>
-                        <td class="py-3 px-4 border-b border-slate-50 text-center font-bold text-slate-500 text-xs">${o.orderDate || 'غير محدد'}</td>
-                        <td class="py-3 px-4 border-b border-slate-50 text-center font-black text-brand-primary text-base">${o.total} ج</td>
-                    </tr>`;
-                }).join('');
-                
-                let tbodyEl = document.getElementById('dash-today-orders-tbody');
-                if(tbodyEl) {
-                    tbodyEl.innerHTML = tableBodyHtml || `<tr><td colspan="4" class="text-center py-8 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد طلبات تم تسليمها اليوم.</td></tr>`;
-                }
-
-                // --- 4. تحديث الأساسيات (أرقام التبويبات الحية) ---
-                ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed'].forEach(s => { 
-                    let b = document.getElementById(`badge-${s}`); 
-                    if(b) b.innerText = counts[s]; 
-                });
-                
-                scheduleSystemRender();
             });
 
 
@@ -1561,91 +1588,86 @@
                     </span>` : '';
 
                 return `
-                <div data-id="${o.id}" class="order-card bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 hover:shadow-card transition-all hover:-translate-y-0.5 relative group">
-                    <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-5 left-4 w-5 h-5 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
-                    <div class="flex justify-between items-start mb-3 pl-8">
+                <div data-id="${o.id}" class="order-card bg-white p-3.5 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group">
+                    <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-3 left-3 w-4 h-4 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
+                    
+                    <div class="flex justify-between items-start mb-1.5 pl-6">
                         <div>
-                            <h5 class="font-black text-slate-800 text-base flex flex-wrap items-center gap-2.5 mb-1.5">
+                            <h5 class="font-black text-slate-800 text-sm flex flex-wrap items-center gap-1.5 mb-1">
                                 <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed select-none" onclick="smartNameClick(this, '${o.id}', '${o.customerPhone}', 'customerName')" title="اضغط مرة لفتح ملف العميل.. مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
-                                <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-6 h-6 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[10px]"></i></a>
-                                <span class="text-[11px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
+                                <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-5 h-5 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[9px]"></i></a>
+                                <span class="text-[10px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
                                 ${phone2Html}
                             </h5>
 
-                            <p class="text-xs text-slate-500 font-bold mb-2.5 flex items-center gap-1 flex-wrap">
+                            <p class="text-[10px] text-slate-500 font-bold flex items-center gap-1 flex-wrap">
                                 <i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> 
-                                <span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'zone')" title="تعديل المنطقة السريع">${o.zone || 'غير مسجل'}</span> 
-                                ${o.customerAddress ? `<span class="mx-1">-</span><span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerAddress')" title="تعديل العنوان التفصيلي">${o.customerAddress}</span>` : ''}
+                                <span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'zone')">${o.zone || 'غير مسجل'}</span> 
+                                ${o.customerAddress ? `<span class="mx-1">-</span><span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerAddress')">${o.customerAddress}</span>` : ''}
                             </p>
-                            <div class="flex flex-wrap gap-1.5">
-                                ${batchTagHtml}
-                                ${customTagHtml}
-                            </div>
                         </div>
-                        <div class="flex flex-col items-end gap-2">
+                        <div class="flex flex-col items-end gap-1.5">
                             ${sBadge}
-                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${d}</span>
+                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">${d}</span>
                         </div>
                     </div>
                     
-<div class="bg-slate-50/80 p-3 rounded-xl border border-slate-100/50 mb-3 flex flex-wrap gap-2">
-    ${itemsStr}
-    
-    <!-- هنا الجزء الجديد اللي هيظهر آخر ملاحظة -->
-    ${(o.adminNote || o.driverNote) ? `
-    <div class="w-full mt-2 pt-2 border-t border-slate-200/50">
-        <p class="text-[10px] font-black text-slate-500 mb-0.5">آخر ملاحظة:</p>
-        <p class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 italic">
-            ${o.adminNote ? o.adminNote.split('\n---\n').pop().substring(0, 45) + (o.adminNote.length > 45 ? '...' : '') : o.driverNote.split('\n---\n').pop().substring(0, 45) + '...'}
-        </p>
-    </div>` : ''}
-</div>
+                    <div class="flex flex-wrap gap-1 mb-1.5">
+                        ${batchTagHtml} ${customTagHtml}
+                    </div>
 
+                    <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5">
+                        ${itemsStr}
+                        ${(o.adminNote || o.driverNote) ? `
+                        <div class="w-full mt-1.5 pt-1.5 border-t border-slate-200/50">
+                            <p class="text-[9px] font-black text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100 italic truncate" title="${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}">
+                                <i class="fa-solid fa-circle-exclamation mr-1"></i> ${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}
+                            </p>
+                        </div>` : ''}
+                    </div>
 
-                    
-                    <div class="flex flex-wrap gap-2 mb-3">
-                        <button onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية')" class="flex-1 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors px-3 py-2 rounded-xl flex items-center justify-between shadow-sm group">
-                            <span class="text-[10px] font-black text-amber-700"><i class="fa-solid fa-lock mr-1"></i> إداري (سري)</span>
-                            ${o.adminNote ? `<span class="bg-amber-200 text-amber-800 text-[10px] font-black px-1.5 py-0.5 rounded">${o.adminNote.split('\n---\n').length} ملاحظة</span>` : '<span class="text-[10px] font-black text-amber-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <button onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية')" class="flex-1 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
+                            <span class="text-[9px] font-black text-amber-700"><i class="fa-solid fa-lock mr-1"></i> إداري</span>
+                            ${o.adminNote ? `<span class="bg-amber-200 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.adminNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-amber-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
                         </button>
-                        <button onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" class="flex-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors px-3 py-2 rounded-xl flex items-center justify-between shadow-sm group">
-                            <span class="text-[10px] font-black text-blue-700"><i class="fa-solid fa-motorcycle mr-1"></i> للمندوب</span>
-                            ${o.driverNote ? `<span class="bg-blue-200 text-blue-800 text-[10px] font-black px-1.5 py-0.5 rounded">${o.driverNote.split('\n---\n').length} ملاحظة</span>` : '<span class="text-[10px] font-black text-blue-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
+                        <button onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" class="flex-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
+                            <span class="text-[9px] font-black text-blue-700"><i class="fa-solid fa-motorcycle mr-1"></i> للمندوب</span>
+                            ${o.driverNote ? `<span class="bg-blue-200 text-blue-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.driverNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-blue-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
                         </button>
                     </div>
 
-
-                    <div class="flex flex-col sm:flex-row justify-between items-center pt-3 border-t border-slate-100 gap-4 mt-1">
-                        <div class="flex gap-2 w-full sm:w-auto">
+                    <div class="flex flex-col sm:flex-row justify-between items-center pt-2 border-t border-slate-100 gap-3">
+                        <div class="flex gap-1.5 w-full sm:w-auto">
                             ${o.status === 'completed' ? 
-                            `<button onclick="sendFollowUpWhatsApp('${o.customerPhone}', '${o.customerName}')" class="flex-1 sm:flex-none text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm shadow-indigo-500/30 flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-heart-circle-check"></i> متابعة العميل</button>` 
+                            `<button onclick="sendFollowUpWhatsApp('${o.customerPhone}', '${o.customerName}')" class="flex-1 sm:flex-none text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-heart-circle-check"></i> متابعة</button>` 
                             : 
-                            `<button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-xs bg-[#25D366] hover:bg-[#1ebd57] text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`
+                            `<button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`
                             }
-                            <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-xs bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-pen text-[10px]"></i> تعديل</button>
+                            <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-pen"></i> تعديل</button>
                         </div>
 
-                        <div class="flex items-center justify-between w-full sm:w-auto gap-5">
+                        <div class="flex items-center justify-between w-full sm:w-auto gap-3">
                             <div class="flex flex-col items-end">
-                                ${o.discount > 0 ? `<span class="bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded text-[10px] font-black mb-1 animate-pulse"><i class="fa-solid fa-gift mr-1"></i> خصم: ${o.discount} ج</span>` : ''}
-                                <span class="font-black text-brand-primary text-2xl tracking-tight">${o.total || 0} <span class="text-sm text-slate-400">ج</span></span>
+                                ${o.discount > 0 ? `<span class="bg-red-50 text-red-600 border border-red-100 px-1 py-0.5 rounded text-[8px] font-black"><i class="fa-solid fa-gift mr-0.5"></i> خصم: ${o.discount} ج</span>` : ''}
+                                <span class="font-black text-brand-primary text-lg tracking-tight">${o.total || 0} <span class="text-[10px] text-slate-400">ج</span></span>
                             </div>
-                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-2.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
-                                <option value="new" ${o.status==='new'?'selected':''}>الآن: جديد</option>
-                                <option value="dispatched" ${o.status==='dispatched'?'selected':''}>في الطريق 🛵</option>
-
-                                <option value="processing" ${o.status==='processing'?'selected':''}>تحويل لتجهيز</option>
-                                <option value="deferred" ${o.status==='deferred'?'selected':''}>حجز مؤجل ⏳</option>
-                                <option value="no_answer" ${o.status==='no_answer'?'selected':''}>لم يتم الرد 📴</option>
-                                <option value="completed" ${o.status==='completed'?'selected':''}>تأكيد مكتمل</option>
-                                <option value="canceled" ${o.status==='canceled'?'selected':''}>إلغاء الطلب ❌</option>
-                                <option value="trash" class="text-red-500 font-black bg-red-50">حذف للسلة 🗑️</option>
+                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-[10px] font-bold bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
+                                <option value="new" ${o.status==='new'?'selected':''}>جديد</option>
+                                <option value="dispatched" ${o.status==='dispatched'?'selected':''}>بالطريق</option>
+                                <option value="processing" ${o.status==='processing'?'selected':''}>تجهيز</option>
+                                <option value="deferred" ${o.status==='deferred'?'selected':''}>مؤجل</option>
+                                <option value="no_answer" ${o.status==='no_answer'?'selected':''}>لم يرد</option>
+                                <option value="completed" ${o.status==='completed'?'selected':''}>مكتمل</option>
+                                <option value="canceled" ${o.status==='canceled'?'selected':''}>إلغاء</option>
+                                <option value="trash" class="text-red-500 font-black bg-red-50">سلة</option>
                             </select>
                         </div>
                     </div>
                 </div>`;
             }).join('');
         };
+
            
 
         window.openNoteOptions = (id) => {
