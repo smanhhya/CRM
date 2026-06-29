@@ -1070,17 +1070,16 @@
                     let tableBodyHtml = todayOrdersList.map(o => {
                         let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `<span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold inline-block m-0.5 border border-emerald-100">${i.quantity}x ${i.name}</span>`).join('') : '-';
                         return `
-                        <tr class="hover:bg-slate-100 transition-colors cursor-pointer group">
-                            <td class="py-3 px-4 border-b border-slate-50" onclick="openCustomerCard('${o.customerPhone}')" title="اضغط لفتح ملف العميل">
-                                <div class="font-black text-slate-800 group-hover:text-brand-primary transition-colors">${o.customerName || 'بدون اسم'}</div>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 border-b border-slate-50">
+                                <div class="font-black text-slate-800">${o.customerName || 'بدون اسم'}</div>
                                 <div class="text-[10px] font-bold text-slate-400" dir="ltr">${o.customerPhone || ''}</div>
                             </td>
-                            <td class="py-3 px-4 border-b border-slate-50 text-center whitespace-normal min-w-[200px] leading-loose" onclick="openEditOrderModal('${o.id}')" title="اضغط لفتح تفاصيل الطلب">${itemsStr}</td>
-                            <td class="py-3 px-4 border-b border-slate-50 text-center font-bold text-slate-500 text-xs" onclick="openEditOrderModal('${o.id}')">${o.orderDate || 'غير محدد'}</td>
-                            <td class="py-3 px-4 border-b border-slate-50 text-center font-black text-brand-primary text-base" onclick="openEditOrderModal('${o.id}')">${o.total} ج</td>
+                            <td class="py-3 px-4 border-b border-slate-50 text-center whitespace-normal min-w-[200px] leading-loose">${itemsStr}</td>
+                            <td class="py-3 px-4 border-b border-slate-50 text-center font-bold text-slate-500 text-xs">${o.orderDate || 'غير محدد'}</td>
+                            <td class="py-3 px-4 border-b border-slate-50 text-center font-black text-brand-primary text-base">${o.total} ج</td>
                         </tr>`;
                     }).join('');
-
                     
                     let tbodyEl = document.getElementById('dash-today-orders-tbody');
                     if(tbodyEl) {
@@ -1617,10 +1616,9 @@
                         ${batchTagHtml} ${customTagHtml}
                     </div>
 
-                    <div onclick="openEditOrderModal('${o.id}')" class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5 cursor-pointer hover:bg-white hover:border-brand-primary transition-all shadow-sm group" title="اضغط لفتح الأوردر وتعديله">
+                    <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5">
                         ${itemsStr}
                         ${(o.adminNote || o.driverNote) ? `
-
                         <div class="w-full mt-1.5 pt-1.5 border-t border-slate-200/50">
                             <p class="text-[9px] font-black text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100 italic truncate" title="${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}">
                                 <i class="fa-solid fa-circle-exclamation mr-1"></i> ${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}
@@ -2797,7 +2795,7 @@
                     let itemsStr = o.items ? o.items.map(i => `<span class="bg-indigo-50 px-2.5 py-1 rounded-lg text-indigo-700 font-black border border-indigo-100 whitespace-nowrap shadow-sm">${i.quantity}x ${i.name}</span>`).join(' ') : ''; 
                     let locationStr = `${o.zone || 'بدون منطقة'} ${o.customerAddress ? '- ' + o.customerAddress : ''}`; 
                     totalMoney += Number(o.total) || 0; 
-                    tableHtml += `<tr class="hover:bg-slate-100 transition-colors cursor-pointer group" onclick="openEditOrderModal('${o.id}')" title="اضغط لفتح الطلب للرؤية أو التعديل"><td class="p-4"><div class="font-black text-slate-800 text-sm mb-1 group-hover:text-brand-primary transition-colors">${o.customerName}</div><div class="text-[10px] text-slate-500 font-bold"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${locationStr}</div></td><td class="p-4 font-black text-slate-600 text-xs" dir="ltr">${o.customerPhone}</td><td class="p-4 flex flex-wrap gap-1.5 mt-1.5">${itemsStr}</td><td class="p-4 font-black text-brand-primary text-center text-lg">${o.total} <span class="text-xs">ج</span></td><td class="p-4 text-[10px] font-bold text-amber-600 max-w-[150px] leading-relaxed">${o.adminNote || '-'}</td></tr>`; <div class="text-[10px] text-slate-500 font-bold"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${locationStr}</div></td><td class="p-4 font-black text-slate-600 text-xs" dir="ltr">${o.customerPhone}</td><td class="p-4 flex flex-wrap gap-1.5 mt-1.5">${itemsStr}</td><td class="p-4 font-black text-brand-primary text-center text-lg">${o.total} <span class="text-xs">ج</span></td><td class="p-4 text-[10px] font-bold text-amber-600 max-w-[150px] leading-relaxed">${o.adminNote || '-'}</td></tr>`; 
+                    tableHtml += `<tr class="hover:bg-slate-50/50 transition-colors"><td class="p-4"><div class="font-black text-slate-800 text-sm mb-1">${o.customerName}</div><div class="text-[10px] text-slate-500 font-bold"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${locationStr}</div></td><td class="p-4 font-black text-slate-600 text-xs" dir="ltr">${o.customerPhone}</td><td class="p-4 flex flex-wrap gap-1.5 mt-1.5">${itemsStr}</td><td class="p-4 font-black text-brand-primary text-center text-lg">${o.total} <span class="text-xs">ج</span></td><td class="p-4 text-[10px] font-bold text-amber-600 max-w-[150px] leading-relaxed">${o.adminNote || '-'}</td></tr>`; 
                 }); 
                 tableHtml += `</tbody></table></div>`;
                 
@@ -4134,7 +4132,7 @@ window.deleteProductUI = async (id) => {
                             ${typeBadge}
                         </div>
                     </div>
-                    <div onclick="openEditOrderModal('${n.orderId}')" class="text-xs font-bold text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed mb-3 cursor-pointer hover:bg-white hover:border-brand-primary hover:shadow-md transition-all" title="اضغط لفتح الطلب وتعديله">${window.formatTags(n.content)}</div>
+                    <div class="text-xs font-bold text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed mb-3">${window.formatTags(n.content)}</div>
                     <div class="flex justify-end gap-2">
                         <button onclick="openEditOrderModal('${n.orderId}')" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-1.5 rounded-lg text-[10px] font-black shadow-sm transition-all flex items-center gap-1.5"><i class="fa-solid fa-folder-open"></i> فتح الطلب للتعديل</button>
                     </div>
