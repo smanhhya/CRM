@@ -101,7 +101,8 @@
             <div class="pt-2 pb-2 px-2 text-[10px] uppercase font-black text-emerald-300/50 tracking-wider">المبيعات والعملاء</div>
             <button onclick="switchTab('orders', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-bolt w-7 text-center text-amber-400"></i> الطلبات الحية</button>
             <button onclick="switchTab('customers', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-users w-7 text-center text-blue-400"></i> أرشيف العملاء</button>
-            
+            <button onclick="switchTab('notes', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-clipboard-list w-7 text-center text-rose-400"></i> مركز الملاحظات</button>
+
             <div class="pt-6 pb-2 px-2 text-[10px] uppercase font-black text-emerald-300/50 tracking-wider">التحكم والتجهيز</div>
             <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-boxes-packing w-7 text-center text-indigo-400"></i> الأصناف والأسعار</button>
             <button onclick="switchTab('batches', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-layer-group w-7 text-center text-teal-400"></i> إدارة الدفعات</button>
@@ -207,6 +208,28 @@
                 </div>
             </div>
 
+            <!-- شاشة مركز الملاحظات الذكي (إضافة جديدة فقط) -->
+            <div id="view-notes" class="page-view h-full flex flex-col max-w-7xl mx-auto space-y-4">
+                <div class="bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
+                    <div>
+                        <h2 class="text-xl font-black text-slate-800"><i class="fa-solid fa-comments text-rose-500 mr-2"></i> مركز الملاحظات الذكي</h2>
+                        <p class="text-xs text-slate-500 font-bold mt-1">تجميع وتحليل فوري لكل الملاحظات (إداري ومندوب) المكتوبة في الطلبات الحية.</p>
+                    </div>
+                    <div class="relative w-full md:w-1/2">
+                        <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
+                        <input type="search" id="search-notes" onkeyup="renderNotesUI()" placeholder="ابحث بكلمة (مستعجل، مشكلة)، أو اسم العميل..." class="w-full pl-4 pr-11 py-2.5 rounded-xl border-none outline-none text-sm font-bold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-rose-200 transition-all">
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 overflow-x-auto custom-scroll pb-2 shrink-0 px-1">
+                    <button onclick="setNotesFilter('all')" id="n-filter-all" class="notes-filter-btn active whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-white transition-all shadow-sm">الكل</button>
+                    <button onclick="setNotesFilter('urgent')" id="n-filter-urgent" class="notes-filter-btn whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-bolt text-amber-500 mr-1"></i> عاجل ومستعجل</button>
+                    <button onclick="setNotesFilter('problem')" id="n-filter-problem" class="notes-filter-btn whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-triangle-exclamation text-red-500 mr-1"></i> مشاكل وشكاوى</button>
+                    <button onclick="setNotesFilter('driver')" id="n-filter-driver" class="notes-filter-btn whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all"><i class="fa-solid fa-motorcycle text-blue-500 mr-1"></i> للمندوب</button>
+                </div>
+
+                <div id="notes-list-container" class="flex-1 overflow-y-auto custom-scroll space-y-3 pr-1 pb-4"></div>
+            </div>
             
 
 
@@ -884,8 +907,11 @@
                 saveBtn.classList.add('hidden'); 
             }
             if(tabId === 'trash') renderTrashUI();            
+            if(tabId === 'notes') renderNotesUI();
+
             if(window.innerWidth < 768) toggleSidebar();
         }
+
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -3508,8 +3534,10 @@ window.deleteProductUI = async (id) => {
             renderTimeout = setTimeout(() => {
                 renderOrdersList();
                 updateBatchSummary();
+                if(document.getElementById('view-notes').classList.contains('active')) renderNotesUI();
             }, 150); 
         };
+
         // ==========================================
         // 📦 نظام أرشيف الدفعات والتقارير الختامية 📦
         // ==========================================
@@ -3981,6 +4009,116 @@ window.deleteProductUI = async (id) => {
                     .catch(err => console.log('PWA Error: ', err));
             });
         }
+        // ==========================================
+        // 💬 نظام مركز الملاحظات الذكي 💬
+        // ==========================================
+        let currentNotesFilter = 'all';
+
+        window.setNotesFilter = (filter) => {
+            currentNotesFilter = filter;
+            document.querySelectorAll('.notes-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-white', 'shadow-sm');
+                btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+            });
+            let activeBtn = document.getElementById('n-filter-' + filter);
+            if(activeBtn) {
+                activeBtn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                activeBtn.classList.add('bg-slate-800', 'text-white', 'shadow-sm');
+            }
+            renderNotesUI();
+        };
+
+        window.renderNotesUI = () => {
+            const container = document.getElementById('notes-list-container');
+            if(!container) return;
+
+            let searchTerm = (document.getElementById('search-notes').value || '').toLowerCase().trim();
+            let allNotes = [];
+
+            // تجميع الملاحظات من الطلبات الحية
+            allOrdersRaw.forEach(o => {
+                if (o.status === 'trash' || o.status === 'completed' || o.status === 'canceled') return; 
+                
+                // ملاحظات الإدارة
+                if (o.adminNote) {
+                    let chunks = o.adminNote.split('\n---\n').filter(c => c.trim() !== '');
+                    chunks.forEach(chunk => {
+                        allNotes.push({ orderId: o.id, customerName: o.customerName || 'بدون اسم', customerPhone: o.customerPhone || '', status: o.status, type: 'admin', content: chunk, rawContent: chunk.toLowerCase(), timestamp: o.createdAt?.toMillis() || 0 });
+                    });
+                }
+                
+                // ملاحظات المندوب
+                if (o.driverNote) {
+                    let chunks = o.driverNote.split('\n---\n').filter(c => c.trim() !== '');
+                    chunks.forEach(chunk => {
+                        allNotes.push({ orderId: o.id, customerName: o.customerName || 'بدون اسم', customerPhone: o.customerPhone || '', status: o.status, type: 'driver', content: chunk, rawContent: chunk.toLowerCase(), timestamp: o.createdAt?.toMillis() || 0 });
+                    });
+                }
+            });
+
+            // فلترة ذكية
+            let filteredNotes = allNotes.filter(n => {
+                let matchSearch = true;
+                if (searchTerm) {
+                    matchSearch = n.rawContent.includes(searchTerm) || n.customerName.toLowerCase().includes(searchTerm) || n.customerPhone.includes(searchTerm);
+                }
+
+                let matchCategory = true;
+                let urgentWords = ['مستعجل', 'بسرعة', 'ضروري', 'عاجل', 'بدري', 'الصبح', 'بكره'];
+                let problemWords = ['مشكلة', 'شكوى', 'ناقص', 'تالف', 'غلط', 'سيء', 'رفض', 'مرتجع'];
+
+                if (currentNotesFilter === 'urgent') {
+                    matchCategory = urgentWords.some(w => n.rawContent.includes(w));
+                } else if (currentNotesFilter === 'problem') {
+                    matchCategory = problemWords.some(w => n.rawContent.includes(w));
+                } else if (currentNotesFilter === 'driver') {
+                    matchCategory = n.type === 'driver';
+                }
+
+                return matchSearch && matchCategory;
+            });
+
+            if (filteredNotes.length === 0) {
+                container.innerHTML = '<div class="text-center py-16 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لا توجد ملاحظات تطابق بحثك حالياً.</div>';
+                return;
+            }
+
+            // ترتيب الملاحظات وعرضها
+            let html = '';
+            filteredNotes.reverse().forEach(n => {
+                let typeBadge = n.type === 'admin' 
+                    ? '<span class="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-black"><i class="fa-solid fa-lock mr-1"></i> إداري</span>'
+                    : '<span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[10px] font-black"><i class="fa-solid fa-motorcycle mr-1"></i> للمندوب</span>';
+                
+                let sBadge = n.status==='new' ? '<span class="text-blue-500 bg-blue-50 px-1.5 rounded border border-blue-100">جديد</span>' : 
+                            (n.status==='processing' ? '<span class="text-amber-500 bg-amber-50 px-1.5 rounded border border-amber-100">تجهيز</span>' : 
+                            (n.status==='dispatched' ? '<span class="text-indigo-500 bg-indigo-50 px-1.5 rounded border border-indigo-100">بالطريق</span>' : 
+                            '<span class="text-purple-500 bg-purple-50 px-1.5 rounded border border-purple-100">مؤجل/لم يرد</span>'));
+
+                let isUrgent = ['مستعجل', 'عاجل', 'ضروري'].some(w => n.rawContent.includes(w));
+                let borderGlow = isUrgent ? 'border-r-4 border-r-red-500 bg-red-50/20' : 'border-r-4 border-r-transparent hover:border-r-slate-300';
+
+                html += `
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm transition-all ${borderGlow}">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h5 class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors inline-block" onclick="openCustomerCard('${n.customerPhone}')">${n.customerName}</h5>
+                            <span class="text-[10px] text-slate-500 font-bold ml-2" dir="ltr">${n.customerPhone}</span>
+                        </div>
+                        <div class="flex gap-2 items-center">
+                            <span class="text-[10px] font-bold">${sBadge}</span>
+                            ${typeBadge}
+                        </div>
+                    </div>
+                    <div class="text-xs font-bold text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 whitespace-pre-wrap leading-relaxed mb-3">${window.formatTags(n.content)}</div>
+                    <div class="flex justify-end gap-2">
+                        <button onclick="openEditOrderModal('${n.orderId}')" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-1.5 rounded-lg text-[10px] font-black shadow-sm transition-all flex items-center gap-1.5"><i class="fa-solid fa-folder-open"></i> فتح الطلب للتعديل</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        };
+
     </script>
 
 </body>
