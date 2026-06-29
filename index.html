@@ -235,7 +235,7 @@
 
             <div id="view-orders" class="page-view h-full flex flex-col max-w-7xl mx-auto relative">
                 
-                <div id="smart-sticky-header" class="sticky top-0 z-40 bg-[#f1f5f9]/95 backdrop-blur-md pt-4 pb-3 -mx-4 px-4 lg:-mx-8 lg:px-8 border-b border-slate-200/60 shadow-sm mb-4 transition-transform duration-300">
+                <div class="sticky top-[-1rem] lg:top-[-2rem] z-40 bg-[#f1f5f9]/95 backdrop-blur-md pt-4 pb-3 -mx-4 px-4 lg:-mx-8 lg:px-8 border-b border-slate-200/60 shadow-sm mb-4">
                     
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3 mb-3">
                         <div class="relative w-full md:flex-1">
@@ -1588,71 +1588,71 @@
                     </span>` : '';
 
                 return `
-                <div data-id="${o.id}" class="order-card bg-white p-4 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group">
-                    <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-3 left-3 w-5 h-5 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
+                <div data-id="${o.id}" class="order-card bg-white p-3.5 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group">
+                    <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-3 left-3 w-4 h-4 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
                     
-                    <div class="flex justify-between items-start mb-2 pl-8">
+                    <div class="flex justify-between items-start mb-1.5 pl-6">
                         <div>
-                            <h5 class="font-black text-slate-800 text-base flex flex-wrap items-center gap-1.5 mb-1">
-                                <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed select-none" onclick="smartNameClick(this, '${o.id}', '${o.customerPhone}', 'customerName')">${o.customerName || 'بدون اسم'}</span>
-                                <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-6 h-6 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[11px]"></i></a>
-                                <span class="text-xs text-slate-500 font-bold cursor-pointer border-b border-transparent hover:border-slate-500 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')">${o.customerPhone}</span>
+                            <h5 class="font-black text-slate-800 text-sm flex flex-wrap items-center gap-1.5 mb-1">
+                                <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed select-none" onclick="smartNameClick(this, '${o.id}', '${o.customerPhone}', 'customerName')" title="اضغط مرة لفتح ملف العميل.. مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
+                                <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-5 h-5 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[9px]"></i></a>
+                                <span class="text-[10px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
                                 ${phone2Html}
                             </h5>
 
-                            <p class="text-xs text-slate-600 font-bold flex items-center gap-1 flex-wrap">
+                            <p class="text-[10px] text-slate-500 font-bold flex items-center gap-1 flex-wrap">
                                 <i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> 
-                                <span class="cursor-pointer border-b border-transparent hover:border-slate-500 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'zone')">${o.zone || 'غير مسجل'}</span> 
-                                ${o.customerAddress ? `<span class="mx-1">-</span><span class="cursor-pointer border-b border-transparent hover:border-slate-500 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerAddress')">${o.customerAddress}</span>` : ''}
+                                <span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'zone')">${o.zone || 'غير مسجل'}</span> 
+                                ${o.customerAddress ? `<span class="mx-1">-</span><span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerAddress')">${o.customerAddress}</span>` : ''}
                             </p>
                         </div>
                         <div class="flex flex-col items-end gap-1.5">
                             ${sBadge}
-                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">${d}</span>
+                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">${d}</span>
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap gap-1.5 mb-2">
+                    <div class="flex flex-wrap gap-1 mb-1.5">
                         ${batchTagHtml} ${customTagHtml}
                     </div>
 
-                    <div class="bg-slate-50/80 p-3 rounded-lg border border-slate-100/50 mb-3 flex flex-wrap gap-2">
+                    <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5">
                         ${itemsStr}
                         ${(o.adminNote || o.driverNote) ? `
                         <div class="w-full mt-1.5 pt-1.5 border-t border-slate-200/50">
-                            <p class="text-[11px] font-black text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-lg border border-amber-100 italic truncate" title="${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}">
+                            <p class="text-[9px] font-black text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100 italic truncate" title="${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}">
                                 <i class="fa-solid fa-circle-exclamation mr-1"></i> ${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}
                             </p>
                         </div>` : ''}
                     </div>
 
-                    <div class="flex flex-wrap gap-2 mb-3">
-                        <button onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية')" class="flex-1 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors px-3 py-2 rounded-xl flex items-center justify-between shadow-sm group">
-                            <span class="text-xs font-black text-amber-700"><i class="fa-solid fa-lock mr-1"></i> إداري</span>
-                            ${o.adminNote ? `<span class="bg-amber-200 text-amber-800 text-[10px] font-black px-2 py-0.5 rounded">${o.adminNote.split('\n---\n').length}</span>` : '<span class="text-[10px] font-black text-amber-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <button onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية')" class="flex-1 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
+                            <span class="text-[9px] font-black text-amber-700"><i class="fa-solid fa-lock mr-1"></i> إداري</span>
+                            ${o.adminNote ? `<span class="bg-amber-200 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.adminNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-amber-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
                         </button>
-                        <button onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" class="flex-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors px-3 py-2 rounded-xl flex items-center justify-between shadow-sm group">
-                            <span class="text-xs font-black text-blue-700"><i class="fa-solid fa-motorcycle mr-1"></i> للمندوب</span>
-                            ${o.driverNote ? `<span class="bg-blue-200 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded">${o.driverNote.split('\n---\n').length}</span>` : '<span class="text-[10px] font-black text-blue-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
+                        <button onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" class="flex-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
+                            <span class="text-[9px] font-black text-blue-700"><i class="fa-solid fa-motorcycle mr-1"></i> للمندوب</span>
+                            ${o.driverNote ? `<span class="bg-blue-200 text-blue-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.driverNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-blue-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
                         </button>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row justify-between items-center pt-3 border-t border-slate-100 gap-3">
-                        <div class="flex gap-2 w-full sm:w-auto">
+                    <div class="flex flex-col sm:flex-row justify-between items-center pt-2 border-t border-slate-100 gap-3">
+                        <div class="flex gap-1.5 w-full sm:w-auto">
                             ${o.status === 'completed' ? 
-                            `<button onclick="sendFollowUpWhatsApp('${o.customerPhone}', '${o.customerName}')" class="flex-1 sm:flex-none text-xs bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-heart-circle-check"></i> متابعة</button>` 
+                            `<button onclick="sendFollowUpWhatsApp('${o.customerPhone}', '${o.customerName}')" class="flex-1 sm:flex-none text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-heart-circle-check"></i> متابعة</button>` 
                             : 
-                            `<button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-xs bg-[#25D366] hover:bg-[#1ebd57] text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`
+                            `<button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`
                             }
-                            <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-xs bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-pen"></i> تعديل</button>
+                            <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-pen"></i> تعديل</button>
                         </div>
 
-                        <div class="flex items-center justify-between w-full sm:w-auto gap-4">
+                        <div class="flex items-center justify-between w-full sm:w-auto gap-3">
                             <div class="flex flex-col items-end">
-                                ${o.discount > 0 ? `<span class="bg-red-50 text-red-600 border border-red-100 px-1.5 py-0.5 rounded text-[9px] font-black mb-0.5"><i class="fa-solid fa-gift mr-0.5"></i> خصم: ${o.discount} ج</span>` : ''}
-                                <span class="font-black text-brand-primary text-xl tracking-tight">${o.total || 0} <span class="text-xs text-slate-400">ج</span></span>
+                                ${o.discount > 0 ? `<span class="bg-red-50 text-red-600 border border-red-100 px-1 py-0.5 rounded text-[8px] font-black"><i class="fa-solid fa-gift mr-0.5"></i> خصم: ${o.discount} ج</span>` : ''}
+                                <span class="font-black text-brand-primary text-lg tracking-tight">${o.total || 0} <span class="text-[10px] text-slate-400">ج</span></span>
                             </div>
-                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-xs font-bold bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
+                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-[10px] font-bold bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
                                 <option value="new" ${o.status==='new'?'selected':''}>جديد</option>
                                 <option value="dispatched" ${o.status==='dispatched'?'selected':''}>بالطريق</option>
                                 <option value="processing" ${o.status==='processing'?'selected':''}>تجهيز</option>
@@ -1666,7 +1666,9 @@
                     </div>
                 </div>`;
             }).join('');
+        };
 
+           
 
         window.openNoteOptions = (id) => {
             currentOrderNoteId = id;
@@ -3557,26 +3559,6 @@ window.deleteProductUI = async (id) => {
                 if(document.getElementById('view-notes').classList.contains('active')) renderNotesUI();
             }, 150); 
         };
-        // 🌟 دالة الشريط الذكي للموبايل 🌟
-        setTimeout(() => {
-            const scrollContainer = document.querySelector('.custom-scroll.p-4.lg\\:p-8');
-            let lastScrollTop = 0;
-            if(scrollContainer) {
-                scrollContainer.addEventListener('scroll', () => {
-                    let st = scrollContainer.scrollTop;
-                    let header = document.getElementById('smart-sticky-header');
-                    if(header) {
-                        // لو نزل لتحت، الشريط يختفي فوق.. لو طلع سنة صغيرة، ينزل تاني!
-                        if (st > lastScrollTop && st > 150) {
-                            header.style.transform = 'translateY(-150%)'; 
-                        } else if (st < lastScrollTop) {
-                            header.style.transform = 'translateY(0)';
-                        }
-                    }
-                    lastScrollTop = st <= 0 ? 0 : st;
-                });
-            }
-        }, 1500);
 
         // ==========================================
         // 📦 نظام أرشيف الدفعات والتقارير الختامية 📦
