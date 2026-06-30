@@ -1122,7 +1122,8 @@
 
 
 
-            db.collection('customers').onSnapshot(snap => {
+            // 👇 التعديل هنا فقط: استخدمنا get().then بدل onSnapshot عشان نوقف نزيف القراءات
+            db.collection('customers').get().then(snap => {
                 customersData = [];
                 snap.forEach(doc => customersData.push(doc.data()));
                 
@@ -1168,7 +1169,7 @@
                 if(document.getElementById('search-customer').value.trim() !== '') {
                     filterCustomers();
                 }
-            });
+            }).catch(err => console.log("خطأ في جلب الأرشيف: ", err)); // 👈 قفلة الـ get الجديدة
 
         }
 
