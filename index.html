@@ -3646,12 +3646,13 @@ window.deleteProductUI = async (id) => {
         // ==========================================
         let archivedBatchesData = [];
         
-        // استدعاء الأرشيف من قاعدة البيانات
-        db.collection('archived_batches').orderBy('archivedAt', 'desc').onSnapshot(snap => {
+        // 🛑 استدعاء الأرشيف من قاعدة البيانات (السحب مرة واحدة لتوفير القراءات بحد أقصى)
+        db.collection('archived_batches').orderBy('archivedAt', 'desc').get().then(snap => {
             archivedBatchesData = [];
             snap.forEach(doc => archivedBatchesData.push({id: doc.id, ...doc.data()}));
             renderArchiveUI();
-        });
+        }).catch(e => console.log("خطأ في جلب الأرشيف: ", e));
+
 
         
 
