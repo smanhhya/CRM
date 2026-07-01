@@ -1012,11 +1012,14 @@
             }).catch(e => console.log("خطأ في جلب بيانات لوحة الإدارة:", e));
 
             // 💡 جلب الطلبات بذكاء: هنجيب آخر 150 طلب (للمكتمل والملغي)، وكل الطلبات الحية (عشان مفيش أوردر قديم يضيع)
+            // 💡 جلب الطلبات بذكاء: الأوردرات القديمة هتيجي مرة واحدة، والحية هتفضل لايف
             const recentOrdersQuery = db.collection('orders').orderBy('createdAt', 'desc').limit(150);
             const activeOrdersQuery = db.collection('orders').where('status', 'in', ['new', 'processing', 'dispatched', 'deferred', 'no_answer']);
 
-            recentOrdersQuery.onSnapshot(recentSnap => {
+            // 🛑 قتلنا الفيروس: سحبنا القديم بـ get() بدل onSnapshot عشان نمنع التكرار الكارثي 🛑
+            recentOrdersQuery.get().then(recentSnap => {
                 activeOrdersQuery.onSnapshot(activeSnap => {
+
                     // --- 1. الأساسيات اللي السيستم كله قايم عليها (ممنوع المساس بيها) ---
                     let counts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
                     allOrdersRaw = []; 
