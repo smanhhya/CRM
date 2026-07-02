@@ -238,15 +238,21 @@
                 <div class="sticky top-[-1rem] lg:top-[-2rem] z-40 bg-[#f1f5f9]/95 backdrop-blur-md pt-4 pb-3 -mx-4 px-4 lg:-mx-8 lg:px-8 border-b border-slate-200/60 shadow-sm mb-4">
                     
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3 mb-3">
-                        <div class="relative w-full md:flex-1">
-                            <div class="absolute right-3 top-2.5 w-7 h-7 bg-brand-primary/10 rounded-lg flex items-center justify-center pointer-events-none">
-                                <i class="fa-solid fa-search text-brand-primary text-xs"></i>
+                        <div class="relative w-full md:flex-1 flex gap-2">
+                            <div class="relative flex-1">
+                                <div class="absolute right-3 top-2.5 w-7 h-7 bg-brand-primary/10 rounded-lg flex items-center justify-center pointer-events-none">
+                                    <i class="fa-solid fa-search text-brand-primary text-xs"></i>
+                                </div>
+                                <button onclick="document.getElementById('search-order').value=''; scheduleSearch();" class="absolute left-3 top-2.5 w-7 h-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center transition-colors">
+                                    <i class="fa-solid fa-xmark text-xs"></i>
+                                </button>
+                                <input type="search" id="search-order" onkeyup="scheduleSearch()" placeholder="بحث سريع في الطلبات (اسم، موبايل، صنف)..." class="w-full pr-12 pl-12 py-3 rounded-xl border border-slate-200 outline-none text-sm font-black bg-white focus:ring-2 focus:ring-brand-primary/30 transition-all shadow-sm">
                             </div>
-                            <button onclick="document.getElementById('search-order').value=''; scheduleSearch();" class="absolute left-3 top-2.5 w-7 h-7 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg flex items-center justify-center transition-colors">
-                                <i class="fa-solid fa-xmark text-xs"></i>
+                            <button onclick="toggleOrderSort()" id="btn-sort-orders" class="w-12 shrink-0 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-brand-primary hover:border-brand-primary hover:bg-emerald-50 transition-colors flex items-center justify-center shadow-sm" title="الترتيب الزمني (أحدث/أقدم)">
+                                <i class="fa-solid fa-arrow-down-short-wide text-lg"></i>
                             </button>
-                            <input type="search" id="search-order" onkeyup="scheduleSearch()" placeholder="بحث سريع في الطلبات (اسم، موبايل، صنف)..." class="w-full pr-12 pl-12 py-3 rounded-xl border border-slate-200 outline-none text-sm font-black bg-white focus:ring-2 focus:ring-brand-primary/30 transition-all shadow-sm">
                         </div>
+
                         
                         <div class="relative w-full md:w-auto shrink-0 group">
                             <button class="w-full md:w-auto bg-slate-800 text-white px-5 py-3 rounded-xl text-sm font-bold shadow-md hover:bg-slate-900 transition-all flex items-center justify-center gap-2">
@@ -1521,6 +1527,98 @@
                 </div>`;
             }).join('');
         };
+        // --- بداية إضافات الترتيب والتظليل والملاحظات المنزلقة ---
+        let ordersSortDirection = 'desc'; 
+        let openInlineNoteId = null;
+        let openInlineNoteField = null;
+
+        window.toggleOrderSort = () => {
+            ordersSortDirection = ordersSortDirection === 'desc' ? 'asc' : 'desc';
+            const icon = document.querySelector('#btn-sort-orders i');
+            if (icon) icon.className = ordersSortDirection === 'desc' ? 'fa-solid fa-arrow-down-short-wide text-lg' : 'fa-solid fa-arrow-up-wide-short text-lg';
+            renderOrdersList();
+        };
+
+        window.highlightOrderCard = (cardEl, e) => {
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.closest('button') || e.target.closest('a')) return;
+            document.querySelectorAll('.order-card').forEach(c => {
+                c.classList.remove('ring-4', 'ring-brand-primary/40', 'border-brand-primary', 'scale-[1.02]', 'z-20', 'shadow-2xl');
+                c.classList.add('opacity-50', 'scale-[0.98]'); 
+            });
+            cardEl.classList.remove('opacity-50', 'scale-[0.98]');
+            cardEl.classList.add('ring-4', 'ring-brand-primary/40', 'border-brand-primary', 'scale-[1.02]', 'z-20', 'shadow-2xl');
+        };
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.order-card') && !e.target.closest('#search-order')) {
+                document.querySelectorAll('.order-card').forEach(c => {
+                    c.classList.remove('ring-4', 'ring-brand-primary/40', 'border-brand-primary', 'scale-[1.02]', 'z-20', 'shadow-2xl', 'opacity-50', 'scale-[0.98]');
+                });
+            }
+        });
+
+        window.toggleInlineNotes = (e, orderId, field, forceReopen = false) => {
+            if(e) e.stopPropagation(); 
+            let container = document.getElementById(`inline-notes-container-${orderId}`);
+            if(!container) return;
+            if(!forceReopen && openInlineNoteId === orderId && openInlineNoteField === field) {
+                container.classList.add('hidden');
+                openInlineNoteId = null; openInlineNoteField = null; return;
+            }
+            if(openInlineNoteId && openInlineNoteId !== orderId) {
+                let oldContainer = document.getElementById(`inline-notes-container-${openInlineNoteId}`);
+                if(oldContainer) oldContainer.classList.add('hidden');
+            }
+            openInlineNoteId = orderId; openInlineNoteField = field;
+            container.classList.remove('hidden');
+            renderInlineNotesContent(orderId, field);
+        };
+
+        window.renderInlineNotesContent = (orderId, field) => {
+            let order = allOrdersRaw.find(o => o.id === orderId);
+            let container = document.getElementById(`inline-notes-content-${orderId}`);
+            if (!order || !container) return;
+            let isDriver = field === 'driverNote';
+            let title = isDriver ? 'ملاحظات المندوب' : 'الملاحظات الإدارية';
+            let colorClass = isDriver ? 'blue' : 'amber';
+            let quickTags = isDriver ? ['موعد غداً', 'العميل هينزل', 'الدفع كاش', 'اتصل قبل الوصول'] : ['مستعجل', 'تأجيل', 'تم التواصل', 'رقم خاطئ', 'حسابات'];
+            let tagsHtml = quickTags.map(t => `<button onclick="document.getElementById('inline-input-${orderId}').value += '${t} '" class="bg-white border border-slate-200 text-slate-600 px-2 py-1 rounded text-[10px] font-bold hover:bg-${colorClass}-500 hover:text-white transition-colors shadow-sm whitespace-nowrap">${t}</button>`).join('');
+            let chunks = (order[field] || '').split('\n---\n').filter(c => c.trim() !== '');
+            let notesHtml = chunks.map((chunk, idx) => {
+                let match = chunk.match(/^(\[.*?\])\s*(.*)/s);
+                let dateStr = match ? match[1] : ''; let textStr = match ? match[2] : chunk;
+                return `<div class="relative group bg-white border border-${colorClass}-100 p-2.5 rounded-lg mb-2 shadow-sm text-xs font-bold text-slate-700"><span class="block text-[9px] text-${colorClass}-600/70 mb-1">${dateStr}</span>${window.formatTags(textStr)}<div class="absolute top-2 left-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white p-1 rounded shadow-sm"><button onclick="editInlineNoteChunk('${orderId}', '${field}', ${idx})" class="text-blue-500 hover:text-blue-700" title="تعديل"><i class="fa-solid fa-pen text-[10px]"></i></button><button onclick="deleteInlineNoteChunk('${orderId}', '${field}', ${idx})" class="text-red-500 hover:text-red-700" title="حذف"><i class="fa-solid fa-trash text-[10px]"></i></button></div></div>`;
+            }).join('');
+            if (!notesHtml) notesHtml = `<div class="text-center py-4 text-[10px] text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-lg mb-2">الشات فارغ.. أضف ملاحظة الآن.</div>`;
+            container.innerHTML = `<div class="p-3 bg-${colorClass}-50/50 border border-${colorClass}-200 rounded-xl relative shadow-inner"><div class="flex justify-between items-center mb-3"><span class="text-[11px] font-black text-${colorClass}-700"><i class="fa-solid ${isDriver ? 'fa-motorcycle' : 'fa-lock'} mr-1"></i> ${title}</span><button onclick="document.getElementById('inline-notes-container-${orderId}').classList.add('hidden'); openInlineNoteId = null;" class="w-6 h-6 flex items-center justify-center bg-white rounded-full text-slate-400 hover:text-red-500 shadow-sm"><i class="fa-solid fa-xmark text-xs"></i></button></div><div class="max-h-40 overflow-y-auto custom-scroll mb-2 pr-1">${notesHtml}</div><div class="flex gap-1.5 mb-2 overflow-x-auto custom-scroll pb-1">${tagsHtml}</div><div class="flex gap-2"><textarea id="inline-input-${orderId}" rows="1" class="flex-1 border border-slate-200 rounded-xl p-2 text-xs font-bold bg-white focus:ring-2 focus:ring-${colorClass}-300 outline-none resize-none" placeholder="اكتب ملاحظتك..."></textarea><button onclick="saveInlineNote('${orderId}', '${field}')" class="bg-${colorClass}-500 hover:bg-${colorClass}-600 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-md shrink-0 transition-colors"><i class="fa-solid fa-paper-plane text-xs"></i></button></div></div>`;
+            setTimeout(() => { document.getElementById(`inline-input-${orderId}`)?.focus(); }, 100);
+        };
+
+        window.saveInlineNote = async (orderId, field) => {
+            let input = document.getElementById(`inline-input-${orderId}`); let text = input.value.trim(); if (!text) return;
+            let order = allOrdersRaw.find(o => o.id === orderId); if (!order) return;
+            input.disabled = true; let btn = input.nextElementSibling; let origBtn = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i>';
+            let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+            let formattedNote = `[${dateStr}] ${text}`; let currentText = order[field] || ''; let updatedText = currentText ? currentText + '\n---\n' + formattedNote : formattedNote;
+            try { await db.collection('orders').doc(orderId).update({ [field]: updatedText }); } catch(e) { alert("خطأ في الحفظ"); input.disabled = false; btn.innerHTML = origBtn; }
+        };
+
+        window.editInlineNoteChunk = (orderId, field, chunkIndex) => {
+            let order = allOrdersRaw.find(o => o.id === orderId); if(!order) return;
+            let chunks = (order[field] || '').split('\n---\n').filter(c => c.trim() !== ''); let textToEdit = chunks[chunkIndex].replace(/^\[.*?\]\s*/, '');
+            let newText = prompt("تعديل نص الملاحظة:", textToEdit);
+            if(newText !== null && newText.trim() !== "") {
+                let match = chunks[chunkIndex].match(/^(\[.*?\])\s*/); let datePrefix = match ? match[1] + ' ' : ''; chunks[chunkIndex] = datePrefix + newText.trim();
+                db.collection('orders').doc(orderId).update({ [field]: chunks.join('\n---\n') });
+            }
+        };
+
+        window.deleteInlineNoteChunk = async (orderId, field, chunkIndex) => {
+            if(!confirm("مسح هذه الملاحظة نهائياً؟")) return;
+            let order = allOrdersRaw.find(o => o.id === orderId); let chunks = (order[field] || '').split('\n---\n').filter(c => c.trim() !== '');
+            chunks.splice(chunkIndex, 1); db.collection('orders').doc(orderId).update({ [field]: chunks.join('\n---\n') });
+        };
+        // --- نهاية إضافات الترتيب والتظليل والملاحظات المنزلقة ---
 
         // ==========================================
         // دالة رسم كروت الأوردرات (مُحدثة بالملاحظات الجديدة)
