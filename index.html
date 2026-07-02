@@ -1623,34 +1623,27 @@
         // ==========================================
         // دالة رسم كروت الأوردرات (مُحدثة بالملاحظات الجديدة)
         // ==========================================
-        window.renderOrdersList = () => {
+         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
             
-            // 💡 التعديل السحري: عداد ذكي بيحسب فقط الطلبات اللي بتطابق البحث
             let dynamicCounts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
 
             let filteredBase = allOrdersRaw.filter(o => {
-                // الحماية من الداتا القديمة وتجهيز نص البحث للتحليل العميق
                 let itemsString = (o.items && Array.isArray(o.items)) ? o.items.map(i => i.name).join(' ') : '';
                 let bNameSearch = o.batchName ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
                 
-                // --- التعديل هنا: تنظيف أرقام العميل عشان البحث يلقطها ---
                 let normPhone1 = window.normalizePhone(o.customerPhone);
                 let normPhone2 = window.normalizePhone(o.customerPhone2);
 
-                // --- الإضافة هنا: زودنا (o.adminNote) و (o.driverNote) عشان يبحث جواهم ---
                 let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString} ${o.adminNote || ''} ${o.driverNote || ''}`.toLowerCase();
                 
-                // الفلترة متعددة الكلمات مع تنظيف البحث نفسه
                 let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => {
                     let normWord = window.normalizePhone(word);
-                    // التعديل هنا: شيلنا شرط الـ 3 أرقام عشان يبحث بذكاء من أول ضغطة
                     return searchStr.includes(word) || (normWord !== '' && searchStr.includes(normWord));
                 });
 
-                // سحر الفلاتر الذكية
                 let matchSmart = true;
                 if(currentSmartFilter === 'vip') {
                     let c = customersData.find(x => window.normalizePhone(x.phone) === normPhone1);
@@ -1666,17 +1659,20 @@
                 return false;
             });
 
-
-
-            // 💡 تحديث الأرقام (البادجات) اللي على الزراير فوراً بالعدد المفلتر الحقيقي
             ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { 
                 let b = document.getElementById(`badge-${s}`); 
                 if(b) b.innerText = dynamicCounts[s]; 
             });
 
-            // تطبيق فلتر التبويب نفسه (عشان يعرض "جديد" بس أو "الكل" بس)
             let filtered = filteredBase.filter(o => {
                 return (currentOrderTab === 'all') || (o.status === currentOrderTab);
+            });
+
+            // تطبيق الترتيب التصاعدي أو التنازلي
+            filtered.sort((a, b) => {
+                let timeA = a.createdAt?.toMillis() || 0;
+                let timeB = b.createdAt?.toMillis() || 0;
+                return ordersSortDirection === 'desc' ? (timeB - timeA) : (timeA - timeB);
             });
 
             if(filtered.length === 0) { 
@@ -1684,17 +1680,14 @@
                 return; 
             }
 
-
             container.innerHTML = filtered.map(o => {
                 let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
-                // حماية الكارت نفسه من الشاشة البيضاء لو الداتا القديمة ناقصة
                 let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map((i, idx) => 
                     `<span class="bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs shadow-sm flex items-center gap-1.5 hover:border-brand-primary transition-colors">
                         <span class="font-black text-slate-800">${i.quantity}x ${i.name}</span>
                         <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded cursor-pointer border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-colors" ondblclick="editItemPrice('${o.id}', ${idx})" title="اضغط مرتين لتعديل السعر (لعمل واجب)">(بـ ${i.price}ج)</span>
                     </span>`
                 ).join('') : '<span class="text-slate-400 text-xs font-bold">لا يوجد تفاصيل</span>';
-
                 
                 let sBadge = o.status==='new' ? '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جديد</span>' : 
                             (o.status==='processing' ? '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جاري التجهيز</span>' : 
@@ -1714,7 +1707,7 @@
                     </span>` : '';
 
                 return `
-                <div data-id="${o.id}" class="order-card bg-white p-3.5 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group">
+                <div data-id="${o.id}" onclick="highlightOrderCard(this, event)" class="order-card bg-white p-3.5 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group cursor-pointer">
                     <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-3 left-3 w-4 h-4 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
                     
                     <div class="flex justify-between items-start mb-1.5 pl-6">
@@ -1753,14 +1746,18 @@
                     </div>
 
                     <div class="flex flex-wrap gap-2 mb-2">
-                        <button onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية')" class="flex-1 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
+                        <button onclick="toggleInlineNotes(event, '${o.id}', 'adminNote')" class="flex-1 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
                             <span class="text-[9px] font-black text-amber-700"><i class="fa-solid fa-lock mr-1"></i> إداري</span>
-                            ${o.adminNote ? `<span class="bg-amber-200 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.adminNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-amber-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
+                            ${o.adminNote ? `<span class="bg-amber-200 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.adminNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-amber-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i></span>'}
                         </button>
-                        <button onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" class="flex-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
+                        <button onclick="toggleInlineNotes(event, '${o.id}', 'driverNote')" class="flex-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
                             <span class="text-[9px] font-black text-blue-700"><i class="fa-solid fa-motorcycle mr-1"></i> للمندوب</span>
-                            ${o.driverNote ? `<span class="bg-blue-200 text-blue-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.driverNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-blue-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
+                            ${o.driverNote ? `<span class="bg-blue-200 text-blue-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.driverNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-blue-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i></span>'}
                         </button>
+                    </div>
+
+                    <div id="inline-notes-container-${o.id}" class="hidden w-full mb-2 transition-all duration-300 origin-top">
+                        <div id="inline-notes-content-${o.id}"></div>
                     </div>
 
                     <div class="flex flex-col sm:flex-row justify-between items-center pt-2 border-t border-slate-100 gap-3">
@@ -1773,7 +1770,6 @@
                             <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-pen"></i> تعديل</button>
                             <button onclick="openOrderTracking('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 px-3 py-1.5 rounded-lg font-bold border border-sky-200 transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-route"></i> تتبع</button>
                         </div>
-
 
                         <div class="flex items-center justify-between w-full sm:w-auto gap-3">
                             <div class="flex flex-col items-end">
@@ -1794,7 +1790,12 @@
                     </div>
                 </div>`;
             }).join('');
+            
+            if (openInlineNoteId && openInlineNoteField) {
+                setTimeout(() => { toggleInlineNotes(null, openInlineNoteId, openInlineNoteField, true); }, 50);
+            }
         };
+
 
            
 
