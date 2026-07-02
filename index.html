@@ -1024,18 +1024,42 @@
             }
         });
 
-        window.loginApp = () => {
-            const e = document.getElementById('login-email').value;
-            const p = document.getElementById('login-password').value;
-            if(!e || !p) return;
-            const btn = document.getElementById('login-btn'); 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-            auth.signInWithEmailAndPassword(e, p).catch(() => { 
-                btn.innerHTML = 'تسجيل الدخول'; 
-                document.getElementById('login-error').innerText = "بيانات الدخول خاطئة!"; 
-                document.getElementById('login-error').classList.remove('hidden'); 
-            });
-        };
+window.loginApp = () => {
+    const e = document.getElementById('login-email').value;
+    const p = document.getElementById('login-password').value;
+    
+    // تأكد أن الحقول غير فارغة
+    if(!e || !p) {
+        document.getElementById('login-error').innerText = "يرجى كتابة الإيميل والباسورد!";
+        document.getElementById('login-error').classList.remove('hidden');
+        return;
+    }
+    
+    const btn = document.getElementById('login-btn'); 
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحقق...';
+    
+    auth.signInWithEmailAndPassword(e, p).catch((error) => { 
+        btn.innerHTML = 'تسجيل الدخول'; 
+        // طباعة الخطأ للمبرمج (أنت) في الكونسول
+        console.error("Firebase Login Error: ", error); 
+        
+        // عرض الخطأ الحقيقي على الشاشة
+        let errorMessage = "حدث خطأ غير معروف";
+        if(error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+            errorMessage = "الإيميل أو الباسورد غير صحيح!";
+        } else if (error.code === 'auth/user-not-found') {
+            errorMessage = "هذا الحساب غير مسجل لدينا!";
+        } else if (error.code === 'auth/network-request-failed') {
+            errorMessage = "تأكد من اتصالك بالإنترنت!";
+        } else {
+            errorMessage = error.message; // عرض رسالة فايربيس الأصلية
+        }
+        
+        document.getElementById('login-error').innerText = errorMessage; 
+        document.getElementById('login-error').classList.remove('hidden'); 
+    });
+};
+
         
         window.logoutApp = () => { if(confirm("الخروج من النظام؟")) auth.signOut(); };
 
