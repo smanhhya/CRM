@@ -1197,7 +1197,6 @@ window.loginApp = () => {
                         tbodyEl.innerHTML = tableBodyHtml || `<tr><td colspan="4" class="text-center py-8 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد طلبات تم تسليمها اليوم.</td></tr>`;
                     }
 
-                    // --- 4. تحديث الأساسيات (أرقام التبويبات الحية) ---
                     ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed'].forEach(s => { 
                         let b = document.getElementById(`badge-${s}`); 
                         if(b) b.innerText = counts[s]; 
@@ -1206,6 +1205,10 @@ window.loginApp = () => {
                     scheduleSystemRender();
                 });
             });
+        } // <--- 🚨 أضف هذا القوس هنا لإغلاق دالة startCRM 🚨
+
+        // === 4. إدارة الطلبات والرسائل المرنة ===
+
 
 
 
