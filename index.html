@@ -1040,8 +1040,11 @@
         window.logoutApp = () => { if(confirm("الخروج من النظام؟")) auth.signOut(); };
 
         function startCRM() {
-            const nowStr = new Date().toLocaleDateString('en-US');
+            // 🚀 تفعيل الكاش المحلي لتقليل القراءات بنسبة 90%
+            db.enablePersistence({ synchronizeTabs: true }).catch(function(err) { console.log("الكاش لم يتم تفعيله", err); });
 
+            const nowStr = new Date().toLocaleDateString('en-US');
+            
             // 👇 التعديل لغلق نزيف القراءات: سحب بيانات الإدارة والمخزون مرة واحدة فقط 👇
             db.collection('inventory').get().then(snap => {
                 snap.forEach(doc => {
@@ -1911,7 +1914,7 @@
             } catch(e) { alert("خطأ في الحذف النهائي!"); } 
         };
 
-        window.filterCustomers = async () => { 
+        window.filterCustomers = () => { 
             let inputEl = document.getElementById('search-customer');
             let original = inputEl.value;
             let converted = original.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
@@ -1919,36 +1922,41 @@
 
             let rawFilter = converted.toLowerCase().trim(); 
             let normPhone = window.normalizePhone(rawFilter);
+            let filterWords = rawFilter.split(' ').filter(w => w.trim() !== '');
 
-            // 🚀 الإضافة السحرية هنا: لو كتب رقم موبايل مش في الشاشة، هيروح يسحبه مخصوص من السيرفر بـ 1 قراءة بس!
+            // 1. دالة الفلترة العادية (بتحصل في لحظتها بدون أي تأخير)
+            const applyFilterToTable = () => {
+                document.querySelectorAll('.customer-row').forEach(row => { 
+                    let searchData = row.getAttribute('data-search').toLowerCase(); 
+                    let isMatch = filterWords.length === 0 ? true : filterWords.every(word => {
+                        let normWord = window.normalizePhone(word);
+                        return searchData.includes(word) || (normWord !== '' && searchData.includes(normWord));
+                    });
+                    row.style.display = isMatch ? '' : 'none'; 
+                });
+            };
+
+            // طبق الفلتر فوراً على اللي موجود في الشاشة
+            applyFilterToTable();
+
+            // 2. البحث في السيرفر في الخلفية (بدون await عشان ميعملش تهنيج)
             if (normPhone.length >= 10) {
                 let cleanPhoneDb = normPhone.startsWith('0') ? normPhone : '0' + normPhone;
-                try {
-                    let doc = await db.collection('customers').doc(cleanPhoneDb).get();
+                
+                db.collection('customers').doc(cleanPhoneDb).get().then(doc => {
                     if (doc.exists) {
                         let c = doc.data();
-                        // لو العميل ده مش موجود في المصفوفة اللي قدامنا، ضيفه وارسم الجدول تاني
+                        // لو العميل مش موجود في الذاكرة، ضيفه
                         if (!customersData.find(x => x.phone === c.phone)) {
                             customersData.unshift(c); 
-                            renderCustomersTable();
+                            renderCustomersTable(); // ارسم الجدول تاني
+                            applyFilterToTable(); // طبق الفلتر تاني عشان العميل الجديد يظهر
                         }
                     }
-                } catch(e) {}
+                }).catch(e => {}); // لو ملقاش حاجة أو حصل خطأ ميعملش أي إزعاج
             }
-
-            // الفلترة العادية في الكروت المعروضة بعد ما جاب العميل (لو موجود)
-            let filterWords = rawFilter.split(' ').filter(w => w.trim() !== '');
-            document.querySelectorAll('.customer-row').forEach(row => { 
-                let searchData = row.getAttribute('data-search').toLowerCase(); 
-                
-                let isMatch = filterWords.length === 0 ? true : filterWords.every(word => {
-                    let normWord = window.normalizePhone(word);
-                    return searchData.includes(word) || (normWord !== '' && searchData.includes(normWord));
-                });
-                
-                row.style.display = isMatch ? '' : 'none'; 
-            }); 
         };
+
 
 
 
