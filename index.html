@@ -933,7 +933,7 @@
             }
         }
 
-        function switchTab(tabId, btnElement) {
+        window.switchTab = (tabId, btnElement) => {
             document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.add('active');
             
@@ -953,9 +953,60 @@
             }
             if(tabId === 'trash') renderTrashUI();            
             if(tabId === 'notes') renderNotesUI();
+            
+            // 🚀 السحر هنا: لو ضغط على زرار الأرشيف، يحمل 50 عميل بس
+            if(tabId === 'customers') loadCustomersArchiveTab();
 
             if(window.innerWidth < 768) toggleSidebar();
         }
+
+        // دالة تحميل الأرشيف الذكية (تسحب عند الطلب فقط)
+        window.loadCustomersArchiveTab = async () => {
+            let tbody = document.getElementById('customers-tbody');
+            if (customersData.length > 0) return; // لو حملناهم قبل كده منسحبش تاني
+            
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-12"><i class="fa-solid fa-spinner fa-spin text-brand-primary text-2xl"></i><p class="text-xs font-bold text-slate-400 mt-2">جاري جلب أرشيف العملاء...</p></td></tr>';
+            
+            try {
+                // هنسحب أحدث 50 عميل بس (بيكلفوك 50 قراءة فقط)
+                const snap = await db.collection('customers').orderBy('lastOrder', 'desc').limit(50).get();
+                customersData = [];
+                snap.forEach(doc => customersData.push(doc.data()));
+                renderCustomersTable();
+            } catch (err) {
+                console.log(err);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-red-500 font-bold p-12">حدث خطأ في تحميل الأرشيف</td></tr>';
+            }
+        };
+
+        window.renderCustomersTable = () => {
+            let tbodyHtml = '';
+            customersData.forEach(c => {
+                let location = c.zone || '';
+                if(c.address) location += ' - ' + c.address;
+                let details = c.notebook ? `<div class="text-[10px] text-amber-600 font-bold mt-1.5 max-w-[180px] truncate mx-auto bg-amber-50 px-2 py-1 rounded" title="${c.notebook}"><i class="fa-solid fa-book"></i> نوت: ${c.notebook}</div>` : '';
+                let normPhone = window.normalizePhone(c.phone);
+                
+                tbodyHtml += `
+                <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location} ${c.notebook || ''}">
+                    <td class="py-4 px-6">
+                        <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div>
+                        <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone || ''}</div>
+                    </td>
+                    <td class="py-4 px-6 text-center">
+                        <div class="text-xs font-bold text-slate-700">${location || '<span class="text-slate-400">غير مسجل</span>'}</div>
+                        ${details}
+                    </td>
+                    <td class="py-4 px-6 text-center font-black text-slate-700 text-base">${c.ordersCount || 0}</td>
+                    <td class="py-4 px-6 text-center font-black text-emerald-600 text-base">${(c.totalSpent || 0).toLocaleString()} <span class="text-[10px]">ج</span></td>
+                    <td class="py-4 px-6 text-center">
+                        <button onclick="openCustomerCard('${c.phone}')" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm">الأرشيف</button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('customers-tbody').innerHTML = tbodyHtml || `<tr><td colspan="5" class="text-center p-12 text-slate-400 font-bold text-sm">لا يوجد عملاء حتى الآن</td></tr>`;
+        };
+
 
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
@@ -1130,57 +1181,6 @@
             });
 
 
-
-            // 👇 التعديل هنا فقط: استخدمنا get().then بدل onSnapshot عشان نوقف نزيف القراءات
-            db.collection('customers').get().then(snap => {
-                customersData = [];
-                snap.forEach(doc => customersData.push(doc.data()));
-                
-                let dashCust = document.getElementById('dash-customers');
-                if(dashCust) dashCust.innerText = customersData.length;
-                
-                customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0));
-
-                
-                let tbody = '';
-                customersData.forEach(c => {
-                    let location = c.zone || '';
-                    if(c.address) location += ' - ' + c.address;
-                    let details = c.notebook ? `<div class="text-[10px] text-amber-600 font-bold mt-1.5 max-w-[180px] truncate mx-auto bg-amber-50 px-2 py-1 rounded" title="${c.notebook}"><i class="fa-solid fa-book"></i> نوت: ${c.notebook}</div>` : '';
-                    
-                    // السطر ده بينظف الأرقام كلها عشان البحث يلقطها
-                    let normPhone = window.normalizePhone(c.phone);
-                    let normPhone2 = window.normalizePhone(c.phone2 || '');
-                    let altPhonesStr = (c.altPhones || []).join(' ');
-
-
-                    tbody += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location} ${c.notebook || ''}">
-                        <td class="py-4 px-6">
-                            <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div>
-                            <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone || ''}</div>
-                        </td>
-                        <td class="py-4 px-6 text-center">
-                            <div class="text-xs font-bold text-slate-700">${location || '<span class="text-slate-400">غير مسجل</span>'}</div>
-                            ${details}
-                        </td>
-                        <td class="py-4 px-6 text-center font-black text-slate-700 text-base">${c.ordersCount || 0}</td>
-                        <td class="py-4 px-6 text-center font-black text-emerald-600 text-base">${(c.totalSpent || 0).toLocaleString()} <span class="text-[10px]">ج</span></td>
-                        <td class="py-4 px-6 text-center">
-                            <button onclick="openCustomerCard('${c.phone}')" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm">الأرشيف</button>
-                        </td>
-                    </tr>`;
-                });
-
-                document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="5" class="text-center p-12 text-slate-400 font-bold text-sm">لا يوجد عملاء حتى الآن</td></tr>`;
-                
-                // تحديث البحث فورا لو اليوزر كاتب حاجة
-                if(document.getElementById('search-customer').value.trim() !== '') {
-                    filterCustomers();
-                }
-            }).catch(err => console.log("خطأ في جلب الأرشيف: ", err)); // 👈 قفلة الـ get الجديدة
-
-        }
 
         // === 4. إدارة الطلبات والرسائل المرنة ===
         window.setOrderTab = (tab) => {
@@ -1911,15 +1911,33 @@
             } catch(e) { alert("خطأ في الحذف النهائي!"); } 
         };
 
-        window.filterCustomers = () => { 
+        window.filterCustomers = async () => { 
             let inputEl = document.getElementById('search-customer');
             let original = inputEl.value;
             let converted = original.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
-            if (original !== converted) inputEl.value = converted; // تحويل فوري للإنجليزي
+            if (original !== converted) inputEl.value = converted; 
 
             let rawFilter = converted.toLowerCase().trim(); 
-            let filterWords = rawFilter.split(' ').filter(w => w.trim() !== '');
+            let normPhone = window.normalizePhone(rawFilter);
 
+            // 🚀 الإضافة السحرية هنا: لو كتب رقم موبايل مش في الشاشة، هيروح يسحبه مخصوص من السيرفر بـ 1 قراءة بس!
+            if (normPhone.length >= 10) {
+                let cleanPhoneDb = normPhone.startsWith('0') ? normPhone : '0' + normPhone;
+                try {
+                    let doc = await db.collection('customers').doc(cleanPhoneDb).get();
+                    if (doc.exists) {
+                        let c = doc.data();
+                        // لو العميل ده مش موجود في المصفوفة اللي قدامنا، ضيفه وارسم الجدول تاني
+                        if (!customersData.find(x => x.phone === c.phone)) {
+                            customersData.unshift(c); 
+                            renderCustomersTable();
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            // الفلترة العادية في الكروت المعروضة بعد ما جاب العميل (لو موجود)
+            let filterWords = rawFilter.split(' ').filter(w => w.trim() !== '');
             document.querySelectorAll('.customer-row').forEach(row => { 
                 let searchData = row.getAttribute('data-search').toLowerCase(); 
                 
@@ -1931,6 +1949,7 @@
                 row.style.display = isMatch ? '' : 'none'; 
             }); 
         };
+
 
 
 
