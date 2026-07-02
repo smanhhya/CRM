@@ -1530,62 +1530,64 @@
         };
 
         // ==========================================
-        // دالة رسم كروت الأوردرات (مُحدثة بالملاحظات الجديدة)
+        // 🚀 نظام الطلبات الحية الحديث (ترتيب، فوكس، ملاحظات داخلية) 🚀
         // ==========================================
+
+        let currentSortAsc = false; 
+        let activeOrderCardId = null; 
+        let openNotesState = {}; 
+
+        window.toggleSortOrder = () => {
+            currentSortAsc = !currentSortAsc;
+            document.getElementById('sort-icon').className = currentSortAsc ? 'fa-solid fa-arrow-down-1-9 text-lg' : 'fa-solid fa-arrow-down-9-1 text-lg';
+            renderOrdersList();
+        };
+
+        window.focusCard = (id) => {
+            activeOrderCardId = id;
+            document.querySelectorAll('.order-card').forEach(c => c.classList.remove('ring-2', 'ring-brand-primary', 'bg-brand-light', 'scale-[1.01]'));
+            let card = document.querySelector(`.order-card[data-id="${id}"]`);
+            if(card) {
+                card.classList.add('ring-2', 'ring-brand-primary', 'bg-brand-light', 'scale-[1.01]');
+            }
+        };
+
         window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
             const filterText = (document.getElementById('search-order').value || '').toLowerCase();
-            
-            // 💡 التعديل السحري: عداد ذكي بيحسب فقط الطلبات اللي بتطابق البحث
             let dynamicCounts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
 
             let filteredBase = allOrdersRaw.filter(o => {
-                // الحماية من الداتا القديمة وتجهيز نص البحث للتحليل العميق
                 let itemsString = (o.items && Array.isArray(o.items)) ? o.items.map(i => i.name).join(' ') : '';
-                let bNameSearch = o.batchName ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
-                
-                // --- التعديل هنا: تنظيف أرقام العميل عشان البحث يلقطها ---
+                let bNameSearch = o.batchName ? o.batchName : (o.customTag ? o.customTag : "أوردرات عادية");
                 let normPhone1 = window.normalizePhone(o.customerPhone);
                 let normPhone2 = window.normalizePhone(o.customerPhone2);
-
-                // --- الإضافة هنا: زودنا (o.adminNote) و (o.driverNote) عشان يبحث جواهم ---
-                let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString} ${o.adminNote || ''} ${o.driverNote || ''}`.toLowerCase();
+                let searchStr = `${o.customerName||''} ${o.customerPhone||''} ${normPhone1} ${o.customerPhone2||''} ${normPhone2} ${bNameSearch} ${o.zone||''} ${itemsString} ${o.adminNote||''} ${o.driverNote||''}`.toLowerCase();
                 
-                // الفلترة متعددة الكلمات مع تنظيف البحث نفسه
                 let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => {
                     let normWord = window.normalizePhone(word);
-                    // التعديل هنا: شيلنا شرط الـ 3 أرقام عشان يبحث بذكاء من أول ضغطة
                     return searchStr.includes(word) || (normWord !== '' && searchStr.includes(normWord));
                 });
 
-                // سحر الفلاتر الذكية
-                let matchSmart = true;
-                if(currentSmartFilter === 'vip') {
-                    let c = customersData.find(x => window.normalizePhone(x.phone) === normPhone1);
-                    matchSmart = c && (c.ordersCount >= 3 || c.totalSpent >= 1500); 
-                } else if(currentSmartFilter === 'high_value') {
-                    matchSmart = Number(o.total) >= 500; 
-                }
-
-                if (matchSearch && matchSmart && o.status !== 'trash') {
+                if (matchSearch && o.status !== 'trash') {
                     if (dynamicCounts[o.status] !== undefined) dynamicCounts[o.status]++;
                     return true;
                 }
                 return false;
             });
 
-
-
-            // 💡 تحديث الأرقام (البادجات) اللي على الزراير فوراً بالعدد المفلتر الحقيقي
             ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { 
-                let b = document.getElementById(`badge-${s}`); 
-                if(b) b.innerText = dynamicCounts[s]; 
+                let b = document.getElementById(`badge-${s}`); if(b) b.innerText = dynamicCounts[s]; 
             });
 
-            // تطبيق فلتر التبويب نفسه (عشان يعرض "جديد" بس أو "الكل" بس)
-            let filtered = filteredBase.filter(o => {
-                return (currentOrderTab === 'all') || (o.status === currentOrderTab);
+            let filtered = filteredBase.filter(o => (currentOrderTab === 'all') || (o.status === currentOrderTab));
+
+            // الترتيب (الأقدم أو الأحدث)
+            filtered.sort((a, b) => {
+                let timeA = a.createdAt?.toMillis() || 0;
+                let timeB = b.createdAt?.toMillis() || 0;
+                return currentSortAsc ? timeA - timeB : timeB - timeA;
             });
 
             if(filtered.length === 0) { 
@@ -1593,168 +1595,167 @@
                 return; 
             }
 
-
             container.innerHTML = filtered.map(o => {
                 let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
-                // حماية الكارت نفسه من الشاشة البيضاء لو الداتا القديمة ناقصة
                 let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map((i, idx) => 
-                    `<span class="bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs shadow-sm flex items-center gap-1.5 hover:border-brand-primary transition-colors">
-                        <span class="font-black text-slate-800">${i.quantity}x ${i.name}</span>
-                        <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded cursor-pointer border border-emerald-100 hover:bg-emerald-500 hover:text-white transition-colors" ondblclick="editItemPrice('${o.id}', ${idx})" title="اضغط مرتين لتعديل السعر (لعمل واجب)">(بـ ${i.price}ج)</span>
-                    </span>`
+                    `<span class="bg-white border border-slate-200 px-2 py-1 rounded text-[11px] shadow-sm flex items-center gap-1"><span class="font-black text-slate-800">${i.quantity}x ${i.name}</span></span>`
                 ).join('') : '<span class="text-slate-400 text-xs font-bold">لا يوجد تفاصيل</span>';
-
                 
-                let sBadge = o.status==='new' ? '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جديد</span>' : 
-                            (o.status==='processing' ? '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2.5 py-1 rounded-lg text-[10px] font-black">جاري التجهيز</span>' : 
-                            (o.status==='dispatched' ? '<span class="bg-indigo-50 text-indigo-600 border border-indigo-100 px-2.5 py-1 rounded-lg text-[10px] font-black"><i class="fa-solid fa-motorcycle mr-1"></i> في الطريق</span>' : 
-                            (o.status==='no_answer' ? '<span class="bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-lg text-[10px] font-black"><i class="fa-solid fa-phone-slash mr-1"></i> لم يتم الرد</span>' : 
-                            (o.status==='completed' ? '<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2.5 py-1 rounded-lg text-[10px] font-black">مكتمل</span>' : 
-                            '<span class="bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black">ملغي</span>'))));
+                let sBadge = o.status==='new' ? '<span class="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded text-[10px] font-black">جديد</span>' : 
+                            (o.status==='processing' ? '<span class="bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded text-[10px] font-black">تجهيز</span>' : 
+                            (o.status==='dispatched' ? '<span class="bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-0.5 rounded text-[10px] font-black"><i class="fa-solid fa-motorcycle"></i> بالطريق</span>' : 
+                            (o.status==='completed' ? '<span class="bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded text-[10px] font-black">مكتمل</span>' : 
+                            '<span class="bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-black">مؤجل/ملغي</span>')));
                 
-                let customTagHtml = o.customTag ? `<span onclick="document.getElementById('search-order').value='${o.customTag}'; renderOrdersList();" class="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-purple-500 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه المجموعة"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
-                let batchTagHtml = o.batchName ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
+                // مؤشر العمر (متأخر ولا لأ)
+                let ageHtml = '';
+                if (['new', 'processing'].includes(o.status)) {
+                    let orderTimeMillis = o.createdAt?.toMillis() || Date.now();
+                    let minsPassed = Math.floor((Date.now() - orderTimeMillis) / 60000);
+                    if (minsPassed >= 30) {
+                        ageHtml = `<span class="bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[9px] font-black animate-pulse border border-red-100 shadow-sm" title="هذا الطلب متأخر"><i class="fa-regular fa-clock"></i> +${minsPassed} دقيقة</span>`;
+                    }
+                }
 
-                let phone2Html = o.customerPhone2 ? `
-                    <span class="flex items-center gap-1.5 bg-purple-50 px-2 py-1 rounded-lg border border-purple-100 ml-1">
-                        <span class="text-[9px] font-black text-purple-500">بديل:</span>
-                        <span class="text-[11px] text-slate-600 font-bold cursor-pointer border-b border-transparent hover:border-purple-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone2')" title="تعديل الرقم البديل">${o.customerPhone2}</span>
-                        <a href="tel:${o.customerPhone2}" class="text-purple-500 hover:text-white hover:bg-purple-500 w-5 h-5 flex items-center justify-center bg-purple-100 rounded-full transition-colors" title="اتصال بالرقم البديل"><i class="fa-solid fa-phone text-[8px]"></i></a>
-                    </span>` : '';
+                let isFocus = activeOrderCardId === o.id ? 'ring-2 ring-brand-primary bg-brand-light scale-[1.01]' : 'bg-white';
+
+                let customTagHtml = o.customTag ? `<span onclick="event.stopPropagation(); document.getElementById('search-order').value='${o.customTag}'; renderOrdersList();" class="text-[9px] bg-purple-50 text-purple-600 border border-purple-100 px-1.5 py-0.5 rounded font-black cursor-pointer hover:bg-purple-500 hover:text-white transition-colors"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
+                let batchTagHtml = o.batchName ? `<span onclick="event.stopPropagation(); document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[9px] bg-slate-50 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded font-black cursor-pointer hover:bg-slate-600 hover:text-white transition-colors"><i class="fa-solid fa-layer-group"></i> ${o.batchName}</span>` : '';
+
+                // رسم الشات الداخلي
+                let activeNoteField = openNotesState[o.id];
+                let inlineNoteHtml = '';
+                if (activeNoteField) {
+                    let noteTitle = activeNoteField === 'adminNote' ? 'ملاحظات إدارية 🔒' : 'ملاحظات المندوب 🛵';
+                    let noteColor = activeNoteField === 'adminNote' ? 'amber' : 'blue';
+                    let existingNotes = o[activeNoteField] || '';
+                    
+                    let chunksHtml = existingNotes.split('\n---\n').filter(c => c.trim() !== '').map((chunk, idx) => {
+                        let text = chunk.replace(/^\[.*?\]\s*/, ''); 
+                        return `
+                        <div class="bg-white border border-${noteColor}-100 p-2 rounded-lg shadow-sm text-[11px] font-bold text-slate-700 relative group flex justify-between items-start gap-2 mb-1.5">
+                            <span class="whitespace-pre-wrap flex-1">${window.formatTags(text)}</span>
+                            <div class="flex gap-1 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="event.stopPropagation(); editInlineNote('${o.id}', '${activeNoteField}', ${idx})" class="text-blue-500 hover:text-blue-700 bg-blue-50 p-1 rounded"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="event.stopPropagation(); deleteInlineNote('${o.id}', '${activeNoteField}', ${idx})" class="text-red-500 hover:text-red-700 bg-red-50 p-1 rounded"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </div>`;
+                    }).join('');
+
+                    inlineNoteHtml = `
+                    <div class="mt-3 bg-${noteColor}-50/50 border border-${noteColor}-200 p-3 rounded-xl transition-all" onclick="event.stopPropagation()">
+                        <div class="flex justify-between items-center mb-2 border-b border-${noteColor}-100 pb-1">
+                            <span class="text-[11px] font-black text-${noteColor}-700">${noteTitle}</span>
+                            <button onclick="event.stopPropagation(); toggleInlineNote('${o.id}', null)" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                        <div class="mb-2 max-h-32 overflow-y-auto custom-scroll pr-1">${chunksHtml || `<div class="text-center text-[10px] font-bold text-${noteColor}-400 py-2">لا توجد ملاحظات.</div>`}</div>
+                        <div class="flex gap-1.5">
+                            <input type="text" id="inline-input-${o.id}" class="flex-1 border border-${noteColor}-200 rounded-lg px-2 py-1.5 text-[11px] font-bold outline-none focus:ring-2 focus:ring-${noteColor}-300" placeholder="اكتب ملاحظة واضغط إرسال..." onkeydown="if(event.key==='Enter') saveInlineNote('${o.id}', '${activeNoteField}')">
+                            <button onclick="event.stopPropagation(); saveInlineNote('${o.id}', '${activeNoteField}')" class="bg-${noteColor}-500 hover:bg-${noteColor}-600 text-white px-3 rounded-lg text-[11px] font-black transition-colors shadow-sm"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                    </div>`;
+                }
 
                 return `
-                <div data-id="${o.id}" class="order-card bg-white p-3.5 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group">
-                    <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-3 left-3 w-4 h-4 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
+                <div data-id="${o.id}" onclick="focusCard('${o.id}')" class="order-card p-3.5 rounded-[1rem] shadow-sm border border-slate-200 transition-all relative group cursor-pointer ${isFocus}">
+                    <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" onclick="event.stopPropagation()" class="bulk-order-cb absolute top-3 left-3 w-4 h-4 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
                     
                     <div class="flex justify-between items-start mb-1.5 pl-6">
                         <div>
-                            <h5 class="font-black text-slate-800 text-sm flex flex-wrap items-center gap-1.5 mb-1">
-                                <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed select-none" onclick="smartNameClick(this, '${o.id}', '${o.customerPhone}', 'customerName')" title="اضغط مرة لفتح ملف العميل.. مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
-                                <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-5 h-5 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[9px]"></i></a>
-                                <span class="text-[10px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
-                                ${phone2Html}
+                            <h5 class="font-black text-slate-800 text-sm flex flex-wrap items-center gap-1.5 mb-0.5">
+                                ${o.customerName || 'بدون اسم'}
+                                <a href="tel:${o.customerPhone}" onclick="event.stopPropagation()" class="text-emerald-500 bg-emerald-50 w-5 h-5 flex items-center justify-center rounded-full hover:bg-emerald-500 hover:text-white transition-colors"><i class="fa-solid fa-phone text-[8px]"></i></a>
+                                <span class="text-[10px] text-slate-500 font-bold" dir="ltr">${o.customerPhone}</span>
                             </h5>
-
-                            <p class="text-[10px] text-slate-500 font-bold flex items-center gap-1 flex-wrap">
-                                <i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> 
-                                <span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'zone')">${o.zone || 'غير مسجل'}</span> 
-                                ${o.customerAddress ? `<span class="mx-1">-</span><span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerAddress')">${o.customerAddress}</span>` : ''}
-                            </p>
+                            <p class="text-[10px] text-slate-500 font-bold"><i class="fa-solid fa-location-dot text-indigo-400 mr-0.5"></i> ${o.zone || ''} ${o.customerAddress ? '- ' + o.customerAddress : ''}</p>
                         </div>
-                        <div class="flex flex-col items-end gap-1.5">
-                            ${sBadge}
-                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">${d}</span>
+                        <div class="flex flex-col items-end gap-1">
+                            <div class="flex items-center gap-1">${ageHtml} ${sBadge}</div>
+                            <span class="text-[8px] text-slate-400 font-bold">${d}</span>
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap gap-1 mb-1.5">
-                        ${batchTagHtml} ${customTagHtml}
-                    </div>
-
-                    <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5">
+                    <div class="bg-slate-50 p-2 rounded-lg border border-slate-100 mb-2 flex flex-wrap gap-1">
                         ${itemsStr}
-                        ${(o.adminNote || o.driverNote) ? `
-                        <div class="w-full mt-1.5 pt-1.5 border-t border-slate-200/50">
-                            <p class="text-[9px] font-black text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-100 italic truncate" title="${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}">
-                                <i class="fa-solid fa-circle-exclamation mr-1"></i> ${o.adminNote ? o.adminNote.split('\n---\n').pop() : o.driverNote.split('\n---\n').pop()}
-                            </p>
-                        </div>` : ''}
                     </div>
 
-                    <div class="flex flex-wrap gap-2 mb-2">
-                        <button onclick="openModernNoteEditor('${o.id}', 'adminNote', 'الملاحظات الإدارية')" class="flex-1 bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
-                            <span class="text-[9px] font-black text-amber-700"><i class="fa-solid fa-lock mr-1"></i> إداري</span>
-                            ${o.adminNote ? `<span class="bg-amber-200 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.adminNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-amber-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
-                        </button>
-                        <button onclick="openModernNoteEditor('${o.id}', 'driverNote', 'ملاحظات للمندوب')" class="flex-1 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors px-2 py-1.5 rounded-lg flex items-center justify-between shadow-sm group">
-                            <span class="text-[9px] font-black text-blue-700"><i class="fa-solid fa-motorcycle mr-1"></i> للمندوب</span>
-                            ${o.driverNote ? `<span class="bg-blue-200 text-blue-800 text-[9px] font-black px-1.5 py-0.5 rounded">${o.driverNote.split('\n---\n').length}</span>` : '<span class="text-[9px] font-black text-blue-600 opacity-50 group-hover:opacity-100 transition-opacity"><i class="fa-solid fa-plus"></i> إضافة</span>'}
-                        </button>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row justify-between items-center pt-2 border-t border-slate-100 gap-3">
-                        <div class="flex gap-1.5 w-full sm:w-auto">
-                            ${o.status === 'completed' ? 
-                            `<button onclick="sendFollowUpWhatsApp('${o.customerPhone}', '${o.customerName}')" class="flex-1 sm:flex-none text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-heart-circle-check"></i> متابعة</button>` 
-                            : 
-                            `<button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`
-                            }
-                            <button onclick="openEditOrderModal('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-pen"></i> تعديل</button>
-                            <button onclick="openOrderTracking('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-sky-50 text-sky-600 hover:bg-sky-100 hover:text-sky-700 px-3 py-1.5 rounded-lg font-bold border border-sky-200 transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-route"></i> تتبع</button>
+                    <div class="flex justify-between items-center pt-1 border-t border-slate-100 gap-2">
+                        <div class="flex gap-1">
+                            <button onclick="event.stopPropagation(); toggleInlineNote('${o.id}', 'adminNote')" class="bg-amber-50 hover:bg-amber-100 text-amber-700 px-2 py-1 rounded text-[10px] font-black border border-amber-100 transition-colors"><i class="fa-solid fa-lock mr-0.5"></i> إداري ${o.adminNote ? `<span class="bg-amber-200 px-1.5 rounded-full ml-1">${o.adminNote.split('\n---\n').filter(c=>c.trim()!=='').length}</span>` : ''}</button>
+                            <button onclick="event.stopPropagation(); toggleInlineNote('${o.id}', 'driverNote')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-2 py-1 rounded text-[10px] font-black border border-blue-100 transition-colors"><i class="fa-solid fa-motorcycle mr-0.5"></i> مندوب ${o.driverNote ? `<span class="bg-blue-200 px-1.5 rounded-full ml-1">${o.driverNote.split('\n---\n').filter(c=>c.trim()!=='').length}</span>` : ''}</button>
                         </div>
-
-
-                        <div class="flex items-center justify-between w-full sm:w-auto gap-3">
-                            <div class="flex flex-col items-end">
-                                ${o.discount > 0 ? `<span class="bg-red-50 text-red-600 border border-red-100 px-1 py-0.5 rounded text-[8px] font-black"><i class="fa-solid fa-gift mr-0.5"></i> خصم: ${o.discount} ج</span>` : ''}
-                                <span class="font-black text-brand-primary text-lg tracking-tight">${o.total || 0} <span class="text-[10px] text-slate-400">ج</span></span>
-                            </div>
-                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="text-[10px] font-bold bg-white border border-slate-200 rounded-lg px-2 py-1.5 outline-none text-slate-700 cursor-pointer focus:ring-2 focus:ring-brand-primary/20 transition-all">
+                        
+                        <div class="flex items-center gap-2">
+                            <span class="font-black text-brand-primary text-base">${o.total || 0} <span class="text-[9px]">ج</span></span>
+                            <select onclick="event.stopPropagation()" onchange="updateOrderStatus('${o.id}', this.value)" class="text-[10px] font-bold bg-white border border-slate-200 rounded px-1.5 py-1 outline-none text-slate-700 focus:ring-1 focus:ring-brand-primary/50 cursor-pointer">
                                 <option value="new" ${o.status==='new'?'selected':''}>جديد</option>
-                                <option value="dispatched" ${o.status==='dispatched'?'selected':''}>بالطريق</option>
                                 <option value="processing" ${o.status==='processing'?'selected':''}>تجهيز</option>
-                                <option value="deferred" ${o.status==='deferred'?'selected':''}>مؤجل</option>
+                                <option value="dispatched" ${o.status==='dispatched'?'selected':''}>بالطريق</option>
                                 <option value="no_answer" ${o.status==='no_answer'?'selected':''}>لم يرد</option>
                                 <option value="completed" ${o.status==='completed'?'selected':''}>مكتمل</option>
-                                <option value="canceled" ${o.status==='canceled'?'selected':''}>إلغاء</option>
-                                <option value="trash" class="text-red-500 font-black bg-red-50">سلة</option>
+                                <option value="trash" class="text-red-500">حذف</option>
                             </select>
                         </div>
                     </div>
+                    
+                    ${inlineNoteHtml}
                 </div>`;
             }).join('');
-        };
-
-           
-
-        window.openNoteOptions = (id) => {
-            currentOrderNoteId = id;
-            openModal('note-action-modal');
-        };
-
-        window.editCurrentNote = async () => {
-            closeModal('note-action-modal');
-            let o = allOrdersRaw.find(x => x.id === currentOrderNoteId);
-            if (!o) return;
-            let newText = prompt("تعديل الملاحظة:", o.adminNote);
-            if (newText !== null && newText.trim() !== "") {
-                try {
-                    await db.collection('orders').doc(o.id).update({ adminNote: newText.trim() });
-                } catch(e) { alert("خطأ في التعديل"); }
-            }
-        };
-
-        window.deleteCurrentNote = async () => {
-            closeModal('note-action-modal');
-            if (confirm("هل أنت متأكد من مسح الملاحظة بالكامل؟")) {
-                try {
-                    await db.collection('orders').doc(currentOrderNoteId).update({ adminNote: '' });
-                } catch(e) { alert("خطأ في المسح"); }
-            }
-        };
-
-
-        window.appendOrderNote = async (id) => {
-            let input = document.getElementById(`new-note-${id}`); 
-            let text = input.value.trim(); 
-            if(!text) return;
             
-            let o = allOrdersRaw.find(x => x.id === id);
+            if(activeOrderCardId) {
+                let input = document.getElementById(`inline-input-${activeOrderCardId}`);
+                if(input) input.focus();
+            }
+        };
+
+        window.toggleInlineNote = (orderId, field) => {
+            if(openNotesState[orderId] === field) delete openNotesState[orderId]; 
+            else openNotesState[orderId] = field; 
+            focusCard(orderId);
+            renderOrdersList(); 
+        };
+
+        window.saveInlineNote = async (orderId, field) => {
+            let input = document.getElementById(`inline-input-${orderId}`);
+            if(!input || !input.value.trim()) return;
+            
+            let text = input.value.trim();
+            input.disabled = true;
+            input.value = "جاري الحفظ...";
+
+            let o = allOrdersRaw.find(x => x.id === orderId);
             let dateStr = new Date().toLocaleString('ar-EG', {month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'});
-            let newNoteLine = `[${dateStr}] ${text}`;
-            let updatedNotes = o.adminNote ? o.adminNote + '\n\n' + newNoteLine : newNoteLine;
-            
-            let origPlaceholder = input.placeholder; 
-            input.value = ''; 
-            input.placeholder = 'جاري الحفظ...';
-            try { 
-                await db.collection('orders').doc(id).update({ adminNote: updatedNotes }); 
-                input.placeholder = origPlaceholder; 
-            } catch(e) { 
-                alert("خطأ في الحفظ"); 
-                input.placeholder = origPlaceholder; 
+            let newNote = `[${dateStr}] ${text}`;
+            let currentText = o[field] || '';
+            let updatedText = currentText ? currentText + '\n---\n' + newNote : newNote;
+
+            try {
+                await db.collection('orders').doc(orderId).update({ [field]: updatedText });
+            } catch(e) { alert("خطأ في الحفظ"); input.disabled = false; input.value = text; }
+        };
+
+        window.deleteInlineNote = async (orderId, field, idx) => {
+            if(!confirm("مسح الملاحظة؟")) return;
+            let o = allOrdersRaw.find(x => x.id === orderId);
+            let chunks = (o[field] || '').split('\n---\n').filter(c => c.trim() !== '');
+            chunks.splice(idx, 1);
+            try { await db.collection('orders').doc(orderId).update({ [field]: chunks.join('\n---\n') }); } catch(e){}
+        };
+
+        window.editInlineNote = async (orderId, field, idx) => {
+            let o = allOrdersRaw.find(x => x.id === orderId);
+            let chunks = (o[field] || '').split('\n---\n').filter(c => c.trim() !== '');
+            let match = chunks[idx].match(/^(\[.*?\])\s*(.*)/s);
+            let datePrefix = match ? match[1] + ' ' : '';
+            let textToEdit = match ? match[2] : chunks[idx];
+
+            let newText = prompt("تعديل الملاحظة:", textToEdit);
+            if(newText && newText.trim() !== "") {
+                chunks[idx] = datePrefix + newText.trim();
+                try { await db.collection('orders').doc(orderId).update({ [field]: chunks.join('\n---\n') }); } catch(e){}
             }
         };
+
 
         // === 5. سلة المحذوفات ===
         window.renderTrashUI = async () => {
@@ -4122,14 +4123,20 @@ window.deleteProductUI = async (id) => {
         
     </script>
     <script>
-        // تسجيل الـ Service Worker عشان الموبايل يلقط إنه تطبيق PWA
+            // 🚨 كود إعدام السيرفيس وركر والكاش القديم الإجباري 🚨
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('PWA Ready!'))
-                    .catch(err => console.log('PWA Error: ', err));
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                    registration.unregister(); 
+                }
             });
         }
+        if ('caches' in window) {
+            caches.keys().then((keyList) => {
+                return Promise.all(keyList.map((key) => caches.delete(key)));
+            });
+        }
+
         // ==========================================
         // 💬 نظام مركز الملاحظات الذكي 💬
         // ==========================================
