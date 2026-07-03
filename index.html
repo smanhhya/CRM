@@ -4242,10 +4242,11 @@ window.deleteProductUI = async (id) => {
             const sel = document.getElementById('recon-driver-select');
             const prevVal = sel.value;
             sel.innerHTML = '<option value="">-- اختر المندوب من هنا --</option>';
-            (storeSettings.drivers || []).forEach(d => sel.innerHTML += `<option value="${d.name}">${d.name}</option>`);
+            (storeSettings.drivers || []).forEach(d => sel.innerHTML += `<option value="${d.name} (${d.phone})">${d.name} (${d.phone})</option>`);
             if (prevVal) sel.value = prevVal;
             calculateDriverReconciliation();
         };
+
 
         window.calculateDriverReconciliation = () => {
             const driverName = document.getElementById('recon-driver-select').value;
