@@ -1038,6 +1038,7 @@
                 renderSettingsUI(); 
                 generateDynamicOrderInputs(); 
                 renderBatchesUI();
+                renderReconciliationUI();
             }).catch(e => console.log("خطأ في جلب بيانات لوحة الإدارة:", e));
 
             // 💡 جلب الطلبات بذكاء: هنجيب آخر 150 طلب (للمكتمل والملغي)، وكل الطلبات الحية (عشان مفيش أوردر قديم يضيع)
