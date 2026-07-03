@@ -955,7 +955,12 @@
             }
         }
 
-        function switchTab(tabId, btnElement) {
+        function switchTab(tabId, btnElement, isFromBackButton = false) {
+            // السحر هنا: لو اليوزر داس بإيده، بنسجل الخطوة في سجل الموبايل
+            if (!isFromBackButton) {
+                history.pushState({ tab: tabId }, '', '#' + tabId);
+            }
+
             document.querySelectorAll('.page-view').forEach(view => view.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.add('active');
             
@@ -977,8 +982,33 @@
             if(tabId === 'notes') renderNotesUI();
             if(tabId === 'reconciliation') renderReconciliationUI();
 
-            if(window.innerWidth < 768) toggleSidebar();
+            // الموبايل: نقفل القائمة الجانبية لو داس بإيده بس (عشان متبقاش مزعجة في الرجوع)
+            if(window.innerWidth < 768 && !isFromBackButton) toggleSidebar();
         }
+
+        // ==========================================
+        // التقاط زرار "الرجوع" من الموبايل لمنع الخروج
+        // ==========================================
+        window.addEventListener('popstate', (event) => {
+            let tabId = 'dashboard'; // الافتراضي
+            if (event.state && event.state.tab) {
+                tabId = event.state.tab;
+            } else if (window.location.hash) {
+                tabId = window.location.hash.replace('#', '');
+            }
+
+            // بنصطاد الزرار بتاع التبويب اللي هيرجعله
+            let btn = document.querySelector(`button[onclick*="switchTab('${tabId}'"]`);
+            if (btn) {
+                switchTab(tabId, btn, true); // true = إحنا راجعين لورا، متسجلش الخطوة دي تاني
+            }
+        });
+
+        // تسجيل أول صفحة (لوحة القيادة) أول ما الموقع يفتح
+        window.addEventListener('DOMContentLoaded', () => {
+            history.replaceState({ tab: 'dashboard' }, '', '#dashboard');
+        });
+
 
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
