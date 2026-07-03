@@ -4259,8 +4259,6 @@ window.deleteProductUI = async (id) => {
                 return;
             }
 
-            // التحسين الثاني (السحر كله هنا): بدل اليساوي (===) استخدمنا (includes)
-            // كده السيستم هيجيب أي أوردر فيه اسم المندوب ده، سواء كان جنبه رقم تليفون أو لأ!
             let driverOrders = allOrdersRaw.filter(o => 
                 o.driverName && 
                 o.driverName.includes(driverName) && 
@@ -4275,15 +4273,18 @@ window.deleteProductUI = async (id) => {
             }
 
             let totalAssigned = 0, totalDeliveredCash = 0, totalCanceled = 0;
+            // المتغيرات الجديدة اللي طلبناها لحساب التوصيل وصافي المنتجات
+            let totalDeliveryFees = 0, totalProductsNet = 0; 
             let ordersHtml = '';
 
             driverOrders.forEach(o => {
                 totalAssigned++;
                 let badge = '';
-                let priceClass = 'text-slate-400 line-through'; // افتراضي للملغي
+                let priceClass = 'text-slate-400 line-through'; 
                 
                 if (o.status === 'completed') {
                     totalDeliveredCash += Number(o.total) || 0;
+                    totalDeliveryFees += Number(o.deliveryFee) || 0; // بنجمع فلوس التوصيل
                     badge = '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-[10px] font-black border border-emerald-100">تم التسليم</span>';
                     priceClass = 'text-brand-primary';
                 } else if (o.status === 'dispatched') {
@@ -4294,35 +4295,63 @@ window.deleteProductUI = async (id) => {
                     badge = `<span class="bg-red-50 text-red-600 px-2 py-1 rounded text-[10px] font-black border border-red-100">${o.status === 'canceled' ? 'ملغي ومسترجع' : 'لم يرد ومسترجع'}</span>`;
                 }
 
+                // سحب الأصناف بتاعت الأوردر عشان تتعرض لما تفتح الكارت
+                let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded mr-1 border border-slate-200 inline-block mb-1 font-black">${i.quantity}x ${i.name}</span>`).join('') : '<span class="text-slate-400 text-xs">بدون تفاصيل</span>';
+                let prodPrice = (Number(o.subtotal)||0) - (Number(o.discount)||0);
+                let delPrice = Number(o.deliveryFee)||0;
+
+                // كارت الأوردر الجديد (قابل للضغط والفتح)
                 ordersHtml += `
-                <div class="flex justify-between items-center bg-white p-3.5 rounded-xl border border-slate-100 shadow-sm mb-2 hover:border-emerald-200 transition-colors">
-                    <div>
-                        <p class="font-black text-sm text-slate-800">${o.customerName}</p>
-                        <p class="text-[10px] font-bold text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${o.zone || 'بدون منطقة'}</p>
+                <div class="bg-white rounded-xl border border-slate-100 shadow-sm mb-2 overflow-hidden transition-all hover:border-emerald-200">
+                    <div class="flex justify-between items-center p-3.5 cursor-pointer hover:bg-slate-50 transition-colors" onclick="toggleOrderDetails('recon-items-${o.id}', 'recon-icon-${o.id}')">
+                        <div>
+                            <p class="font-black text-sm text-slate-800">${o.customerName}</p>
+                            <p class="text-[10px] font-bold text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot text-indigo-400 mr-1"></i> ${o.zone || 'بدون منطقة'}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex flex-col items-end gap-1.5">
+                                <span class="font-black ${priceClass} text-base">${o.total} ج</span>
+                                ${badge}
+                            </div>
+                            <i id="recon-icon-${o.id}" class="fa-solid fa-chevron-down text-slate-300 text-xs transition-transform duration-300"></i>
+                        </div>
                     </div>
-                    <div class="flex flex-col items-end gap-1.5">
-                        <span class="font-black ${priceClass} text-base">${o.total} ج</span>
-                        ${badge}
+                    
+                    <div id="recon-items-${o.id}" class="hidden p-3 border-t border-slate-50 bg-slate-50/50">
+                        <p class="text-[11px] font-bold text-slate-700 leading-relaxed mb-2"><i class="fa-solid fa-box-open text-brand-primary mr-1"></i> الأصناف المطلوبة:</p>
+                        <div class="flex flex-wrap">${itemsStr}</div>
+                        <div class="flex justify-between mt-2 pt-2 border-t border-slate-200/50 text-[10px] font-black text-slate-500">
+                            <span>صافي المنتجات: ${prodPrice} ج</span>
+                            <span class="text-indigo-500">فلوس التوصيل: ${delPrice} ج</span>
+                        </div>
                     </div>
                 </div>`;
             });
 
-            // تحذير ذكي يمنع التقفيل لو لسه فيه أوردرات المندوب مبلغش بحالتها
+            // حساب صافي المنتجات (إجمالي الكاش - إجمالي التوصيل)
+            totalProductsNet = totalDeliveredCash - totalDeliveryFees;
+
             let hasPending = driverOrders.some(o => o.status === 'dispatched');
             let pendingWarning = hasPending ? `<div class="bg-amber-50 text-amber-700 p-4 rounded-xl border border-amber-200 text-xs font-black mb-4 shadow-sm leading-relaxed"><i class="fa-solid fa-triangle-exclamation mr-1 text-amber-500"></i> تنبيه: لا يمكن التقفيل. يوجد أوردرات لا تزال حالتها (في الطريق). برجاء تعديل حالتها إلى (مكتمل) أو (ملغي) من الشاشة الرئيسية لتتمكن من التصفية.</div>` : '';
 
             container.innerHTML = `
                 ${pendingWarning}
-                <div class="grid grid-cols-3 gap-3 mb-5">
-                    <div class="bg-white border border-slate-200 p-3.5 rounded-xl text-center shadow-sm"><p class="text-[10px] font-bold text-slate-500 mb-1">استلم كم أوردر؟</p><p class="text-2xl font-black text-slate-700">${totalAssigned}</p></div>
-                    <div class="bg-white border border-slate-200 p-3.5 rounded-xl text-center shadow-sm"><p class="text-[10px] font-bold text-slate-500 mb-1">المرتجعات</p><p class="text-2xl font-black text-red-500">${totalCanceled}</p></div>
-                    <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-center shadow-md relative overflow-hidden">
-                        <div class="absolute -right-2 -top-2 w-10 h-10 bg-emerald-200 rounded-full opacity-50"></div>
-                        <p class="text-[10px] font-bold text-emerald-700 mb-1 relative z-10">الصافي لدرج الكاش</p>
-                        <p class="text-2xl font-black text-emerald-600 relative z-10">${totalDeliveredCash} <span class="text-sm">ج</span></p>
-                    </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    <div class="bg-white border border-slate-200 p-3 rounded-xl text-center shadow-sm"><p class="text-[10px] font-bold text-slate-500 mb-1">الطلبات المستلمة</p><p class="text-xl font-black text-slate-700">${totalAssigned}</p></div>
+                    <div class="bg-white border border-slate-200 p-3 rounded-xl text-center shadow-sm"><p class="text-[10px] font-bold text-slate-500 mb-1">المرتجعات</p><p class="text-xl font-black text-red-500">${totalCanceled}</p></div>
+                    <div class="bg-white border border-slate-200 p-3 rounded-xl text-center shadow-sm"><p class="text-[10px] font-bold text-slate-500 mb-1">فلوس التوصيل</p><p class="text-xl font-black text-indigo-500">${totalDeliveryFees} <span class="text-[10px]">ج</span></p></div>
+                    <div class="bg-white border border-slate-200 p-3 rounded-xl text-center shadow-sm"><p class="text-[10px] font-bold text-slate-500 mb-1">صافي المنتجات</p><p class="text-xl font-black text-brand-primary">${totalProductsNet} <span class="text-[10px]">ج</span></p></div>
                 </div>
-                <h4 class="text-xs font-black text-slate-700 mb-3 pb-2 border-b border-slate-200"><i class="fa-solid fa-list text-slate-400 mr-1"></i> تفاصيل أوردرات الوردية:</h4>
+                
+                <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex justify-between items-center shadow-md mb-5">
+                    <div>
+                        <p class="text-[11px] font-black text-emerald-800 mb-1">الصافي الكلي للدرج (منتجات + توصيل)</p>
+                        <p class="text-[9px] font-bold text-emerald-600/80">إجمالي المبلغ المطلوب استلامه في إيدك من المندوب</p>
+                    </div>
+                    <p class="text-3xl font-black text-emerald-600">${totalDeliveredCash} <span class="text-base">ج</span></p>
+                </div>
+
+                <h4 class="text-xs font-black text-slate-700 mb-3 pb-2 border-b border-slate-200"><i class="fa-solid fa-list text-slate-400 mr-1"></i> تفاصيل أوردرات الوردية (اضغط للتفاصيل):</h4>
                 <div class="max-h-72 overflow-y-auto custom-scroll pr-1">${ordersHtml}</div>
             `;
             
@@ -4333,6 +4362,7 @@ window.deleteProductUI = async (id) => {
                 btn.onclick = () => settleDriverAccount(driverName, totalDeliveredCash, driverOrders);
             }
         };
+
 
 
         window.settleDriverAccount = async (driverName, cashAmount, driverOrders) => {
