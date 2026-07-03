@@ -346,6 +346,27 @@
                 </div>
                 <div id="archive-list-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 overflow-y-auto custom-scroll pr-1 pb-4"></div>
             </div>
+            <div id="view-reconciliation" class="page-view h-full flex flex-col space-y-4 max-w-4xl mx-auto">
+                <div class="bg-white p-6 rounded-[1.5rem] shadow-soft border border-slate-100 shrink-0">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h2 class="text-xl font-black text-slate-800"><i class="fa-solid fa-hand-holding-dollar text-emerald-500 mr-2"></i> تقفيل عهدة المناديب</h2>
+                            <p class="text-xs text-slate-500 font-bold mt-1.5">اختر المندوب لحساب عهدته وتصفية الكاش الخاص بورديته.</p>
+                        </div>
+                    </div>
+                    <select id="recon-driver-select" onchange="calculateDriverReconciliation()" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 font-black text-slate-700 outline-none focus:ring-2 focus:ring-emerald-200 transition-all"></select>
+                </div>
+                
+                <div class="flex-1 bg-slate-50/50 rounded-[1.5rem] p-5 border border-slate-100 flex flex-col">
+                    <div id="recon-details-container" class="flex-1">
+                        <div class="text-center py-10 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl bg-white">برجاء اختيار مندوب لعرض عهدته.</div>
+                    </div>
+                </div>
+                
+                <div class="shrink-0 bg-white p-5 rounded-[1.5rem] shadow-soft border border-slate-100">
+                    <button id="btn-settle-recon" class="hidden w-full bg-slate-800 hover:bg-slate-900 text-white font-black py-4 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 text-base"><i class="fa-solid fa-check-double text-emerald-400"></i> تأكيد استلام النقدية وتقفيل العهدة</button>
+                </div>
+            </div>
 
             <div id="view-inventory" class="page-view h-full flex flex-col space-y-6 max-w-6xl mx-auto">
                 <div class="flex justify-between items-center bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft shrink-0">
