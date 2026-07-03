@@ -3764,6 +3764,7 @@ window.deleteProductUI = async (id) => {
                 renderOrdersList();
                 updateBatchSummary();
                 if(document.getElementById('view-notes').classList.contains('active')) renderNotesUI();
+                if(document.getElementById('view-reconciliation').classList.contains('active')) calculateDriverReconciliation();
             }, 150); 
         };
 
