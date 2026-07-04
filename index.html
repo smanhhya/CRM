@@ -1093,7 +1093,6 @@
                     
                     let mergedOrders = Object.values(globalOrdersMap);
                     
-                    let mergedOrders = Object.values(ordersMap);
                     // ترتيب الأوردرات من الأحدث للأقدم زي ما السيستم متعود
                     mergedOrders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
