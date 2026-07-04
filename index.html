@@ -1087,10 +1087,11 @@
                     allOrdersRaw = []; 
                     dispatchOrdersRaw = [];
 
-                    // دمج الاستعلامين مع منع التكرار
-                    let ordersMap = {};
-                    recentSnap.forEach(doc => ordersMap[doc.id] = {id: doc.id, ...doc.data()});
-                    activeSnap.forEach(doc => ordersMap[doc.id] = {id: doc.id, ...doc.data()});
+                    // دمج الاستعلامين بذكاء في الذاكرة الدائمة عشان الأوردرات متختفيش
+                    recentSnap.forEach(doc => globalOrdersMap[doc.id] = {id: doc.id, ...doc.data()});
+                    activeSnap.forEach(doc => globalOrdersMap[doc.id] = {id: doc.id, ...doc.data()});
+                    
+                    let mergedOrders = Object.values(globalOrdersMap);
                     
                     let mergedOrders = Object.values(ordersMap);
                     // ترتيب الأوردرات من الأحدث للأقدم زي ما السيستم متعود
@@ -4000,10 +4001,12 @@ window.deleteProductUI = async (id) => {
         window.setFreezerCount = async (id, val) => {
             let count = parseInt(val) || 0;
             if (count < 0) count = 0;
+            storeFreezer[id] = count; // التحديث الفوري محلياً عشان ميحتاجش ريفريش
             try {
                 await db.collection('inventory').doc('freezer').set({ [id]: count }, { merge: true });
             } catch(e) { console.log("خطأ في تحديث الفريزر"); }
         };
+
 
         // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر مع توثيق السجل الزمني 🌟
         window.updateOrderStatus = async (id, s) => { 
@@ -4014,8 +4017,16 @@ window.deleteProductUI = async (id) => {
             if(s === 'canceled' && !confirm('هل أنت متأكد من إلغاء هذا الطلب وإرجاع الكميات للمخزن والدفعة؟')) { renderOrdersList(); return; }
             if(s === 'trash' && !confirm('نقل الطلب لسلة المحذوفات؟ (يُحذف نهائياً بعد 15 يوم)')) { renderOrdersList(); return; }
             
+            // --- التحديث الفوري للواجهة (السحر اللي بيخلي الأوردر يروح مكانه فوراً بدون تقطيع) ---
+            o.status = s;
+            if (s === 'completed') o.completedAtStr = new Date().toLocaleDateString('en-US');
+            renderOrdersList();
+            if (s === 'trash') renderTrashUI();
+            // ---------------------------------------------------------
+
             try { 
                 let updateData = { status: s };
+
                 
                 // --- الإضافات الجديدة: تسجيل الوقت الدقيق للخط الزمني بدقة السيرفر ---
                 if (s === 'trash') updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
