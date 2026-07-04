@@ -890,7 +890,9 @@
         let customersData = []; 
         let allOrdersRaw = []; 
         let dispatchOrdersRaw = [];
+        let globalOrdersMap = {}; // سحر الذاكرة الدائمة
         let currentOrderTab = 'all';
+
 
         const defaultProducts = {
             'super': { name: 'طبق سوبر', basePrice: 100, weight: '300-350 جم', images: ['super.png'], isExtra: false },
