@@ -1717,13 +1717,18 @@
                 let normPhone1 = window.normalizePhone(o.customerPhone);
                 let normPhone2 = window.normalizePhone(o.customerPhone2);
 
+                // 1. توحيد النص بالكامل لأرقام إنجليزية لضمان التطابق التام
                 let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString} ${o.adminNote || ''} ${o.driverNote || ''}`.toLowerCase();
+                searchStr = searchStr.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
 
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => {
+                    // 2. تحويل الكلمة المبحوث عنها لإنجليزية
+                    let engWord = word.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
                     let normWord = window.normalizePhone(word);
-                    return searchStr.includes(word) || (normWord !== '' && searchStr.includes(normWord));
+                    
+                    // 3. السر هنا: الفلترة برقم التليفون هتشتغل بس لو الرقم أكبر من 5 أرقام، عشان الأرقام الصغيرة (7 أو 8) متجيبش كل الأوردرات!
+                    return searchStr.includes(engWord) || (normWord !== '' && normWord.length > 5 && searchStr.includes(normWord));
                 });
-
                 let matchSmart = true;
                 if(currentSmartFilter === 'vip') {
                     let c = customersData.find(x => window.normalizePhone(x.phone) === normPhone1);
