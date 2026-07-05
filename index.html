@@ -1692,7 +1692,6 @@
         };
         // --- نهاية إضافات الترتيب والتظليل والملاحظات المنزلقة ---
 
-        // ==========================================
         // دالة رسم كروت الأوردرات (مُحدثة بالملاحظات الجديدة)
         // ==========================================
          window.renderOrdersList = () => {
@@ -1702,12 +1701,13 @@
             // ضفنا dispatched و canceled هنا لضمان عمل العدادات بشكل كامل
             let dynamicCounts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
 
-            // --- التعديل السحري: دعم البحث بالكلمات المتطابقة (Exact Match) ---
+            // --- التعديل السحري: فصل الكلمات العادية عن المدخلات المتطابقة (Exact Entities) ---
             let filterWords = [];
+            let exactPhrases = []; // هنا خزان الكلمات اللي بين علامات تنصيص
             let quotesMatch = filterText.match(/"([^"]+)"/g);
             if (quotesMatch) {
                 quotesMatch.forEach(q => {
-                    filterWords.push(q.replace(/"/g, '').trim());
+                    exactPhrases.push(q.replace(/"/g, '').trim());
                     filterText = filterText.replace(q, ''); 
                 });
             }
@@ -1725,14 +1725,26 @@
                 let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString} ${o.adminNote || ''} ${o.driverNote || ''}`.toLowerCase();
                 searchStr = searchStr.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
 
+                // 2. فحص الكلمات العادية للبحث الحر
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => {
-                    // 2. تحويل الكلمة المبحوث عنها لإنجليزية
                     let engWord = word.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
                     let normWord = window.normalizePhone(word);
                     
-                    // 3. السر هنا: الفلترة برقم التليفون هتشتغل بس لو الرقم أكبر من 5 أرقام، عشان الأرقام الصغيرة (7 أو 8) متجيبش كل الأوردرات!
+                    // الفلترة برقم التليفون هتشتغل بس لو الرقم أكبر من 5 أرقام
                     return searchStr.includes(engWord) || (normWord !== '' && normWord.length > 5 && searchStr.includes(normWord));
                 });
+
+                // 3. الفحص المتطابق الصارم (Strict Exact Match) للمدخلات المحددة (الأصناف والدفعات)
+                let matchExact = exactPhrases.length === 0 ? true : exactPhrases.every(p => {
+                    let isBatch = bNameSearch.toLowerCase() === p;
+                    let isZone = (o.zone || '').toLowerCase() === p;
+                    let isName = (o.customerName || '').toLowerCase() === p;
+                    // البحث ككيان مستقل داخل مصفوفة الأصناف
+                    let isItem = o.items ? o.items.some(i => i.name.toLowerCase() === p) : false;
+                    
+                    return isBatch || isZone || isItem || isName || searchStr.includes(p);
+                });
+
                 let matchSmart = true;
                 if(currentSmartFilter === 'vip') {
                     let c = customersData.find(x => window.normalizePhone(x.phone) === normPhone1);
@@ -1741,7 +1753,8 @@
                     matchSmart = Number(o.total) >= 500; 
                 }
 
-                if (matchSearch && matchSmart && o.status !== 'trash') {
+                // دمجنا كل الشروط هنا (matchExact)
+                if (matchSearch && matchExact && matchSmart && o.status !== 'trash') {
                     if (dynamicCounts[o.status] !== undefined) dynamicCounts[o.status]++;
                     return true;
                 }
