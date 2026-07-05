@@ -3969,10 +3969,26 @@ window.deleteProductUI = async (id) => {
         };
 
         // ==========================================
-        // 🧊 نظام الفريزر الفعلي المتكامل 🧊
+        // 🧊 نظام الفريزر الفعلي المتكامل (المُحدث) 🧊
         // ==========================================
-        window.openFreezerModal = () => {
+        let freezerUpdateTimers = {}; // متغير لحفظ المؤقت الزمني لكل صنف (الفرامل)
+
+        window.openFreezerModal = async () => {
+            openModal('freezer-modal');
             let cont = document.getElementById('freezer-items-container');
+            
+            // 1. شاشة تحميل سريعة لمنع التعديل على داتا قديمة
+            cont.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-cyan-500 text-3xl mb-3"></i><p class="text-xs font-bold text-slate-500">جاري جلب الرصيد الفعلي...</p></div>';
+
+            // 2. جلب الداتا اللحظية من السيرفر
+            try {
+                let doc = await db.collection('inventory').doc('freezer').get();
+                if(doc.exists) storeFreezer = doc.data() || {};
+            } catch(e) {
+                console.log("خطأ في جلب الفريزر اللحظي: ", e);
+            }
+
+            // 3. رسم الشاشة بعد التأكد من الداتا
             cont.innerHTML = '';
             Object.keys(storeProducts).forEach(id => {
                 let currentCount = storeFreezer[id] || 0;
@@ -3980,30 +3996,48 @@ window.deleteProductUI = async (id) => {
                 <div class="flex justify-between items-center bg-white shadow-sm border border-slate-100 p-3 rounded-xl hover:border-cyan-200 transition-colors">
                     <span class="font-black text-slate-700 text-sm">${storeProducts[id].name}</span>
                     <div class="flex items-center gap-2">
-                        <button onclick="updateFreezerCount('${id}', -1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-red-500 hover:bg-red-50 font-black transition-colors"><i class="fa-solid fa-minus"></i></button>
-                        <input type="number" id="fz-${id}" value="${currentCount}" onchange="setFreezerCount('${id}', this.value)" class="w-16 border border-slate-200 bg-slate-50 text-center font-black text-cyan-700 text-base rounded-lg py-1 outline-none focus:ring-2 focus:ring-cyan-300 focus:bg-white transition-all">
-                        <button onclick="updateFreezerCount('${id}', 1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-emerald-600 hover:bg-emerald-50 font-black transition-colors"><i class="fa-solid fa-plus"></i></button>
+                        <button onclick="updateFreezerCount('${id}', -1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-red-500 hover:bg-red-50 font-black transition-colors active:scale-95"><i class="fa-solid fa-minus"></i></button>
+                        <input type="number" id="fz-${id}" value="${currentCount}" oninput="setFreezerCount('${id}', this.value)" class="w-16 border border-slate-200 bg-slate-50 text-center font-black text-cyan-700 text-base rounded-lg py-1 outline-none focus:ring-2 focus:ring-cyan-300 focus:bg-white transition-all">
+                        <button onclick="updateFreezerCount('${id}', 1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-emerald-600 hover:bg-emerald-50 font-black transition-colors active:scale-95"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>`;
             });
-            openModal('freezer-modal');
         };
 
-        window.updateFreezerCount = async (id, amount) => {
+        window.updateFreezerCount = (id, amount) => {
             let input = document.getElementById(`fz-${id}`);
             let newVal = (parseInt(input.value) || 0) + amount;
             if (newVal < 0) newVal = 0;
-            input.value = newVal;
-            await setFreezerCount(id, newVal);
+            
+            input.value = newVal; // تحديث الشاشة فوراً
+            triggerFreezerSave(id, newVal); // إرسال للحفظ الذكي
         };
 
-        window.setFreezerCount = async (id, val) => {
-            let count = parseInt(val) || 0;
-            if (count < 0) count = 0;
-            storeFreezer[id] = count; // التحديث الفوري محلياً عشان ميحتاجش ريفريش
-            try {
-                await db.collection('inventory').doc('freezer').set({ [id]: count }, { merge: true });
-            } catch(e) { console.log("خطأ في تحديث الفريزر"); }
+        window.setFreezerCount = (id, val) => {
+            let newVal = parseInt(val) || 0;
+            if (newVal < 0) newVal = 0;
+            
+            triggerFreezerSave(id, newVal); // إرسال للحفظ الذكي
+        };
+
+        // الدالة السحرية للحفظ الذكي (Debounce) لمنع التهنيج واختناق السيرفر
+        window.triggerFreezerSave = (id, newVal) => {
+            storeFreezer[id] = newVal; // التحديث الفوري محلياً
+
+            // إلغاء أي حفظ قديم معلق للصنف ده لو اليوزر ضغط تاني بسرعة
+            clearTimeout(freezerUpdateTimers[id]);
+
+            // عمل مؤقت 500 ملي ثانية (نص ثانية) للحفظ
+            freezerUpdateTimers[id] = setTimeout(async () => {
+                let inputEl = document.getElementById(`fz-${id}`);
+                try {
+                    if(inputEl) inputEl.classList.add('bg-cyan-50'); // إشارة بصرية خفيفة إنه بيحفظ
+                    await db.collection('inventory').doc('freezer').set({ [id]: newVal }, { merge: true });
+                    if(inputEl) inputEl.classList.remove('bg-cyan-50');
+                } catch(e) {
+                    console.log("خطأ في تحديث الفريزر", e);
+                }
+            }, 500);
         };
 
 
