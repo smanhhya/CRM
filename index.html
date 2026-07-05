@@ -4041,7 +4041,7 @@ window.deleteProductUI = async (id) => {
         };
 
 
-        // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر مع توثيق السجل الزمني 🌟
+        // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر مع توثيق السجل الزمني والخصم اللحظي 🌟
         window.updateOrderStatus = async (id, s) => { 
             let o = allOrdersRaw.find(x => x.id === id);
             if(!o) return;
@@ -4060,7 +4060,6 @@ window.deleteProductUI = async (id) => {
             try { 
                 let updateData = { status: s };
 
-                
                 // --- الإضافات الجديدة: تسجيل الوقت الدقيق للخط الزمني بدقة السيرفر ---
                 if (s === 'trash') updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
                 if (s === 'dispatched') updateData.dispatchedAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -4075,7 +4074,7 @@ window.deleteProductUI = async (id) => {
 
                 await db.collection('orders').doc(id).update(updateData); 
                 
-                // 🧊 سحر الفريزر: الخصم والإرجاع الأوتوماتيك 🧊
+                // 🧊 سحر الفريزر: الخصم والإرجاع الأوتوماتيك واللحظي 🧊
                 // 💡 التعديل هنا: ضفنا 'deferred' عشان تتخصم، ولو نقلنا من deferred لـ processing مش هيخصم تاني!
                 let deductingStates = ['processing', 'dispatched', 'completed', 'deferred'];
                 let wasInFreezer = deductingStates.includes(oldStatus);
@@ -4083,11 +4082,23 @@ window.deleteProductUI = async (id) => {
 
                 if (!wasInFreezer && isNowInFreezer) {
                     let fzUpdates = {};
-                    if(o.items) o.items.forEach(i => fzUpdates[i.id] = firebase.firestore.FieldValue.increment(-i.quantity));
+                    if(o.items) {
+                        o.items.forEach(i => {
+                            fzUpdates[i.id] = firebase.firestore.FieldValue.increment(-i.quantity);
+                            // السطر ده هو اللي بيعمل الخصم اللحظي قدام عينك بدون ريفرش
+                            storeFreezer[i.id] = Math.max(0, (storeFreezer[i.id] || 0) - i.quantity); 
+                        });
+                    }
                     await db.collection('inventory').doc('freezer').set(fzUpdates, { merge: true });
                 } else if (wasInFreezer && !isNowInFreezer) {
                     let fzUpdates = {};
-                    if(o.items) o.items.forEach(i => fzUpdates[i.id] = firebase.firestore.FieldValue.increment(i.quantity));
+                    if(o.items) {
+                        o.items.forEach(i => {
+                            fzUpdates[i.id] = firebase.firestore.FieldValue.increment(i.quantity);
+                            // السطر ده هو اللي بيرجع الكمية لحظياً قدام عينك بدون ريفرش
+                            storeFreezer[i.id] = (storeFreezer[i.id] || 0) + i.quantity; 
+                        });
+                    }
                     await db.collection('inventory').doc('freezer').set(fzUpdates, { merge: true });
                 }
 
@@ -4115,7 +4126,6 @@ window.deleteProductUI = async (id) => {
         };
 
 
-
         window.bulkChangeStatus = async (newStatus) => {
             let checked = Array.from(document.querySelectorAll('.bulk-order-cb:checked')).map(cb => cb.value);
             if(checked.length === 0) return;
@@ -4140,12 +4150,19 @@ window.deleteProductUI = async (id) => {
                         // 💡 التعديل هنا برضو
                         let wasIn = ['processing', 'dispatched', 'completed', 'deferred'].includes(o.status);
                         let isNowIn = ['processing', 'dispatched', 'completed', 'deferred'].includes(newStatus);
-
                         
                         if (!wasIn && isNowIn) {
-                            o.items.forEach(i => fzBulkUpdates[i.id] = (fzBulkUpdates[i.id] || 0) - i.quantity);
+                            o.items.forEach(i => {
+                                fzBulkUpdates[i.id] = (fzBulkUpdates[i.id] || 0) - i.quantity;
+                                // 🚀 السطر ده للخصم اللحظي في الذاكرة (بدون ريفرش)
+                                storeFreezer[i.id] = Math.max(0, (storeFreezer[i.id] || 0) - i.quantity);
+                            });
                         } else if (wasIn && !isNowIn) {
-                            o.items.forEach(i => fzBulkUpdates[i.id] = (fzBulkUpdates[i.id] || 0) + i.quantity);
+                            o.items.forEach(i => {
+                                fzBulkUpdates[i.id] = (fzBulkUpdates[i.id] || 0) + i.quantity;
+                                // 🚀 السطر ده للإرجاع اللحظي في الذاكرة (بدون ريفرش)
+                                storeFreezer[i.id] = (storeFreezer[i.id] || 0) + i.quantity;
+                            });
                         }
                     }
                 });
@@ -4166,7 +4183,6 @@ window.deleteProductUI = async (id) => {
                 bar.innerHTML = originalHtml;
             }
         };
-
 
 
         window.saveEditedOrder = async () => {
@@ -4235,8 +4251,16 @@ window.deleteProductUI = async (id) => {
                     // 🧊 تحديث الفريزر لو عدلنا طلب بيتم تجهيزه 🧊
                     if (['processing', 'completed', 'deferred'].includes(editingOrderData.status)) {
                         let freezerEditUpdates = {};
-                        oldItems.forEach(i => { freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) + i.quantity; }); 
-                        newItems.forEach(i => { freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) - i.quantity; }); 
+                        oldItems.forEach(i => { 
+                            freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) + i.quantity; 
+                            // 🚀 إرجاع الكمية القديمة لحظياً للذاكرة
+                            storeFreezer[i.id] = (storeFreezer[i.id] || 0) + i.quantity; 
+                        }); 
+                        newItems.forEach(i => { 
+                            freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) - i.quantity; 
+                            // 🚀 خصم الكمية الجديدة لحظياً من الذاكرة
+                            storeFreezer[i.id] = Math.max(0, (storeFreezer[i.id] || 0) - i.quantity); 
+                        }); 
                         
                         let finalFzUpdates = {};
                         Object.keys(freezerEditUpdates).forEach(id => { 
@@ -4270,6 +4294,7 @@ window.deleteProductUI = async (id) => {
             } catch(e) { alert("حدث خطأ أثناء حفظ التعديلات!"); console.log(e); }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
+
         // ↩️ دالة إلغاء الأرشفة واستعادة الدفعة للوضع الحي بالكامل ↩️
         window.unarchiveBatch = async (arId) => {
             let a = archivedBatchesData.find(x => x.id === arId); if(!a) return;
