@@ -277,7 +277,7 @@
                         <button onclick="setOrderTab('deferred')" id="tab-deferred" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مؤجل <span id="badge-deferred" class="ml-1 bg-orange-100 text-orange-700 px-1.5 rounded-full text-[10px]">0</span></button>                  
                         <button onclick="setOrderTab('no_answer')" id="tab-no_answer" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">لم يرد <span id="badge-no_answer" class="ml-1 bg-purple-100 text-purple-700 px-1.5 rounded-full text-[10px]">0</span></button>
                         <button onclick="setOrderTab('completed')" id="tab-completed" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">مكتمل <span id="badge-completed" class="ml-1 bg-emerald-100 text-emerald-700 px-1.5 rounded-full text-[10px]">0</span></button>
-                        <button onclick="setOrderTab('canceled')" id="tab-canceled" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">ملغي</button>
+                        <button onclick="setOrderTab('canceled')" id="tab-canceled" class="order-tab whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">ملغي <span id="badge-canceled" class="ml-1 bg-slate-100 text-slate-700 px-1.5 rounded-full text-[10px]">0</span></button>
                     </div>
 
                     <div id="bulk-actions-bar" class="hidden bg-slate-800 text-white p-2 rounded-xl mt-3 shadow-lg flex justify-between items-center transition-all border border-slate-700">
@@ -1088,11 +1088,19 @@
                     allOrdersRaw = []; 
                     dispatchOrdersRaw = [];
 
-                    // دمج الاستعلامين بذكاء في الذاكرة الدائمة عشان الأوردرات متختفيش
-                    recentSnap.forEach(doc => globalOrdersMap[doc.id] = {id: doc.id, ...doc.data()});
-                    activeSnap.forEach(doc => globalOrdersMap[doc.id] = {id: doc.id, ...doc.data()});
+                    recentSnap.forEach(doc => {
+                        // التعديل السحري: نمنع الأوردر القديم إنه يمسح التحديث اليدوي اللي عملناه (عشان قسم الملغي والمكتمل يفضل شغال)
+                        if (!globalOrdersMap[doc.id] || !globalOrdersMap[doc.id].manuallyUpdated) {
+                            globalOrdersMap[doc.id] = {id: doc.id, ...doc.data()};
+                        }
+                    });
+                    activeSnap.forEach(doc => {
+                        globalOrdersMap[doc.id] = {id: doc.id, ...doc.data()};
+                        globalOrdersMap[doc.id].manuallyUpdated = false; // ريستارت للتحديث اليدوي
+                    });
                     
                     let mergedOrders = Object.values(globalOrdersMap);
+
                     
                     // ترتيب الأوردرات من الأحدث للأقدم زي ما السيستم متعود
                     mergedOrders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
@@ -1177,10 +1185,12 @@
                     }
 
                     // --- 4. تحديث الأساسيات (أرقام التبويبات الحية) ---
-                    ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed'].forEach(s => { 
+                    // أضفنا canceled هنا عشان العداد يشتغل
+                    ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed', 'canceled'].forEach(s => { 
                         let b = document.getElementById(`badge-${s}`); 
-                        if(b) b.innerText = counts[s]; 
+                        if(b) b.innerText = counts[s] || 0; 
                     });
+
                     
                     scheduleSystemRender();
                 });
@@ -1338,7 +1348,7 @@
             });
 
 
-            // الدالة السحرية (الذكية التراكمية) لتركيب الفلاتر
+            // الدالة السحرية (الذكية التراكمية) لتركيب الفلاتر - تم إضافة دعم البحث المتطابق
             window.filterOrdersFromAnalysis = (keyword) => {
                 closeModal('analysis-modal');
                 let searchBox = document.getElementById('search-order');
@@ -1346,18 +1356,20 @@
                     if (keyword === "أوردرات عادية" || keyword === "مسح") {
                         searchBox.value = "";
                     } else {
+                        let exactKeyword = `"${keyword}"`; // التعديل هنا: إضافة علامات تنصيص للبحث المتطابق
                         let currentVal = searchBox.value.trim();
                         // لو ضغطت على فلتر موجود أصلاً.. هيشيله (عشان لو حبيت تتراجع)
-                        if (currentVal.includes(keyword)) {
-                            searchBox.value = currentVal.replace(keyword, '').replace(/\s+/g, ' ').trim();
+                        if (currentVal.includes(exactKeyword)) {
+                            searchBox.value = currentVal.replace(exactKeyword, '').replace(/\s+/g, ' ').trim();
                         } else {
                             // لو فلتر جديد، هيحطه جنب القديم ويدمجهم!
-                            searchBox.value = currentVal ? currentVal + " " + keyword : keyword;
+                            searchBox.value = currentVal ? currentVal + " " + exactKeyword : exactKeyword;
                         }
                     }
                     renderOrdersList();
                 }
             };
+
 
 
             if(totalOrders === 0) {
@@ -1682,9 +1694,22 @@
         // ==========================================
          window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
-            const filterText = (document.getElementById('search-order').value || '').toLowerCase();
+            let filterText = (document.getElementById('search-order').value || '').toLowerCase();
             
-            let dynamicCounts = { new: 0, processing: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+            // ضفنا dispatched و canceled هنا لضمان عمل العدادات بشكل كامل
+            let dynamicCounts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+
+            // --- التعديل السحري: دعم البحث بالكلمات المتطابقة (Exact Match) ---
+            let filterWords = [];
+            let quotesMatch = filterText.match(/"([^"]+)"/g);
+            if (quotesMatch) {
+                quotesMatch.forEach(q => {
+                    filterWords.push(q.replace(/"/g, '').trim());
+                    filterText = filterText.replace(q, ''); 
+                });
+            }
+            filterWords = filterWords.concat(filterText.split(' ').filter(w => w.trim() !== ''));
+            // -----------------------------------------------------------------
 
             let filteredBase = allOrdersRaw.filter(o => {
                 let itemsString = (o.items && Array.isArray(o.items)) ? o.items.map(i => i.name).join(' ') : '';
@@ -1694,8 +1719,7 @@
                 let normPhone2 = window.normalizePhone(o.customerPhone2);
 
                 let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString} ${o.adminNote || ''} ${o.driverNote || ''}`.toLowerCase();
-                
-                let filterWords = filterText.split(' ').filter(w => w.trim() !== '');
+
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => {
                     let normWord = window.normalizePhone(word);
                     return searchStr.includes(word) || (normWord !== '' && searchStr.includes(normWord));
@@ -1716,10 +1740,12 @@
                 return false;
             });
 
-            ['new', 'processing', 'deferred', 'no_answer', 'completed'].forEach(s => { 
+            // ضفنا dispatched و canceled لضمان تحديث الأرقام لحظياً
+            ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed', 'canceled'].forEach(s => { 
                 let b = document.getElementById(`badge-${s}`); 
-                if(b) b.innerText = dynamicCounts[s]; 
+                if(b) b.innerText = dynamicCounts[s] || 0; 
             });
+
 
             let filtered = filteredBase.filter(o => {
                 return (currentOrderTab === 'all') || (o.status === currentOrderTab);
@@ -4109,10 +4135,19 @@ window.deleteProductUI = async (id) => {
 
             // --- التحديث الفوري للواجهة ---
             o.status = s;
-            if (s === 'completed') o.completedAtStr = new Date().toLocaleDateString('en-US');
+            o.manuallyUpdated = true; // علامة التحديث اليدوي
+            if(globalOrdersMap[id]) {
+                globalOrdersMap[id].status = s;
+                globalOrdersMap[id].manuallyUpdated = true;
+            }
+            if (s === 'completed') {
+                o.completedAtStr = new Date().toLocaleDateString('en-US');
+                if(globalOrdersMap[id]) globalOrdersMap[id].completedAtStr = o.completedAtStr;
+            }
             renderOrdersList();
             if (s === 'trash') renderTrashUI();
             // ---------------------------------------------------------
+
 
             try { 
                 let updateData = { status: s };
