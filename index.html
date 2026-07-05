@@ -4021,32 +4021,29 @@ window.deleteProductUI = async (id) => {
             // التأكيد في حالة السالب
             if (newVal < 0) {
                 if(!confirm(`⚠️ انتباه: رصيد (${storeProducts[id].name}) سيكون بالسالب (${newVal}).\nهل أنت متأكد من هذا الإجراء؟`)) {
-                    return; // لو رفض، نلغي العملية
+                    return; // لو رفض، نلغي العملية وميخصمش
                 }
             }
             
             input.value = newVal; // تحديث الشاشة فوراً
-            triggerFreezerSave(id, amount); // نبعت مقدار الزيادة/النقصان فقط (Delta)
+            triggerFreezerSave(id, newVal); // 👈 بنبعت الرقم النهائي (newVal) زي ما السيستم بتاعك متعود
         };
 
         // دالة الكتابة اليدوية جوه المربع
         window.setFreezerCount = (id, val) => {
             let newVal = parseInt(val) || 0;
-            let currentDbVal = storeFreezer[id] || 0;
-            let delta = newVal - currentDbVal; // حساب الفرق بين المكتوب والرصيد الحالي
             
-            if (delta === 0) return; // مفيش تغيير
-
             // التأكيد في حالة السالب
             if (newVal < 0) {
                 if(!confirm(`⚠️ انتباه: رصيد (${storeProducts[id].name}) سيكون بالسالب (${newVal}).\nهل أنت متأكد من هذا الإجراء؟`)) {
-                    document.getElementById(`fz-${id}`).value = currentDbVal; // نرجع الرقم القديم
+                    document.getElementById(`fz-${id}`).value = storeFreezer[id] || 0; // نرجع الرقم القديم
                     return;
                 }
             }
             
-            triggerFreezerSave(id, delta); // نبعت الفرق فقط لفايربيس
+            triggerFreezerSave(id, newVal); // 👈 بنبعت الرقم النهائي (newVal) زي ما السيستم بتاعك متعود
         };
+
 
         // الدالة السحرية للحفظ الآمن (إرسال الفروق فقط لمنع تضارب البيانات)
         window.triggerFreezerSave = async (id, delta) => {
