@@ -1347,27 +1347,30 @@
             });
 
 
-            // الدالة السحرية (الذكية التراكمية) لتركيب الفلاتر - تم إضافة دعم البحث المتطابق
-            window.filterOrdersFromAnalysis = (keyword) => {
+            // الدالة السحرية (الذكية التراكمية) لتركيب الفلاتر - بدعم المدخلات المنفصلة (Exact Entities)
+            window.filterOrdersFromAnalysis = (keyword, secondKeyword = null) => {
                 closeModal('analysis-modal');
                 let searchBox = document.getElementById('search-order');
                 if(searchBox) {
                     if (keyword === "أوردرات عادية" || keyword === "مسح") {
                         searchBox.value = "";
                     } else {
-                        let exactKeyword = `"${keyword}"`; // التعديل هنا: إضافة علامات تنصيص للبحث المتطابق
+                        let k1 = `"${keyword}"`;
+                        let k2 = secondKeyword ? `"${secondKeyword}"` : "";
                         let currentVal = searchBox.value.trim();
-                        // لو ضغطت على فلتر موجود أصلاً.. هيشيله (عشان لو حبيت تتراجع)
-                        if (currentVal.includes(exactKeyword)) {
-                            searchBox.value = currentVal.replace(exactKeyword, '').replace(/\s+/g, ' ').trim();
+                        
+                        if (currentVal.includes(k1)) {
+                            currentVal = currentVal.replace(k1, '').replace(k2, '');
                         } else {
-                            // لو فلتر جديد، هيحطه جنب القديم ويدمجهم!
-                            searchBox.value = currentVal ? currentVal + " " + exactKeyword : exactKeyword;
+                            currentVal = currentVal ? currentVal + " " + k1 : k1;
+                            if (secondKeyword) currentVal += " " + k2;
                         }
+                        searchBox.value = currentVal.replace(/\s+/g, ' ').trim();
                     }
                     renderOrdersList();
                 }
             };
+
 
 
 
