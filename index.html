@@ -3969,26 +3969,34 @@ window.deleteProductUI = async (id) => {
         };
 
         // ==========================================
-        // 🧊 نظام الفريزر الفعلي المتكامل (المُحدث) 🧊
+        // 🧊 نظام الفريزر الفعلي المتكامل (المُحدث والتفاعلي لحظياً) 🧊
         // ==========================================
-        let freezerUpdateTimers = {}; // متغير لحفظ المؤقت الزمني لكل صنف (الفرامل)
+        let isFreezerListenerActive = false; // متغير لمنع تكرار فتح الاتصال اللحظي
 
-        window.openFreezerModal = async () => {
+        window.openFreezerModal = () => {
             openModal('freezer-modal');
             let cont = document.getElementById('freezer-items-container');
             
-            // 1. شاشة تحميل سريعة لمنع التعديل على داتا قديمة
-            cont.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-cyan-500 text-3xl mb-3"></i><p class="text-xs font-bold text-slate-500">جاري جلب الرصيد الفعلي...</p></div>';
-
-            // 2. جلب الداتا اللحظية من السيرفر
-            try {
-                let doc = await db.collection('inventory').doc('freezer').get();
-                if(doc.exists) storeFreezer = doc.data() || {};
-            } catch(e) {
-                console.log("خطأ في جلب الفريزر اللحظي: ", e);
+            // 1. تفعيل الاتصال اللحظي بفايربيس (مرة واحدة فقط)
+            if (!isFreezerListenerActive) {
+                db.collection('inventory').doc('freezer').onSnapshot(doc => {
+                    if(doc.exists) {
+                        storeFreezer = doc.data() || {};
+                        
+                        // التحديث اللحظي للواجهة بدون ما نقفل الشاشة أو نقطع كتابة اليوزر
+                        Object.keys(storeFreezer).forEach(id => {
+                            let inputEl = document.getElementById(`fz-${id}`);
+                            // بنحدث الرقم بس لو اليوزر مش واقف بيكتب جواه حالياً
+                            if(inputEl && document.activeElement !== inputEl) {
+                                inputEl.value = storeFreezer[id];
+                            }
+                        });
+                    }
+                }, error => console.log("خطأ في الاتصال اللحظي للفريزر:", error));
+                isFreezerListenerActive = true; // تم التفعيل
             }
 
-            // 3. رسم الشاشة بعد التأكد من الداتا
+            // 2. رسم الشاشة فوراً (بدون أي انتظار أو تحميل)
             cont.innerHTML = '';
             Object.keys(storeProducts).forEach(id => {
                 let currentCount = storeFreezer[id] || 0;
@@ -3997,51 +4005,73 @@ window.deleteProductUI = async (id) => {
                     <span class="font-black text-slate-700 text-sm">${storeProducts[id].name}</span>
                     <div class="flex items-center gap-2">
                         <button onclick="updateFreezerCount('${id}', -1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-red-500 hover:bg-red-50 font-black transition-colors active:scale-95"><i class="fa-solid fa-minus"></i></button>
-                        <input type="number" id="fz-${id}" value="${currentCount}" oninput="setFreezerCount('${id}', this.value)" class="w-16 border border-slate-200 bg-slate-50 text-center font-black text-cyan-700 text-base rounded-lg py-1 outline-none focus:ring-2 focus:ring-cyan-300 focus:bg-white transition-all">
+                        <input type="number" id="fz-${id}" value="${currentCount}" onchange="setFreezerCount('${id}', this.value)" class="w-16 border border-slate-200 bg-slate-50 text-center font-black text-cyan-700 text-base rounded-lg py-1 outline-none focus:ring-2 focus:ring-cyan-300 focus:bg-white transition-all">
                         <button onclick="updateFreezerCount('${id}', 1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-emerald-600 hover:bg-emerald-50 font-black transition-colors active:scale-95"><i class="fa-solid fa-plus"></i></button>
                     </div>
                 </div>`;
             });
         };
 
+        // دالة الضغط على زراير (+ / -)
         window.updateFreezerCount = (id, amount) => {
             let input = document.getElementById(`fz-${id}`);
-            let newVal = (parseInt(input.value) || 0) + amount;
-            if (newVal < 0) newVal = 0;
+            let currentVal = parseInt(input.value) || 0;
+            let newVal = currentVal + amount;
+            
+            // التأكيد في حالة السالب
+            if (newVal < 0) {
+                if(!confirm(`⚠️ انتباه: رصيد (${storeProducts[id].name}) سيكون بالسالب (${newVal}).\nهل أنت متأكد من هذا الإجراء؟`)) {
+                    return; // لو رفض، نلغي العملية
+                }
+            }
             
             input.value = newVal; // تحديث الشاشة فوراً
-            triggerFreezerSave(id, newVal); // إرسال للحفظ الذكي
+            triggerFreezerSave(id, amount); // نبعت مقدار الزيادة/النقصان فقط (Delta)
         };
 
+        // دالة الكتابة اليدوية جوه المربع
         window.setFreezerCount = (id, val) => {
             let newVal = parseInt(val) || 0;
-            if (newVal < 0) newVal = 0;
+            let currentDbVal = storeFreezer[id] || 0;
+            let delta = newVal - currentDbVal; // حساب الفرق بين المكتوب والرصيد الحالي
             
-            triggerFreezerSave(id, newVal); // إرسال للحفظ الذكي
-        };
+            if (delta === 0) return; // مفيش تغيير
 
-        // الدالة السحرية للحفظ الذكي (Debounce) لمنع التهنيج واختناق السيرفر
-        window.triggerFreezerSave = (id, newVal) => {
-            storeFreezer[id] = newVal; // التحديث الفوري محلياً
-
-            // إلغاء أي حفظ قديم معلق للصنف ده لو اليوزر ضغط تاني بسرعة
-            clearTimeout(freezerUpdateTimers[id]);
-
-            // عمل مؤقت 500 ملي ثانية (نص ثانية) للحفظ
-            freezerUpdateTimers[id] = setTimeout(async () => {
-                let inputEl = document.getElementById(`fz-${id}`);
-                try {
-                    if(inputEl) inputEl.classList.add('bg-cyan-50'); // إشارة بصرية خفيفة إنه بيحفظ
-                    await db.collection('inventory').doc('freezer').set({ [id]: newVal }, { merge: true });
-                    if(inputEl) inputEl.classList.remove('bg-cyan-50');
-                } catch(e) {
-                    console.log("خطأ في تحديث الفريزر", e);
+            // التأكيد في حالة السالب
+            if (newVal < 0) {
+                if(!confirm(`⚠️ انتباه: رصيد (${storeProducts[id].name}) سيكون بالسالب (${newVal}).\nهل أنت متأكد من هذا الإجراء؟`)) {
+                    document.getElementById(`fz-${id}`).value = currentDbVal; // نرجع الرقم القديم
+                    return;
                 }
-            }, 500);
+            }
+            
+            triggerFreezerSave(id, delta); // نبعت الفرق فقط لفايربيس
+        };
+
+        // الدالة السحرية للحفظ الآمن (إرسال الفروق فقط لمنع تضارب البيانات)
+        window.triggerFreezerSave = async (id, delta) => {
+            if (delta === 0) return;
+
+            storeFreezer[id] = (storeFreezer[id] || 0) + delta; // التحديث الفوري محلياً للسرعة
+
+            let inputEl = document.getElementById(`fz-${id}`);
+            try {
+                if(inputEl) inputEl.classList.add('bg-cyan-50'); // إشارة بصرية خفيفة
+                // نبعت الزيادة أو النقصان لفايربيس عشان يجمع أو يطرح بأمان تام
+                await db.collection('inventory').doc('freezer').set({ 
+                    [id]: firebase.firestore.FieldValue.increment(delta) 
+                }, { merge: true });
+                if(inputEl) inputEl.classList.remove('bg-cyan-50');
+            } catch(e) {
+                console.log("خطأ في تحديث الفريزر", e);
+                // لو حصل خطأ في النت، نرجع الداتا زي ما كانت
+                storeFreezer[id] = (storeFreezer[id] || 0) - delta;
+                if(inputEl) inputEl.value = storeFreezer[id];
+            }
         };
 
 
-        // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر مع توثيق السجل الزمني والخصم اللحظي 🌟
+        // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر مع السماح بالسالب 🌟
         window.updateOrderStatus = async (id, s) => { 
             let o = allOrdersRaw.find(x => x.id === id);
             if(!o) return;
@@ -4050,7 +4080,7 @@ window.deleteProductUI = async (id) => {
             if(s === 'canceled' && !confirm('هل أنت متأكد من إلغاء هذا الطلب وإرجاع الكميات للمخزن والدفعة؟')) { renderOrdersList(); return; }
             if(s === 'trash' && !confirm('نقل الطلب لسلة المحذوفات؟ (يُحذف نهائياً بعد 15 يوم)')) { renderOrdersList(); return; }
             
-            // --- التحديث الفوري للواجهة (السحر اللي بيخلي الأوردر يروح مكانه فوراً بدون تقطيع) ---
+            // --- التحديث الفوري للواجهة ---
             o.status = s;
             if (s === 'completed') o.completedAtStr = new Date().toLocaleDateString('en-US');
             renderOrdersList();
@@ -4060,22 +4090,18 @@ window.deleteProductUI = async (id) => {
             try { 
                 let updateData = { status: s };
 
-                // --- الإضافات الجديدة: تسجيل الوقت الدقيق للخط الزمني بدقة السيرفر ---
                 if (s === 'trash') updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
                 if (s === 'dispatched') updateData.dispatchedAt = firebase.firestore.FieldValue.serverTimestamp();
                 if (s === 'canceled') updateData.canceledAt = firebase.firestore.FieldValue.serverTimestamp();
                 
-                // 💡 حساب مبيعات اليوم الفعلي وقت التسليم + توثيق وقت التسليم للخط الزمني 💡
                 if (s === 'completed') {
                     updateData.completedAtStr = new Date().toLocaleDateString('en-US');
                     updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
                 }
-                // ---------------------------------------------------------
 
                 await db.collection('orders').doc(id).update(updateData); 
                 
-                // 🧊 سحر الفريزر: الخصم والإرجاع الأوتوماتيك واللحظي 🧊
-                // 💡 التعديل هنا: ضفنا 'deferred' عشان تتخصم، ولو نقلنا من deferred لـ processing مش هيخصم تاني!
+                // 🧊 سحر الفريزر 🧊
                 let deductingStates = ['processing', 'dispatched', 'completed', 'deferred'];
                 let wasInFreezer = deductingStates.includes(oldStatus);
                 let isNowInFreezer = deductingStates.includes(s);
@@ -4085,8 +4111,8 @@ window.deleteProductUI = async (id) => {
                     if(o.items) {
                         o.items.forEach(i => {
                             fzUpdates[i.id] = firebase.firestore.FieldValue.increment(-i.quantity);
-                            // السطر ده هو اللي بيعمل الخصم اللحظي قدام عينك بدون ريفرش
-                            storeFreezer[i.id] = Math.max(0, (storeFreezer[i.id] || 0) - i.quantity); 
+                            // تم إزالة Math.max للسماح بالسالب
+                            storeFreezer[i.id] = (storeFreezer[i.id] || 0) - i.quantity; 
                         });
                     }
                     await db.collection('inventory').doc('freezer').set(fzUpdates, { merge: true });
@@ -4095,7 +4121,6 @@ window.deleteProductUI = async (id) => {
                     if(o.items) {
                         o.items.forEach(i => {
                             fzUpdates[i.id] = firebase.firestore.FieldValue.increment(i.quantity);
-                            // السطر ده هو اللي بيرجع الكمية لحظياً قدام عينك بدون ريفرش
                             storeFreezer[i.id] = (storeFreezer[i.id] || 0) + i.quantity; 
                         });
                     }
@@ -4147,20 +4172,18 @@ window.deleteProductUI = async (id) => {
 
                     let o = allOrdersRaw.find(x => x.id === id);
                     if(o && o.items) {
-                        // 💡 التعديل هنا برضو
                         let wasIn = ['processing', 'dispatched', 'completed', 'deferred'].includes(o.status);
                         let isNowIn = ['processing', 'dispatched', 'completed', 'deferred'].includes(newStatus);
                         
                         if (!wasIn && isNowIn) {
                             o.items.forEach(i => {
                                 fzBulkUpdates[i.id] = (fzBulkUpdates[i.id] || 0) - i.quantity;
-                                // 🚀 السطر ده للخصم اللحظي في الذاكرة (بدون ريفرش)
-                                storeFreezer[i.id] = Math.max(0, (storeFreezer[i.id] || 0) - i.quantity);
+                                // تم إزالة Math.max للسماح بالسالب
+                                storeFreezer[i.id] = (storeFreezer[i.id] || 0) - i.quantity;
                             });
                         } else if (wasIn && !isNowIn) {
                             o.items.forEach(i => {
                                 fzBulkUpdates[i.id] = (fzBulkUpdates[i.id] || 0) + i.quantity;
-                                // 🚀 السطر ده للإرجاع اللحظي في الذاكرة (بدون ريفرش)
                                 storeFreezer[i.id] = (storeFreezer[i.id] || 0) + i.quantity;
                             });
                         }
@@ -4221,10 +4244,9 @@ window.deleteProductUI = async (id) => {
                 await db.collection('orders').doc(editingOrderData.id).update({ 
                     items: newItems, subtotal: newSubtotal, deliveryFee: newDelivery, discount: newDiscount, total: newTotal, 
                     batchId: newBatchId, batchName: newBatchName, customTag: newCustomTag, customerPhone2: newPhone2,
-                    deliveryStart: newDeliveryStart, // السطر ده اتضاف
-                    deliveryEnd: newDeliveryEnd      // والسطر ده اتضاف
+                    deliveryStart: newDeliveryStart,
+                    deliveryEnd: newDeliveryEnd     
                 });
-
                 
                 if(difference !== 0 && editingOrderData.customerPhone) { let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; await db.collection('customers').doc(cleanPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(difference) }); }
                 if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(difference) }); }
@@ -4253,13 +4275,12 @@ window.deleteProductUI = async (id) => {
                         let freezerEditUpdates = {};
                         oldItems.forEach(i => { 
                             freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) + i.quantity; 
-                            // 🚀 إرجاع الكمية القديمة لحظياً للذاكرة
                             storeFreezer[i.id] = (storeFreezer[i.id] || 0) + i.quantity; 
                         }); 
                         newItems.forEach(i => { 
                             freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) - i.quantity; 
-                            // 🚀 خصم الكمية الجديدة لحظياً من الذاكرة
-                            storeFreezer[i.id] = Math.max(0, (storeFreezer[i.id] || 0) - i.quantity); 
+                            // تم إزالة Math.max للسماح بالسالب
+                            storeFreezer[i.id] = (storeFreezer[i.id] || 0) - i.quantity; 
                         }); 
                         
                         let finalFzUpdates = {};
@@ -4294,6 +4315,7 @@ window.deleteProductUI = async (id) => {
             } catch(e) { alert("حدث خطأ أثناء حفظ التعديلات!"); console.log(e); }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
+
 
         // ↩️ دالة إلغاء الأرشفة واستعادة الدفعة للوضع الحي بالكامل ↩️
         window.unarchiveBatch = async (arId) => {
