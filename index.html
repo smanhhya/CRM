@@ -4019,30 +4019,34 @@ window.deleteProductUI = async (id) => {
             let currentVal = parseInt(input.value) || 0;
             let newVal = currentVal + amount;
             
-            // التأكيد في حالة السالب
             if (newVal < 0) {
-                if(!confirm(`⚠️ انتباه: رصيد (${storeProducts[id].name}) سيكون بالسالب (${newVal}).\nهل أنت متأكد من هذا الإجراء؟`)) {
-                    return; // لو رفض، نلغي العملية وميخصمش
+                if(!confirm(`⚠️ الصنف (${storeProducts[id].name}) مش موجود بالعدد ده في الفريزر.\nهل أنت متأكد؟ (اضغط "موافق" لو عندك رصيد في مكان تاني ومش ضايفه، أو "إلغاء" عشان تعدل الفريزر الأول)`)) {
+                    return; // لو داس إلغاء، العملية هتقف
                 }
             }
             
-            input.value = newVal; // تحديث الشاشة فوراً
-            triggerFreezerSave(id, newVal); // 👈 بنبعت الرقم النهائي (newVal) زي ما السيستم بتاعك متعود
+            input.value = newVal; 
+            storeFreezer[id] = newVal; 
+            triggerFreezerDeltaSave(id, amount); 
         };
 
         // دالة الكتابة اليدوية جوه المربع
         window.setFreezerCount = (id, val) => {
             let newVal = parseInt(val) || 0;
+            let currentDbVal = storeFreezer[id] || 0;
+            let delta = newVal - currentDbVal; 
             
-            // التأكيد في حالة السالب
+            if (delta === 0) return; 
+
             if (newVal < 0) {
-                if(!confirm(`⚠️ انتباه: رصيد (${storeProducts[id].name}) سيكون بالسالب (${newVal}).\nهل أنت متأكد من هذا الإجراء؟`)) {
-                    document.getElementById(`fz-${id}`).value = storeFreezer[id] || 0; // نرجع الرقم القديم
+                if(!confirm(`⚠️ الصنف (${storeProducts[id].name}) مش موجود بالعدد ده في الفريزر.\nهل أنت متأكد؟ (اضغط "موافق" لو عندك رصيد في مكان تاني ومش ضايفه، أو "إلغاء" عشان تعدل الفريزر الأول)`)) {
+                    document.getElementById(`fz-${id}`).value = currentDbVal; // نرجع الرقم القديم
                     return;
                 }
             }
             
-            triggerFreezerSave(id, newVal); // 👈 بنبعت الرقم النهائي (newVal) زي ما السيستم بتاعك متعود
+            storeFreezer[id] = newVal; 
+            triggerFreezerDeltaSave(id, delta); 
         };
 
 
@@ -4070,6 +4074,7 @@ window.deleteProductUI = async (id) => {
 
 
         // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر مع السماح بالسالب 🌟
+        // 🌟 التعديل السحري: إرجاع الكميات للمخزن والفريزر مع تنبيه السالب الذكي 🌟
         window.updateOrderStatus = async (id, s) => { 
             let o = allOrdersRaw.find(x => x.id === id);
             if(!o) return;
@@ -4078,6 +4083,30 @@ window.deleteProductUI = async (id) => {
             if(s === 'canceled' && !confirm('هل أنت متأكد من إلغاء هذا الطلب وإرجاع الكميات للمخزن والدفعة؟')) { renderOrdersList(); return; }
             if(s === 'trash' && !confirm('نقل الطلب لسلة المحذوفات؟ (يُحذف نهائياً بعد 15 يوم)')) { renderOrdersList(); return; }
             
+            // 🛡️ التعديل الجديد: تنبيه الفريزر لو الكمية هتنزل للسالب قبل ما نحول الأوردر 🛡️
+            let deductingStates = ['processing', 'dispatched', 'completed', 'deferred'];
+            let wasInFreezer = deductingStates.includes(oldStatus);
+            let isNowInFreezer = deductingStates.includes(s);
+
+            // السيستم هيشيك لو الأوردر ده هيتخصم من الفريزر دلوقتي
+            if (!wasInFreezer && isNowInFreezer) {
+                let negativeItems = [];
+                if(o.items) {
+                    o.items.forEach(i => {
+                        let currentFreezer = storeFreezer[i.id] || 0;
+                        if (currentFreezer - i.quantity < 0) negativeItems.push(i.name);
+                    });
+                }
+                
+                // لو لقى صنف هينزل تحت الصفر، بيطلع رسالة التنبيه
+                if (negativeItems.length > 0) {
+                    if (!confirm(`⚠️ انتباه: الأصناف دي مش موجود منها عدد كافي في الفريزر:\n(${negativeItems.join('، ')})\n\nهل أنت متأكد؟ (اضغط "موافق" لو عندك منها في مكان تاني ومش ضايفه، أو "إلغاء" وروح عدل الفريزر الأول)`)) {
+                        renderOrdersList(); // عشان نرجع القائمة (Select) لحالتها القديمة لو اليوزر ألغى
+                        return; 
+                    }
+                }
+            }
+
             // --- التحديث الفوري للواجهة ---
             o.status = s;
             if (s === 'completed') o.completedAtStr = new Date().toLocaleDateString('en-US');
@@ -4099,17 +4128,12 @@ window.deleteProductUI = async (id) => {
 
                 await db.collection('orders').doc(id).update(updateData); 
                 
-                // 🧊 سحر الفريزر 🧊
-                let deductingStates = ['processing', 'dispatched', 'completed', 'deferred'];
-                let wasInFreezer = deductingStates.includes(oldStatus);
-                let isNowInFreezer = deductingStates.includes(s);
-
+                // 🧊 سحر الفريزر: الخصم والإرجاع الأوتوماتيك واللحظي (بيدعم السالب) 🧊
                 if (!wasInFreezer && isNowInFreezer) {
                     let fzUpdates = {};
                     if(o.items) {
                         o.items.forEach(i => {
                             fzUpdates[i.id] = firebase.firestore.FieldValue.increment(-i.quantity);
-                            // تم إزالة Math.max للسماح بالسالب
                             storeFreezer[i.id] = (storeFreezer[i.id] || 0) - i.quantity; 
                         });
                     }
@@ -4147,6 +4171,7 @@ window.deleteProductUI = async (id) => {
                 }
             } catch(e) { alert("حدث خطأ أثناء تغيير الحالة!"); }
         };
+
 
 
         window.bulkChangeStatus = async (newStatus) => {
