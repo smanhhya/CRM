@@ -2468,25 +2468,38 @@
                 };
 
                 
-                await db.collection('orders').add(orderData);
-                await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(total), orders: firebase.firestore.FieldValue.increment(1) });
+                let atomicBatch = db.batch();
                 
+                // 1. إنشاء الأوردر
+                let newOrderRef = db.collection('orders').doc();
+                atomicBatch.set(newOrderRef, orderData);
+                
+                // 2. تحديث الإحصائيات
+                let statsRef = db.collection('inventory').doc('stats');
+                atomicBatch.set(statsRef, { sales: firebase.firestore.FieldValue.increment(total), orders: firebase.firestore.FieldValue.increment(1) }, { merge: true });
+                
+                // 3. تحديث العميل
                 let cleanPhoneForDB = phone.startsWith('0') ? phone : '0'+phone;
-                await db.collection('customers').doc(cleanPhoneForDB).set({ name: name, phone: cleanPhoneForDB, phone2: phone2, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                let customerRef = db.collection('customers').doc(cleanPhoneForDB);
+                atomicBatch.set(customerRef, { name: name, phone: cleanPhoneForDB, phone2: phone2, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
 
+                // 4. تحديث الدفعة (لو موجودة)
                 if(batchId) {
                     let bookedUpdates = {};
                     Object.keys(batchUpdates).forEach(pId => { 
                         bookedUpdates[pId] = firebase.firestore.FieldValue.increment(batchUpdates[pId]); 
                     });
-                    await db.collection("inventory").doc("batches").set({
-                        [batchId]: { booked: bookedUpdates }
-                    }, { merge: true });
+                    atomicBatch.set(db.collection("inventory").doc("batches"), { [batchId]: { booked: bookedUpdates } }, { merge: true });
                 }
 
+                // 5. خصم المخزون
                 let stockUpdatesDB = {};
                 items.forEach(i => { stockUpdatesDB[i.id] = firebase.firestore.FieldValue.increment(-i.quantity); });
-                await db.collection("inventory").doc("stock").set(stockUpdatesDB, { merge: true });
+                atomicBatch.set(db.collection("inventory").doc("stock"), stockUpdatesDB, { merge: true });
+
+                // تنفيذ الطلقة كلها في نفس اللحظة
+                await atomicBatch.commit();
+
 
                 if (batchName) autoHashtags.push('#' + batchName.replace(/\s+/g, '_'));
                 if (customTag) autoHashtags.push(customTag.startsWith('#') ? customTag.replace(/\s+/g, '_') : '#' + customTag.replace(/\s+/g, '_'));
@@ -4198,6 +4211,8 @@ window.deleteProductUI = async (id) => {
 
 
             try { 
+                let atomicBatch = db.batch();
+                let orderRef = db.collection('orders').doc(id);
                 let updateData = { status: s };
 
                 if (s === 'trash') updateData.deletedAt = firebase.firestore.FieldValue.serverTimestamp();
@@ -4209,9 +4224,9 @@ window.deleteProductUI = async (id) => {
                     updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
                 }
 
-                await db.collection('orders').doc(id).update(updateData); 
+                atomicBatch.update(orderRef, updateData); 
                 
-                // 🧊 سحر الفريزر: الخصم والإرجاع الأوتوماتيك واللحظي (بيدعم السالب) 🧊
+                // 🧊 سحر الفريزر
                 if (!wasInFreezer && isNowInFreezer) {
                     let fzUpdates = {};
                     if(o.items) {
@@ -4220,7 +4235,7 @@ window.deleteProductUI = async (id) => {
                             storeFreezer[i.id] = (storeFreezer[i.id] || 0) - i.quantity; 
                         });
                     }
-                    await db.collection('inventory').doc('freezer').set(fzUpdates, { merge: true });
+                    if(Object.keys(fzUpdates).length > 0) atomicBatch.set(db.collection('inventory').doc('freezer'), fzUpdates, { merge: true });
                 } else if (wasInFreezer && !isNowInFreezer) {
                     let fzUpdates = {};
                     if(o.items) {
@@ -4229,7 +4244,7 @@ window.deleteProductUI = async (id) => {
                             storeFreezer[i.id] = (storeFreezer[i.id] || 0) + i.quantity; 
                         });
                     }
-                    await db.collection('inventory').doc('freezer').set(fzUpdates, { merge: true });
+                    if(Object.keys(fzUpdates).length > 0) atomicBatch.set(db.collection('inventory').doc('freezer'), fzUpdates, { merge: true });
                 }
 
                 if(s === 'canceled' && oldStatus !== 'canceled') {
@@ -4240,20 +4255,22 @@ window.deleteProductUI = async (id) => {
                             stockUpdates[i.id] = firebase.firestore.FieldValue.increment(i.quantity);
                             if(o.batchId) batchBookedUpdates[i.id] = firebase.firestore.FieldValue.increment(-i.quantity);
                         });
-                        await db.collection('inventory').doc('stock').set(stockUpdates, {merge: true});
-                        if(o.batchId) {
-                            await db.collection('inventory').doc('batches').set({ [o.batchId]: { booked: batchBookedUpdates } }, {merge: true});
+                        if(Object.keys(stockUpdates).length > 0) atomicBatch.set(db.collection('inventory').doc('stock'), stockUpdates, {merge: true});
+                        if(o.batchId && Object.keys(batchBookedUpdates).length > 0) {
+                            atomicBatch.set(db.collection('inventory').doc('batches'), { [o.batchId]: { booked: batchBookedUpdates } }, {merge: true});
                         }
                     }
                     if(o.total) {
-                        await db.collection('inventory').doc('stats').update({
+                        atomicBatch.set(db.collection('inventory').doc('stats'), {
                             sales: firebase.firestore.FieldValue.increment(-Number(o.total)),
                             orders: firebase.firestore.FieldValue.increment(-1)
-                        });
+                        }, {merge: true});
                     }
                 }
+                
+                await atomicBatch.commit();
             } catch(e) { alert("حدث خطأ أثناء تغيير الحالة!"); }
-        };
+
 
 
 
@@ -4345,17 +4362,25 @@ window.deleteProductUI = async (id) => {
             
             const btn = document.getElementById('btn-save-edit'); const origHtml = btn.innerHTML; 
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تحديث السيستم...'; btn.disabled = true;
-
             try {
-                await db.collection('orders').doc(editingOrderData.id).update({ 
+                let atomicBatch = db.batch();
+                
+                let orderRef = db.collection('orders').doc(editingOrderData.id);
+                atomicBatch.update(orderRef, { 
                     items: newItems, subtotal: newSubtotal, deliveryFee: newDelivery, discount: newDiscount, total: newTotal, 
                     batchId: newBatchId, batchName: newBatchName, customTag: newCustomTag, customerPhone2: newPhone2,
                     deliveryStart: newDeliveryStart,
                     deliveryEnd: newDeliveryEnd     
                 });
                 
-                if(difference !== 0 && editingOrderData.customerPhone) { let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; await db.collection('customers').doc(cleanPhone).update({ totalSpent: firebase.firestore.FieldValue.increment(difference) }); }
-                if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { await db.collection('inventory').doc('stats').update({ sales: firebase.firestore.FieldValue.increment(difference) }); }
+                if(difference !== 0 && editingOrderData.customerPhone) { 
+                    let cleanPhone = editingOrderData.customerPhone.startsWith('0') ? editingOrderData.customerPhone : '0' + editingOrderData.customerPhone; 
+                    atomicBatch.set(db.collection('customers').doc(cleanPhone), { totalSpent: firebase.firestore.FieldValue.increment(difference) }, {merge: true}); 
+                }
+                
+                if(difference !== 0 && editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') { 
+                    atomicBatch.set(db.collection('inventory').doc('stats'), { sales: firebase.firestore.FieldValue.increment(difference) }, {merge: true}); 
+                }
                 
                 if(editingOrderData.status !== 'canceled' && editingOrderData.status !== 'trash') {
                     let stockUpdates = {};
@@ -4374,9 +4399,9 @@ window.deleteProductUI = async (id) => {
 
                     let finalStockUpdates = {};
                     Object.keys(stockUpdates).forEach(id => { if(stockUpdates[id] !== 0) finalStockUpdates[id] = firebase.firestore.FieldValue.increment(stockUpdates[id]); });
-                    if(Object.keys(finalStockUpdates).length > 0) { await db.collection("inventory").doc("stock").set(finalStockUpdates, { merge: true }); }
+                    if(Object.keys(finalStockUpdates).length > 0) { atomicBatch.set(db.collection("inventory").doc("stock"), finalStockUpdates, { merge: true }); }
 
-                    // 🧊 تحديث الفريزر لو عدلنا طلب بيتم تجهيزه 🧊
+                    // 🧊 الفريزر
                     if (['processing', 'completed', 'deferred'].includes(editingOrderData.status)) {
                         let freezerEditUpdates = {};
                         oldItems.forEach(i => { 
@@ -4385,7 +4410,6 @@ window.deleteProductUI = async (id) => {
                         }); 
                         newItems.forEach(i => { 
                             freezerEditUpdates[i.id] = (freezerEditUpdates[i.id] || 0) - i.quantity; 
-                            // تم إزالة Math.max للسماح بالسالب
                             storeFreezer[i.id] = (storeFreezer[i.id] || 0) - i.quantity; 
                         }); 
                         
@@ -4394,7 +4418,7 @@ window.deleteProductUI = async (id) => {
                             if(freezerEditUpdates[id] !== 0) finalFzUpdates[id] = firebase.firestore.FieldValue.increment(freezerEditUpdates[id]); 
                         });
                         if(Object.keys(finalFzUpdates).length > 0) {
-                            await db.collection("inventory").doc("freezer").set(finalFzUpdates, { merge: true });
+                            atomicBatch.set(db.collection("inventory").doc("freezer"), finalFzUpdates, { merge: true });
                         }
                     }
 
@@ -4404,21 +4428,23 @@ window.deleteProductUI = async (id) => {
                             let netChange = (oldBatchBookedUpdates[id] || 0) + (newBatchBookedUpdates[id] || 0);
                             if(netChange !== 0) combinedBatchUpdates[id] = firebase.firestore.FieldValue.increment(netChange);
                         });
-                        if(Object.keys(combinedBatchUpdates).length > 0) { await db.collection("inventory").doc("batches").set({ [oldBatchId]: { booked: combinedBatchUpdates } }, { merge: true }); }
+                        if(Object.keys(combinedBatchUpdates).length > 0) { atomicBatch.set(db.collection("inventory").doc("batches"), { [oldBatchId]: { booked: combinedBatchUpdates } }, { merge: true }); }
                     } else {
                         if (oldBatchId) {
                             let oldFinal = {}; Object.keys(oldBatchBookedUpdates).forEach(id => { if(oldBatchBookedUpdates[id] !== 0) oldFinal[id] = firebase.firestore.FieldValue.increment(oldBatchBookedUpdates[id]); });
-                            if(Object.keys(oldFinal).length > 0) await db.collection("inventory").doc("batches").set({ [oldBatchId]: { booked: oldFinal } }, { merge: true });
+                            if(Object.keys(oldFinal).length > 0) atomicBatch.set(db.collection("inventory").doc("batches"), { [oldBatchId]: { booked: oldFinal } }, { merge: true });
                         }
                         if (newBatchId) {
                             let newFinal = {}; Object.keys(newBatchBookedUpdates).forEach(id => { if(newBatchBookedUpdates[id] !== 0) newFinal[id] = firebase.firestore.FieldValue.increment(newBatchBookedUpdates[id]); });
-                            if(Object.keys(newFinal).length > 0) await db.collection("inventory").doc("batches").set({ [newBatchId]: { booked: newFinal } }, { merge: true });
+                            if(Object.keys(newFinal).length > 0) atomicBatch.set(db.collection("inventory").doc("batches"), { [newBatchId]: { booked: newFinal } }, { merge: true });
                         }
                     }
                 }
-
+                
+                await atomicBatch.commit();
                 closeModal('edit-order-modal');
             } catch(e) { alert("حدث خطأ أثناء حفظ التعديلات!"); console.log(e); }
+
             btn.innerHTML = origHtml; btn.disabled = false;
         };
 
