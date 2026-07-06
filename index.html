@@ -4270,9 +4270,7 @@ window.deleteProductUI = async (id) => {
                 
                 await atomicBatch.commit();
             } catch(e) { alert("حدث خطأ أثناء تغيير الحالة!"); }
-
-
-
+        }; // <--- دي القفلة اللي كانت ناقصة وموقفة السيستم!
 
         window.bulkChangeStatus = async (newStatus) => {
             let checked = Array.from(document.querySelectorAll('.bulk-order-cb:checked')).map(cb => cb.value);
