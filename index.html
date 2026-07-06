@@ -1752,12 +1752,12 @@
                 } else if(currentSmartFilter === 'high_value') {
                     matchSmart = Number(o.total) >= 500; 
                 }
-
-                // دمجنا كل الشروط هنا (matchExact)
-                if (matchSearch && matchExact && matchSmart && o.status !== 'trash') {
+                // دمجنا كل الشروط هنا وضيفنا شرط إخفاء المؤرشف (!o.isArchived)
+                if (matchSearch && matchExact && matchSmart && o.status !== 'trash' && !o.isArchived) {
                     if (dynamicCounts[o.status] !== undefined) dynamicCounts[o.status]++;
                     return true;
                 }
+
                 return false;
             });
 
@@ -3862,45 +3862,56 @@ window.deleteProductUI = async (id) => {
 
 
         
-
         // دالة الترحيل للأرشيف
         window.archiveBatch = async (bId) => {
             const b = storeBatches[bId]; if(!b) return;
             
             if(!confirm(`⚠️ هل أنت متأكد من إغلاق وترحيل دفعة (${b.name}) نهائياً للأرشيف؟\nسيتم حساب أرباحها وإغلاقها، ولن تظهر في الشاشات الحية بعد الآن.`)) return;
             
-            let bOrders = allOrdersRaw.filter(o => o.batchId === bId && o.status === 'completed');
-            let totalRev = 0, totalDel = 0, totalDisc = 0, itemsMap = {}, zonesMap = {};
-            
-            bOrders.forEach(o => {
-                totalRev += Number(o.total) || 0;
-                totalDel += Number(o.deliveryFee) || 0;
-                totalDisc += Number(o.discount) || 0;
-                
-                let z = o.zone || 'غير محدد';
-                zonesMap[z] = (zonesMap[z] || 0) + 1;
-
-                if(o.items) {
-                    o.items.forEach(i => { itemsMap[i.name] = (itemsMap[i.name] || 0) + i.quantity; });
-                }
-            });
-
-            let archiveData = {
-                batchName: b.name,
-                originalBatchId: bId,
-                totalRevenue: totalRev,
-                totalDelivery: totalDel,
-                totalDiscount: totalDisc,
-                ordersCount: bOrders.length,
-                itemsSummary: itemsMap,
-                zonesSummary: zonesMap,
-                rawStock: b.stock || {}, // 💾 نسخة احتياطية من كميات الدفعة
-                rawBooked: b.booked || {}, // 💾 نسخة احتياطية من المحجوز
-                archivedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
-
-
             try {
+                // السحر هنا: هنجيب كل الأوردرات بتاعة الدفعة دي مباشرة من الداتابيز عشان مننساش حاجة
+                let snap = await db.collection('orders').where('batchId', '==', bId).get();
+                let bOrders = [];
+                snap.forEach(doc => bOrders.push({id: doc.id, ...doc.data()}));
+
+                let totalRev = 0, totalDel = 0, totalDisc = 0, itemsMap = {}, zonesMap = {};
+                let ordersToArchiveRefs = [];
+                
+                bOrders.forEach(o => {
+                    // حسابات الأرباح من المكتمل فقط
+                    if(o.status === 'completed') {
+                        totalRev += Number(o.total) || 0;
+                        totalDel += Number(o.deliveryFee) || 0;
+                        totalDisc += Number(o.discount) || 0;
+                        
+                        let z = o.zone || 'غير محدد';
+                        zonesMap[z] = (zonesMap[z] || 0) + 1;
+
+                        if(o.items) {
+                            o.items.forEach(i => { itemsMap[i.name] = (itemsMap[i.name] || 0) + i.quantity; });
+                        }
+                    }
+                    
+                    // تجميع الأوردرات المكتملة والملغية عشان نأرشفهم ونخفيهم من اللايف
+                    if(o.status === 'completed' || o.status === 'canceled') {
+                        ordersToArchiveRefs.push(db.collection('orders').doc(o.id));
+                    }
+                });
+
+                let archiveData = {
+                    batchName: b.name,
+                    originalBatchId: bId,
+                    totalRevenue: totalRev,
+                    totalDelivery: totalDel,
+                    totalDiscount: totalDisc,
+                    ordersCount: bOrders.filter(x => x.status === 'completed').length,
+                    itemsSummary: itemsMap,
+                    zonesSummary: zonesMap,
+                    rawStock: b.stock || {}, // 💾 نسخة احتياطية من كميات الدفعة
+                    rawBooked: b.booked || {}, // 💾 نسخة احتياطية من المحجوز
+                    archivedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
                 let batchProcess = db.batch();
                 
                 // 1. حفظ في الأرشيف
@@ -3912,12 +3923,27 @@ window.deleteProductUI = async (id) => {
                 batchProcess.update(batchRef, {
                     [bId]: firebase.firestore.FieldValue.delete()
                 });
+
+                // 3. وضع علامة (isArchived) على الأوردرات عشان تختفي من الشاشات الحية
+                ordersToArchiveRefs.forEach(ref => {
+                    batchProcess.update(ref, { isArchived: true });
+                });
                 
                 await batchProcess.commit();
                 
                 // تنظيف المتغير المحلي عشان الواجهة تتحدث صح
                 delete storeBatches[bId];
+                
+                // تحديث الذاكرة الحية عشان يختفوا فوراً قدامك
+                allOrdersRaw.forEach(o => {
+                    if (o.batchId === bId && (o.status === 'completed' || o.status === 'canceled')) {
+                        o.isArchived = true;
+                        if(globalOrdersMap[o.id]) globalOrdersMap[o.id].isArchived = true;
+                    }
+                });
+
                 renderBatchesUI();
+                renderOrdersList();
                 
                 alert("تم إغلاق الدفعة وترحيلها للأرشيف بنجاح! 🚀📊");
             } catch(e) { 
@@ -3925,6 +3951,7 @@ window.deleteProductUI = async (id) => {
                 alert("حدث خطأ أثناء الأرشفة! (السبب غالباً من قواعد حماية فايربيس، راجع الشرح)"); 
             }
         };
+
 
 
         // رسم شاشة الأرشيف
@@ -4408,13 +4435,16 @@ window.deleteProductUI = async (id) => {
             btn.disabled = true;
 
             try {
+                // نجيب الأوردرات المؤرشفة للدفعة دي عشان نرجعها للايف
+                let snap = await db.collection('orders').where('batchId', '==', a.originalBatchId).where('isArchived', '==', true).get();
+                
                 let batchProcess = db.batch();
                 
                 // 1. حذف وثيقة الأرشيف نهائياً
                 let archiveRef = db.collection('archived_batches').doc(arId);
                 batchProcess.delete(archiveRef);
                 
-                // 2. إعادة الدفعة الحية بكافة أرقام مخزنها ومحجوزاتها (تم التعديل لـ set مع merge لتجنب أخطاء فايربيس)
+                // 2. إعادة الدفعة الحية بكافة أرقام مخزنها ومحجوزاتها
                 let batchRef = db.collection('inventory').doc('batches');
                 let restoredBatch = {
                     name: a.batchName,
@@ -4423,13 +4453,27 @@ window.deleteProductUI = async (id) => {
                     booked: a.rawBooked || {}
                 };
                 
-                // 💡 التعديل هنا: استخدام set بدل update 💡
                 batchProcess.set(batchRef, {
                     [a.originalBatchId]: restoredBatch
                 }, { merge: true });
+
+                // 3. مسح علامة الأرشفة من الأوردرات عشان تظهر تاني
+                snap.forEach(doc => {
+                    batchProcess.update(doc.ref, { isArchived: firebase.firestore.FieldValue.delete() });
+                });
                 
                 await batchProcess.commit();
+
+                // تحديث الذاكرة
+                allOrdersRaw.forEach(o => {
+                    if (o.batchId === a.originalBatchId && o.isArchived) {
+                        o.isArchived = false;
+                        if(globalOrdersMap[o.id]) globalOrdersMap[o.id].isArchived = false;
+                    }
+                });
+
                 closeModal('archive-report-modal');
+                renderOrdersList();
                 alert("تم إلغاء الأرشفة بنجاح وعادت الدفعة للتشغيل الحي! ↩️📊");
             } catch(e) { 
                 console.error(e);
@@ -4437,6 +4481,7 @@ window.deleteProductUI = async (id) => {
             }
             btn.innerHTML = origHtml; btn.disabled = false;
         };
+
         // ==========================================
         window.renderReconciliationUI = () => {
             const sel = document.getElementById('recon-driver-select');
