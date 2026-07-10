@@ -2286,15 +2286,18 @@
             }
         };
 
-        // === 7. إنشاء طلب جديد (الخصم الصارم للدفعة والمخزن) ===
         window.generateDynamicOrderInputs = () => {
             const container = document.getElementById('dynamic-order-items'); if(!container) return; 
             container.innerHTML = '';
             Object.keys(storeProducts).forEach(id => {
+                let p = storeProducts[id];
+                let step = p.isWeightBased ? "0.1" : "1";
+                let placeholder = p.isWeightBased ? "الوزن كجم" : "0";
+                let icon = p.isWeightBased ? "⚖️" : "";
                 container.innerHTML += `
                 <div class="bg-slate-50 border border-slate-100 p-2 rounded-xl text-center">
-                    <span class="text-[10px] font-bold text-slate-600 block truncate mb-2">${storeProducts[id].name}</span>
-                    <input type="number" id="no-q-${id}" min="0" class="w-full border-none bg-white rounded-lg p-2 text-center font-black text-brand-primary outline-none focus:ring-2 focus:ring-brand-primary/20 shadow-sm transition-all" placeholder="0" oninput="calcTotal('no')">
+                    <span class="text-[10px] font-bold text-slate-600 block truncate mb-2" title="${p.name}">${p.name} ${icon}</span>
+                    <input type="number" id="no-q-${id}" min="0" step="${step}" class="w-full border-none bg-white rounded-lg p-2 text-center font-black text-brand-primary outline-none focus:ring-2 focus:ring-brand-primary/20 shadow-sm transition-all" placeholder="${placeholder}" oninput="calcTotal('no')">
                 </div>`;
             });
             const zSel = document.getElementById('no-zone');
@@ -3087,7 +3090,10 @@
                     <div class="flex flex-wrap items-center gap-5 bg-slate-50/80 p-3 rounded-xl border border-slate-100/50 mt-2">
                         <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-slate-600"><input type="checkbox" ${p.isExtra?'checked':''} onchange="storeProducts['${id}'].isExtra = this.checked" class="w-4 h-4 text-brand-primary rounded"> يُعرض كمنتج إضافي</label>
                         <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-amber-600"><input type="checkbox" ${p.isBest?'checked':''} onchange="storeProducts['${id}'].isBest = this.checked" class="w-4 h-4 text-amber-500 rounded"> الأكثر طلباً 🔥</label>
+                        <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-indigo-600"><input type="checkbox" ${p.isWeightBased?'checked':''} onchange="storeProducts['${id}'].isWeightBased = this.checked; generateDynamicOrderInputs();" class="w-4 h-4 text-indigo-500 rounded"> يباع بالوزن ⚖️</label>
+                        <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-slate-500"><input type="checkbox" ${p.isHidden?'checked':''} onchange="storeProducts['${id}'].isHidden = this.checked" class="w-4 h-4 text-slate-400 rounded"> إخفاء من المتجر 🚫</label>
                         <div class="flex items-center gap-3 border-r border-slate-200 pr-4">
+
                             <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-red-500"><input type="checkbox" ${p.isDisc?'checked':''} onchange="storeProducts['${id}'].isDisc = this.checked; renderInventoryUI();" class="w-4 h-4 text-red-500 rounded"> تفعيل سعر الخصم</label>
                             ${p.isDisc ? `<input type="number" value="${oldPrice}" onchange="storeProducts['${id}'].oldPrice = parseInt(this.value) || 0" class="w-20 border-none bg-white rounded-lg p-1.5 text-[11px] font-black text-red-400 text-center line-through shadow-sm outline-none focus:ring-2 focus:ring-red-100" placeholder="السعر القديم">` : ''}
                         </div>
@@ -3099,10 +3105,12 @@
 
         window.addNewProductUI = () => { 
             const newId = 'p_' + Date.now(); 
-            storeProducts[newId] = { name: "صنف جديد", basePrice: 0, weight: "", images: [""], isExtra: false, isBest: false, isDisc: false, oldPrice: 0, oldBatchPrice: 0 }; 
+            // التعديل: ضفنا isHidden و isWeightBased
+            storeProducts[newId] = { name: "صنف جديد", basePrice: 0, weight: "", images: [""], isExtra: false, isBest: false, isDisc: false, oldPrice: 0, oldBatchPrice: 0, isHidden: false, isWeightBased: false }; 
             storePrices[newId] = 0; storeStock[newId] = 0; 
             renderInventoryUI(); generateDynamicOrderInputs(); 
         };
+
 
 
 window.deleteProductUI = async (id) => { 
@@ -3267,18 +3275,24 @@ window.deleteProductUI = async (id) => {
             const container = document.getElementById('edit-dynamic-order-items'); container.innerHTML = '';
             
             Object.keys(storeProducts).forEach(pId => {
-                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === storeProducts[pId].name) : null;
+                let p = storeProducts[pId];
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === p.name) : null;
                 let q = existingItem ? existingItem.quantity : 0;
+                
+                let step = p.isWeightBased ? 0.5 : 1; // الزراير هتزود وتنقص بالنص كيلو لو ده ميزان
+                let icon = p.isWeightBased ? "⚖️" : "";
+                
                 container.innerHTML += `
                 <div class="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm flex flex-col justify-between">
-                    <span class="text-[11px] font-black text-slate-600 block text-center truncate mb-3">${storeProducts[pId].name}</span>
+                    <span class="text-[11px] font-black text-slate-600 block text-center truncate mb-3" title="${p.name}">${p.name} ${icon}</span>
                     <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5">
-                        <button onclick="changeEditQty('${pId}', -1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
-                        <input type="number" id="edit-q-${pId}" min="0" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()">
-                        <button onclick="changeEditQty('${pId}', 1)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
+                        <button onclick="changeEditQty('${pId}', -${step}, ${p.isWeightBased})" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
+                        <input type="number" id="edit-q-${pId}" min="0" step="${p.isWeightBased ? '0.1' : '1'}" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()">
+                        <button onclick="changeEditQty('${pId}', ${step}, ${p.isWeightBased})" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
                     </div>
                 </div>`;
             });
+
 
             let bSel = document.getElementById('edit-batch'); 
             bSel.innerHTML = '<option value="">-- بدون دورة مسجلة --</option>';
@@ -3296,8 +3310,14 @@ window.deleteProductUI = async (id) => {
             calcEditTotal(); openModal('edit-order-modal');
         };
 
-        window.changeEditQty = (pId, amount) => { 
-            let input = document.getElementById(`edit-q-${pId}`); let val = parseInt(input.value) || 0; val += amount; if(val < 0) val = 0; input.value = val; calcEditTotal(); 
+        window.changeEditQty = (pId, amount, isWeight = false) => { 
+            let input = document.getElementById(`edit-q-${pId}`); 
+            // لو वजन بناخد الرقم بكسوره (parseFloat)، لو عدد بناخده صحيح (parseInt)
+            let val = isWeight ? parseFloat(input.value) || 0 : parseInt(input.value) || 0; 
+            val += amount; 
+            if(val < 0) val = 0; 
+            input.value = isWeight ? parseFloat(val.toFixed(2)) : val; 
+            calcEditTotal(); 
         };
 
         window.calcEditTotal = () => { 
