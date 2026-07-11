@@ -2292,7 +2292,7 @@
             Object.keys(storeProducts).forEach(id => {
                 let p = storeProducts[id];
 
-                if (p.isHidden) return; // 👈👈 السطر اللي ناقص عشان يخفيه من الأوردر الجديد
+
 
                 let step = p.isWeightBased ? "0.1" : "1";
                 let placeholder = p.isWeightBased ? "الوزن كجم" : "0";
@@ -3282,7 +3282,7 @@ window.deleteProductUI = async (id) => {
             Object.keys(storeProducts).forEach(pId => {
                 let p = storeProducts[pId];
 
-                if (p.isHidden) return; // 👈👈 السطر اللي ناقص عشان يخفيه من التعديل
+    
 
                 let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === p.name) : null;
 // ... باقي الكود زي ما هو
