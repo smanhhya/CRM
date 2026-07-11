@@ -2291,8 +2291,13 @@
             container.innerHTML = '';
             Object.keys(storeProducts).forEach(id => {
                 let p = storeProducts[id];
+
+                if (p.isHidden) return; // 👈👈 السطر اللي ناقص عشان يخفيه من الأوردر الجديد
+
                 let step = p.isWeightBased ? "0.1" : "1";
                 let placeholder = p.isWeightBased ? "الوزن كجم" : "0";
+// ... باقي الكود زي ما هو
+
                 let icon = p.isWeightBased ? "⚖️" : "";
                 container.innerHTML += `
                 <div class="bg-slate-50 border border-slate-100 p-2 rounded-xl text-center">
@@ -3276,7 +3281,11 @@ window.deleteProductUI = async (id) => {
             
             Object.keys(storeProducts).forEach(pId => {
                 let p = storeProducts[pId];
+
+                if (p.isHidden) return; // 👈👈 السطر اللي ناقص عشان يخفيه من التعديل
+
                 let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === p.name) : null;
+// ... باقي الكود زي ما هو
                 let q = existingItem ? existingItem.quantity : 0;
                 
                 let step = p.isWeightBased ? 0.5 : 1; // الزراير هتزود وتنقص بالنص كيلو لو ده ميزان
