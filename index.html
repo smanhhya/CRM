@@ -4086,34 +4086,37 @@ window.deleteProductUI = async (id) => {
         };
 
         // ==========================================
-        // 🧊 نظام الفريزر الفعلي المتكامل (المُحدث والتفاعلي لحظياً) 🧊
+        // 🧊 نظام الفريزر الفعلي المتكامل (النسخة المحدثة اللحظية) 🧊
         // ==========================================
-        let isFreezerListenerActive = false; // متغير لمنع تكرار فتح الاتصال اللحظي
+        let isFreezerListenerActive = false;
 
-        window.openFreezerModal = () => {
-            openModal('freezer-modal');
-            let cont = document.getElementById('freezer-items-container');
-            
-            // 1. تفعيل الاتصال اللحظي بفايربيس (مرة واحدة فقط)
+        // 1. تشغيل المراقبة اللحظية في الخلفية دايماً (عشان يسمع عند أي حد فاتح السيستم فوراً)
+        window.activateFreezerSync = () => {
             if (!isFreezerListenerActive) {
                 db.collection('inventory').doc('freezer').onSnapshot(doc => {
                     if(doc.exists) {
                         storeFreezer = doc.data() || {};
-                        
                         // التحديث اللحظي للواجهة بدون ما نقفل الشاشة أو نقطع كتابة اليوزر
                         Object.keys(storeFreezer).forEach(id => {
                             let inputEl = document.getElementById(`fz-${id}`);
-                            // بنحدث الرقم بس لو اليوزر مش واقف بيكتب جواه حالياً
                             if(inputEl && document.activeElement !== inputEl) {
                                 inputEl.value = storeFreezer[id];
                             }
                         });
                     }
                 }, error => console.log("خطأ في الاتصال اللحظي للفريزر:", error));
-                isFreezerListenerActive = true; // تم التفعيل
+                isFreezerListenerActive = true;
             }
+        };
 
-            // 2. رسم الشاشة فوراً (بدون أي انتظار أو تحميل)
+        // تفعيل المزامنة فور تشغيل الكود
+        activateFreezerSync();
+
+        window.openFreezerModal = () => {
+            activateFreezerSync(); // للتأكيد
+            openModal('freezer-modal');
+            let cont = document.getElementById('freezer-items-container');
+            
             cont.innerHTML = '';
             Object.keys(storeProducts).forEach(id => {
                 let currentCount = storeFreezer[id] || 0;
@@ -4129,15 +4132,14 @@ window.deleteProductUI = async (id) => {
             });
         };
 
-        // دالة الضغط على زراير (+ / -)
         window.updateFreezerCount = (id, amount) => {
             let input = document.getElementById(`fz-${id}`);
             let currentVal = parseInt(input.value) || 0;
             let newVal = currentVal + amount;
             
             if (newVal < 0) {
-                if(!confirm(`⚠️ الصنف (${storeProducts[id].name}) مش موجود بالعدد ده في الفريزر.\nهل أنت متأكد؟ (اضغط "موافق" لو عندك رصيد في مكان تاني ومش ضايفه، أو "إلغاء" عشان تعدل الفريزر الأول)`)) {
-                    return; // لو داس إلغاء، العملية هتقف
+                if(!confirm(`⚠️ الصنف (${storeProducts[id].name}) مش موجود بالعدد ده في الفريزر.\nهل أنت متأكد؟`)) {
+                    return; 
                 }
             }
             
@@ -4146,7 +4148,6 @@ window.deleteProductUI = async (id) => {
             triggerFreezerDeltaSave(id, amount); 
         };
 
-        // دالة الكتابة اليدوية جوه المربع
         window.setFreezerCount = (id, val) => {
             let newVal = parseInt(val) || 0;
             let currentDbVal = storeFreezer[id] || 0;
@@ -4155,8 +4156,8 @@ window.deleteProductUI = async (id) => {
             if (delta === 0) return; 
 
             if (newVal < 0) {
-                if(!confirm(`⚠️ الصنف (${storeProducts[id].name}) مش موجود بالعدد ده في الفريزر.\nهل أنت متأكد؟ (اضغط "موافق" لو عندك رصيد في مكان تاني ومش ضايفه، أو "إلغاء" عشان تعدل الفريزر الأول)`)) {
-                    document.getElementById(`fz-${id}`).value = currentDbVal; // نرجع الرقم القديم
+                if(!confirm(`⚠️ الصنف (${storeProducts[id].name}) مش موجود بالعدد ده في الفريزر.\nهل أنت متأكد؟`)) {
+                    document.getElementById(`fz-${id}`).value = currentDbVal; 
                     return;
                 }
             }
@@ -4165,24 +4166,23 @@ window.deleteProductUI = async (id) => {
             triggerFreezerDeltaSave(id, delta); 
         };
 
-
-        // الدالة السحرية للحفظ الآمن (إرسال الفروق فقط لمنع تضارب البيانات)
-        window.triggerFreezerSave = async (id, delta) => {
+        // 2. الدالة السحرية للحفظ الآمن (تم تصحيح الاسم ليتطابق مع الاستدعاء!)
+        window.triggerFreezerDeltaSave = async (id, delta) => {
             if (delta === 0) return;
 
-            storeFreezer[id] = (storeFreezer[id] || 0) + delta; // التحديث الفوري محلياً للسرعة
+            storeFreezer[id] = (storeFreezer[id] || 0) + delta; 
 
             let inputEl = document.getElementById(`fz-${id}`);
             try {
-                if(inputEl) inputEl.classList.add('bg-cyan-50'); // إشارة بصرية خفيفة
-                // نبعت الزيادة أو النقصان لفايربيس عشان يجمع أو يطرح بأمان تام
+                if(inputEl) inputEl.classList.add('bg-cyan-50'); 
+                
                 await db.collection('inventory').doc('freezer').set({ 
                     [id]: firebase.firestore.FieldValue.increment(delta) 
                 }, { merge: true });
+                
                 if(inputEl) inputEl.classList.remove('bg-cyan-50');
             } catch(e) {
                 console.log("خطأ في تحديث الفريزر", e);
-                // لو حصل خطأ في النت، نرجع الداتا زي ما كانت
                 storeFreezer[id] = (storeFreezer[id] || 0) - delta;
                 if(inputEl) inputEl.value = storeFreezer[id];
             }
