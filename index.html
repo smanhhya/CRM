@@ -2703,7 +2703,9 @@
                     // الحماية هنا اهي
                     let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(item => `${item.quantity} ${item.name}`).join(' + ') : 'بدون تفاصيل';
 
-                    // التعديل: لو الأوردر أونلاين، هنصفر الإجمالي اللي بيظهر للمندوب
+                    // تصفير كل المتغيرات المالية للمندوب لو الأوردر أونلاين
+                    let subtotalForDriver = (o.paymentMethod === 'online') ? '0' : (o.subtotal || o.total);
+                    let deliveryForDriver = (o.paymentMethod === 'online') ? '0' : (o.deliveryFee || 0);
                     let finalTotalForDriver = (o.paymentMethod === 'online') ? '0 (الحساب خالص أونلاين)' : o.total;
 
                     let orderMsg = dispatchTemplate
@@ -2712,9 +2714,10 @@
                         .replace(/{المنطقة}/g, o.zone || '')
                         .replace(/{العنوان}/g, o.customerAddress || '')
                         .replace(/{تفاصيل_الطلبات}/g, itemsStr)
-                        .replace(/{إجمالي_الطلب}/g, o.subtotal || o.total)
-                        .replace(/{التوصيل}/g, o.deliveryFee || 0)
+                        .replace(/{إجمالي_الطلب}/g, subtotalForDriver)
+                        .replace(/{التوصيل}/g, deliveryForDriver)
                         .replace(/{الإجمالي_النهائي}/g, finalTotalForDriver);
+
 
 
                     msg += `\n${i+1}- ` + orderMsg + `\n`; 
