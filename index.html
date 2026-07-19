@@ -842,39 +842,43 @@
                 <button onclick="closeModal('batch-settings-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/50 space-y-4">
-                <p class="text-[10px] font-bold text-slate-500 mb-2">البيانات دي هتظهر لايف لأي عميل بيتابع أوردر مربوط بالدفعة دي.</p>
-                
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-[10px] font-black text-slate-700 block mb-1">تاريخ البداية (متوقع)</label>
-                        <input type="date" id="batch-del-start" class="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-black text-slate-700 block mb-1">تاريخ النهاية (متوقع)</label>
-                        <input type="date" id="batch-del-end" class="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white">
-                    </div>
+                <div class="bg-blue-50 border border-blue-100 p-3 rounded-xl">
+                    <p class="text-[10px] font-black text-blue-800 mb-1"><i class="fa-solid fa-robot mr-1"></i> المخ الإلكتروني للدفعة (تحديث تلقائي)</p>
+                    <p class="text-[9px] text-blue-600 font-bold leading-relaxed">اكتب عمر السمان دلوقتي، والسيستم هيحسب مع نفسه كل يوم ويغير رسالة التتبع للعملاء بدون أي تدخل منك.</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[10px] font-black text-slate-700 block mb-1">عمر السمان الحالي</label>
-                        <input type="text" id="batch-quail-age" placeholder="مثال: 25 يوم" class="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white">
+                        <label class="text-[10px] font-black text-slate-700 block mb-1">عمر السمان (النهاردة)</label>
+                        <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-200">
+                            <input type="number" id="batch-current-age" placeholder="مثال: 15" oninput="previewSmartMessage()" class="w-full p-2 text-xs font-bold outline-none text-center">
+                            <span class="bg-slate-50 text-[10px] font-bold text-slate-500 px-3 py-2 border-r border-slate-200">يوم</span>
+                        </div>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-700 block mb-1">باقي على الذبح</label>
-                        <input type="text" id="batch-days-left" placeholder="مثال: 10 أيام" class="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white">
+                        <label class="text-[10px] font-black text-slate-700 block mb-1">عمر الذبح المستهدف</label>
+                        <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-200">
+                            <input type="number" id="batch-slaughter-age" value="40" placeholder="40" oninput="previewSmartMessage()" class="w-full p-2 text-xs font-bold outline-none text-center">
+                            <span class="bg-slate-50 text-[10px] font-bold text-slate-500 px-3 py-2 border-r border-slate-200">يوم</span>
+                        </div>
                     </div>
                 </div>
 
                 <div>
-                    <label class="text-[10px] font-black text-slate-700 block mb-1">رسالة تحديث للعملاء (تظهر في التتبع)</label>
-                    <textarea id="batch-customer-msg" rows="3" class="w-full border border-slate-200 rounded-lg p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white resize-none" placeholder="السمان بيكبر وبنجهز العنابر..."></textarea>
+                    <label class="text-[10px] font-black text-slate-700 block mb-1">تنبيه طارئ (يظهر فوق رسالة السيستم - اختياري)</label>
+                    <textarea id="batch-customer-msg" rows="2" oninput="previewSmartMessage()" class="w-full border border-slate-200 rounded-lg p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white resize-none" placeholder="مثال: التسليم هيتأخر يوم بسبب..."></textarea>
+                </div>
+
+                <div class="bg-purple-50/50 p-3 rounded-xl border border-purple-100">
+                    <label class="text-[10px] font-black text-purple-800 block mb-2"><i class="fa-solid fa-eye mr-1"></i> العميل هيشوف الرسالة دي النهاردة:</label>
+                    <p id="batch-smart-preview" class="text-[11px] font-bold text-purple-700 leading-relaxed bg-white p-2.5 rounded-lg border border-purple-100 shadow-sm min-h-[40px]"></p>
                 </div>
             </div>
             <div class="p-5 border-t border-slate-100 bg-white shrink-0">
-                <button onclick="saveBatchSettings()" id="btn-save-batch-settings" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> حفظ ونشر للعملاء</button>
+                <button onclick="saveBatchSettings()" id="btn-save-batch-settings" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-robot"></i> تفعيل المخ الإلكتروني ونشر للعملاء</button>
             </div>
         </div>
+
     </div>
 
     <div id="freezer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] hidden flex items-center justify-center p-4 transition-opacity">
@@ -2882,17 +2886,63 @@
         // إعدادات رسائل ومواعيد الدفعة للعملاء
         // ==========================================
         let currentEditingBatchId = null;
+        window.previewSmartMessage = () => {
+            let ageInput = document.getElementById('batch-current-age').value;
+            let slaughterInput = document.getElementById('batch-slaughter-age').value;
+            let customMsg = document.getElementById('batch-customer-msg').value.trim();
+            let isOpen = document.getElementById('batch-settings-modal').getAttribute('data-isopen') === 'true';
+            
+            let previewEl = document.getElementById('batch-smart-preview');
+            
+            if (!ageInput || !slaughterInput) {
+                previewEl.innerHTML = '<span class="text-slate-400">برجاء إدخال العمر الحالي وعمر الذبح لرؤية الرسالة...</span>';
+                return;
+            }
+
+            let currentAge = parseInt(ageInput);
+            let slaughterAge = parseInt(slaughterInput);
+            let remaining = slaughterAge - currentAge;
+
+            let smartMsg = "";
+
+            if (!isOpen) {
+                smartMsg = "✅ الدورة اكتملت واكتفينا بالحجز! السمان الآن في مرحلة التجهيز والذبح وجاري ترتيب مواعيد التسليم.";
+            } else if (remaining <= 0) {
+                smartMsg = "🔪 السمان وصل لعمر الذبح وجاهز فريش! سيتم قفل الحجز وتحديد مواعيد التسليم قريباً.";
+            } else if (remaining <= 5) {
+                smartMsg = `⏳ أيام بسيطة والسمان يكون جاهز! (متبقي حوالي ${remaining} أيام على الذبح).`;
+            } else if (currentAge <= 15) {
+                smartMsg = `🐣 السمان لسه في مرحلة التحضين والرعاية الأولية (عمره دلوقتي ${currentAge} يوم)، بنجهزلكم أفضل جودة!`;
+            } else {
+                smartMsg = `📈 السمان بيكبر وفي مرحلة بناء اللحم والوزن الممتاز (عمره ${currentAge} يوم، ومتبقي ${remaining} يوم للذبح).`;
+            }
+
+            previewEl.innerHTML = customMsg ? `<strong class="block mb-1 text-red-500">📌 تنبيه: ${customMsg}</strong>${smartMsg}` : smartMsg;
+        };
+
 
         window.openBatchSettings = (bId) => {
             currentEditingBatchId = bId;
             let b = storeBatches[bId];
             
-            document.getElementById('batch-del-start').value = b.deliveryStart || '';
-            document.getElementById('batch-del-end').value = b.deliveryEnd || '';
-            document.getElementById('batch-quail-age').value = b.quailAge || '';
-            document.getElementById('batch-days-left').value = b.daysLeft || '';
+            // استنتاج العمر الحالي من تاريخ الفقس لو متسجل
+            let currentAge = '';
+            if (b.hatchDate) {
+                let diffMs = Date.now() - b.hatchDate;
+                currentAge = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                if (currentAge < 0) currentAge = 0;
+            } else if (b.quailAge) { // للتوافق مع الداتا القديمة لو مكتوبة يدوي
+                currentAge = parseInt(b.quailAge.replace(/\D/g, '')) || '';
+            }
+
+            document.getElementById('batch-current-age').value = currentAge;
+            document.getElementById('batch-slaughter-age').value = b.slaughterAge || 40;
             document.getElementById('batch-customer-msg').value = b.customerMsg || '';
             
+            // حفظ حالة فتح الدفعة للبريفيو
+            document.getElementById('batch-settings-modal').setAttribute('data-isopen', b.isOpen);
+
+            previewSmartMessage();
             openModal('batch-settings-modal');
         };
 
@@ -2902,37 +2952,47 @@
             
             let btn = document.getElementById('btn-save-batch-settings');
             let origText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري النشر...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تفعيل المخ...';
             btn.disabled = true;
 
-            // تحديث المتغير المحلي
-            storeBatches[bId].deliveryStart = document.getElementById('batch-del-start').value;
-            storeBatches[bId].deliveryEnd = document.getElementById('batch-del-end').value;
-            storeBatches[bId].quailAge = document.getElementById('batch-quail-age').value;
-            storeBatches[bId].daysLeft = document.getElementById('batch-days-left').value;
-            storeBatches[bId].customerMsg = document.getElementById('batch-customer-msg').value;
+            let currentAge = parseInt(document.getElementById('batch-current-age').value) || 0;
+            let slaughterAge = parseInt(document.getElementById('batch-slaughter-age').value) || 40;
+            let customerMsg = document.getElementById('batch-customer-msg').value.trim();
+
+            // 🧠 السحر هنا: بنحسب تاريخ ميلاد السمان (الفقس) ونحفظه!
+            let hatchDate = Date.now() - (currentAge * 24 * 60 * 60 * 1000);
+
+            storeBatches[bId].hatchDate = hatchDate;
+            storeBatches[bId].slaughterAge = slaughterAge;
+            storeBatches[bId].customerMsg = customerMsg;
+            
+            // تنظيف الحقول اليدوية القديمة لو موجودة
+            delete storeBatches[bId].quailAge;
+            delete storeBatches[bId].daysLeft;
+            delete storeBatches[bId].deliveryStart;
+            delete storeBatches[bId].deliveryEnd;
 
             try {
-                // حفظ التحديثات في فايربيس (جوه الدفعة نفسها مش الأوردرات)
                 await db.collection("inventory").doc("batches").set({
                     [bId]: {
-                        deliveryStart: storeBatches[bId].deliveryStart,
-                        deliveryEnd: storeBatches[bId].deliveryEnd,
-                        quailAge: storeBatches[bId].quailAge,
-                        daysLeft: storeBatches[bId].daysLeft,
-                        customerMsg: storeBatches[bId].customerMsg
+                        hatchDate: hatchDate,
+                        slaughterAge: slaughterAge,
+                        customerMsg: customerMsg,
+                        quailAge: firebase.firestore.FieldValue.delete(),
+                        daysLeft: firebase.firestore.FieldValue.delete(),
+                        deliveryStart: firebase.firestore.FieldValue.delete(),
+                        deliveryEnd: firebase.firestore.FieldValue.delete()
                     }
                 }, { merge: true });
                 
-                alert("تم تحديث بيانات الدفعة، وأي عميل هيفتح التتبع هيشوف البيانات دي فوراً!");
+                alert("تم تشغيل الذكاء التلقائي للدفعة! 🤖\nالسيستم هيعد الأيام لوحده ويغير رسالة العميل كل يوم.");
                 closeModal('batch-settings-modal');
-            } catch(e) {
-                alert("حدث خطأ في الحفظ!");
-            }
+            } catch(e) { alert("حدث خطأ في الحفظ!"); }
             
             btn.innerHTML = origText;
             btn.disabled = false;
         };
+
 
         window.processTickTickCSV = (event) => {
             const file = event.target.files[0];
