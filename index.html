@@ -848,6 +848,19 @@
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
+                <!-- تواريخ التسليم (للعرض في المتجر) -->
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-700 block mb-1">تاريخ بداية التسليم (للمتجر)</label>
+                        <input type="date" id="batch-del-start" class="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-700 block mb-1">تاريخ نهاية التسليم (للمتجر)</label>
+                        <input type="date" id="batch-del-end" class="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] font-black text-slate-700 block mb-1">عمر السمان الفعلي (مخفي للعميل)</label>
                         <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-200">
@@ -870,15 +883,11 @@
                 </div>
 
                 <div class="bg-purple-50/50 p-3 rounded-xl border border-purple-100 mt-2">
-                    <label class="text-[10px] font-black text-purple-800 block mb-2"><i class="fa-solid fa-eye mr-1"></i> شكل الرسالة عند العميل (النهاردة):</label>
+                    <label class="text-[10px] font-black text-purple-800 block mb-2"><i class="fa-solid fa-eye mr-1"></i> شكل رسالة الحالة عند العميل:</label>
                     <p id="batch-smart-preview" class="text-[11px] font-bold text-purple-700 leading-relaxed bg-white p-2.5 rounded-lg border border-purple-100 shadow-sm min-h-[40px]"></p>
                 </div>
             </div>
-            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
-                <button onclick="saveBatchSettings()" id="btn-save-batch-settings" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> حفظ الإعدادات</button>
-            </div>
 
-        </div>
 
     </div>
 
@@ -2934,12 +2943,16 @@
                 if (currentAge < 0) currentAge = 0;
             }
 
+            // إرجاع التواريخ عشان المتجر يقرأها
+            document.getElementById('batch-del-start').value = b.deliveryStart || '';
+            document.getElementById('batch-del-end').value = b.deliveryEnd || '';
+
             document.getElementById('batch-current-age').value = currentAge;
             document.getElementById('batch-slaughter-age').value = b.slaughterAge || 40;
             document.getElementById('batch-urgent-note').value = b.urgentNote || '';
             
             document.getElementById('batch-settings-modal').setAttribute('data-isopen', b.isOpen);
-            previewLiveMessage(); // يشغل البريفيو أول ما النافذة تفتح
+            previewLiveMessage(); 
             openModal('batch-settings-modal');
         };
 
@@ -2955,10 +2968,13 @@
             let currentAge = parseInt(document.getElementById('batch-current-age').value) || 0;
             let slaughterAge = parseInt(document.getElementById('batch-slaughter-age').value) || 40;
             let urgentNote = document.getElementById('batch-urgent-note').value.trim();
+            
+            // سحب تواريخ التسليم الجديدة
+            let delStart = document.getElementById('batch-del-start').value;
+            let delEnd = document.getElementById('batch-del-end').value;
 
             // 🧠 السحر كله هنا: السيستم بيحسب "تاريخ الفقس" ويخزنه
             let hatchDate = storeBatches[bId].hatchDate;
-            // لو إنت عدلت العمر بإيدك، السيستم بيصحح تاريخ الفقس
             if (currentAge > 0) {
                  hatchDate = Date.now() - (currentAge * 24 * 60 * 60 * 1000);
             } else if (!hatchDate) {
@@ -2969,30 +2985,33 @@
             storeBatches[bId].hatchDate = hatchDate;
             storeBatches[bId].slaughterAge = slaughterAge;
             storeBatches[bId].urgentNote = urgentNote;
+            storeBatches[bId].deliveryStart = delStart;
+            storeBatches[bId].deliveryEnd = delEnd;
 
             try {
-                // حفظ البيانات في قاعدة البيانات
+                // حفظ البيانات في قاعدة البيانات (بما فيها تواريخ التسليم للمتجر)
                 await db.collection("inventory").doc("batches").set({
                     [bId]: {
                         hatchDate: hatchDate,
                         slaughterAge: slaughterAge,
                         urgentNote: urgentNote,
-                        // بنمسح أي بيانات قديمة ملهاش لازمة
+                        deliveryStart: delStart,
+                        deliveryEnd: delEnd,
+                        // بنمسح أي بيانات قديمة ملهاش لازمة بس سيبنا تواريخ التسليم!
                         customerMsg: firebase.firestore.FieldValue.delete(),
                         quailAge: firebase.firestore.FieldValue.delete(),
-                        daysLeft: firebase.firestore.FieldValue.delete(),
-                        deliveryStart: firebase.firestore.FieldValue.delete(),
-                        deliveryEnd: firebase.firestore.FieldValue.delete()
+                        daysLeft: firebase.firestore.FieldValue.delete()
                     }
                 }, { merge: true });
                 
-                alert("تم الحفظ! 🚀\nالسيستم دلوقتي هيتابع عمر الدفعة أوتوماتيك ويغير رسائل العملاء كل يوم مع نفسه بناءً على الزمن.");
+                alert("تم الحفظ! 🚀\nالمتجر دلوقتي هيعرض التواريخ للعميل، والسيستم هيحدث رسالة الحالة أوتوماتيك.");
                 closeModal('batch-settings-modal');
             } catch(e) { alert("حدث خطأ في الحفظ!"); }
             
             btn.innerHTML = origText;
             btn.disabled = false;
         };
+
 
 
 
