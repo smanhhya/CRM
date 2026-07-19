@@ -843,40 +843,41 @@
             </div>
             <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/50 space-y-4">
                 <div class="bg-blue-50 border border-blue-100 p-3 rounded-xl">
-                    <p class="text-[10px] font-black text-blue-800 mb-1"><i class="fa-solid fa-robot mr-1"></i> المخ الإلكتروني للدفعة (تحديث تلقائي)</p>
-                    <p class="text-[9px] text-blue-600 font-bold leading-relaxed">اكتب عمر السمان دلوقتي، والسيستم هيحسب مع نفسه كل يوم ويغير رسالة التتبع للعملاء بدون أي تدخل منك.</p>
+                    <p class="text-[10px] font-black text-blue-800 mb-1"><i class="fa-solid fa-robot mr-1"></i> المخ الإلكتروني للدفعة (أوتوماتيك 100%)</p>
+                    <p class="text-[9px] text-blue-600 font-bold leading-relaxed">اكتب عمر السمان النهاردة بس والسيستم هيحفظ (تاريخ ميلاده). موقع العميل هيحسب العمر كل يوم أوتوماتيك ويغير الرسالة لوحده من غير ما يظهر للعميل أي أرقام تلزمك بميعاد.</p>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[10px] font-black text-slate-700 block mb-1">عمر السمان (النهاردة)</label>
+                        <label class="text-[10px] font-black text-slate-700 block mb-1">عمر السمان الفعلي (مخفي للعميل)</label>
                         <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-200">
-                            <input type="number" id="batch-current-age" placeholder="مثال: 15" oninput="previewSmartMessage()" class="w-full p-2 text-xs font-bold outline-none text-center">
+                            <input type="number" id="batch-current-age" placeholder="مثال: 25" oninput="previewLiveMessage()" class="w-full p-2 text-xs font-bold outline-none text-center">
                             <span class="bg-slate-50 text-[10px] font-bold text-slate-500 px-3 py-2 border-r border-slate-200">يوم</span>
                         </div>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-700 block mb-1">عمر الذبح المستهدف</label>
+                        <label class="text-[10px] font-black text-slate-700 block mb-1">عمر الذبح المستهدف (مخفي)</label>
                         <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-purple-200">
-                            <input type="number" id="batch-slaughter-age" value="40" placeholder="40" oninput="previewSmartMessage()" class="w-full p-2 text-xs font-bold outline-none text-center">
+                            <input type="number" id="batch-slaughter-age" value="40" placeholder="40" oninput="previewLiveMessage()" class="w-full p-2 text-xs font-bold outline-none text-center">
                             <span class="bg-slate-50 text-[10px] font-bold text-slate-500 px-3 py-2 border-r border-slate-200">يوم</span>
                         </div>
                     </div>
                 </div>
 
-                <div>
-                    <label class="text-[10px] font-black text-slate-700 block mb-1">تنبيه طارئ (يظهر فوق رسالة السيستم - اختياري)</label>
-                    <textarea id="batch-customer-msg" rows="2" oninput="previewSmartMessage()" class="w-full border border-slate-200 rounded-lg p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white resize-none" placeholder="مثال: التسليم هيتأخر يوم بسبب..."></textarea>
+                <div class="border-t border-slate-200 pt-3">
+                    <label class="text-[10px] font-black text-slate-700 block mb-2"><i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1"></i> تنبيه طارئ للعملاء (اختياري)</label>
+                    <textarea id="batch-urgent-note" rows="2" oninput="previewLiveMessage()" class="w-full border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none focus:ring-2 focus:ring-amber-300 bg-white resize-none shadow-inner" placeholder="لو كتبت حاجة هنا، هتظهر للعميل فوق الرسالة الأوتوماتيك (مثال: متاح توصيل مجاني اليوم)..."></textarea>
                 </div>
 
-                <div class="bg-purple-50/50 p-3 rounded-xl border border-purple-100">
-                    <label class="text-[10px] font-black text-purple-800 block mb-2"><i class="fa-solid fa-eye mr-1"></i> العميل هيشوف الرسالة دي النهاردة:</label>
+                <div class="bg-purple-50/50 p-3 rounded-xl border border-purple-100 mt-2">
+                    <label class="text-[10px] font-black text-purple-800 block mb-2"><i class="fa-solid fa-eye mr-1"></i> شكل الرسالة عند العميل (النهاردة):</label>
                     <p id="batch-smart-preview" class="text-[11px] font-bold text-purple-700 leading-relaxed bg-white p-2.5 rounded-lg border border-purple-100 shadow-sm min-h-[40px]"></p>
                 </div>
             </div>
             <div class="p-5 border-t border-slate-100 bg-white shrink-0">
-                <button onclick="saveBatchSettings()" id="btn-save-batch-settings" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-robot"></i> تفعيل المخ الإلكتروني ونشر للعملاء</button>
+                <button onclick="saveBatchSettings()" id="btn-save-batch-settings" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> حفظ الإعدادات</button>
             </div>
+
         </div>
 
     </div>
@@ -2883,66 +2884,62 @@
             } 
         };
         // ==========================================
-        // إعدادات رسائل ومواعيد الدفعة للعملاء
-        // ==========================================
         let currentEditingBatchId = null;
-        window.previewSmartMessage = () => {
+
+        // الدالة دي بتوريك شكل الرسالة أوتوماتيك وإنت بتكتب عشان تطمن (بدون أي أرقام للعميل)
+        window.previewLiveMessage = () => {
             let ageInput = document.getElementById('batch-current-age').value;
             let slaughterInput = document.getElementById('batch-slaughter-age').value;
-            let customMsg = document.getElementById('batch-customer-msg').value.trim();
+            let urgentNote = document.getElementById('batch-urgent-note').value.trim();
             let isOpen = document.getElementById('batch-settings-modal').getAttribute('data-isopen') === 'true';
             
             let previewEl = document.getElementById('batch-smart-preview');
             
             if (!ageInput || !slaughterInput) {
-                previewEl.innerHTML = '<span class="text-slate-400">برجاء إدخال العمر الحالي وعمر الذبح لرؤية الرسالة...</span>';
+                previewEl.innerHTML = '<span class="text-slate-400">اكتب العمر الحالي وعمر الذبح لرؤية الرسالة الأوتوماتيكية...</span>';
                 return;
             }
 
             let currentAge = parseInt(ageInput);
             let slaughterAge = parseInt(slaughterInput);
             let remaining = slaughterAge - currentAge;
+            let autoMsg = "";
 
-            let smartMsg = "";
-
+            // هنا بنبرمج الحالات، والسيستم بيختار الجملة بناءً على الحسبة (بدون أي ذكر للأيام)
             if (!isOpen) {
-                smartMsg = "✅ الدورة اكتملت واكتفينا بالحجز! السمان الآن في مرحلة التجهيز والذبح وجاري ترتيب مواعيد التسليم.";
+                autoMsg = "✅ الدورة اكتملت واكتفينا بالحجز! السمان الآن في مرحلة التجهيز والذبح وجاري ترتيب مواعيد التسليم.";
             } else if (remaining <= 0) {
-                smartMsg = "🔪 السمان وصل لعمر الذبح وجاهز فريش! سيتم قفل الحجز وتحديد مواعيد التسليم قريباً.";
+                autoMsg = "🔪 السمان وصل لمرحلة النضج وجاهز فريش! سيتم قفل الحجز وتحديد مواعيد التسليم قريباً.";
             } else if (remaining <= 5) {
-                smartMsg = `⏳ أيام بسيطة والسمان يكون جاهز! (متبقي حوالي ${remaining} أيام على الذبح).`;
+                autoMsg = "⏳ أيام بسيطة جداً والسمان يكون جاهز! استعدوا لاستلام أوردراتكم قريباً.";
             } else if (currentAge <= 15) {
-                smartMsg = `🐣 السمان لسه في مرحلة التحضين والرعاية الأولية (عمره دلوقتي ${currentAge} يوم)، بنجهزلكم أفضل جودة!`;
+                autoMsg = "🐣 السمان حالياً في مرحلة التحضين والرعاية الأولية، بنجهزلكم أفضل جودة إن شاء الله!";
             } else {
-                smartMsg = `📈 السمان بيكبر وفي مرحلة بناء اللحم والوزن الممتاز (عمره ${currentAge} يوم، ومتبقي ${remaining} يوم للذبح).`;
+                autoMsg = "📈 السمان بيكبر وفي مرحلة التسمين وبناء اللحم الممتاز، تابعونا لتحديد موعد الذبح قريباً.";
             }
 
-            previewEl.innerHTML = customMsg ? `<strong class="block mb-1 text-red-500">📌 تنبيه: ${customMsg}</strong>${smartMsg}` : smartMsg;
+            // لو كاتب تنبيه طارئ بيتحط فوق الرسالة
+            let finalHtml = urgentNote ? `<strong class="block mb-1 text-amber-600">📌 تنبيه: ${urgentNote}</strong>${autoMsg}` : autoMsg;
+            previewEl.innerHTML = finalHtml;
         };
-
 
         window.openBatchSettings = (bId) => {
             currentEditingBatchId = bId;
             let b = storeBatches[bId];
             
-            // استنتاج العمر الحالي من تاريخ الفقس لو متسجل
+            // السيستم بيحسب العمر النهاردة كام لوحده بناءً على تاريخ الفقس اللي اتسجل قبل كده
             let currentAge = '';
             if (b.hatchDate) {
-                let diffMs = Date.now() - b.hatchDate;
-                currentAge = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                currentAge = Math.floor((Date.now() - b.hatchDate) / (1000 * 60 * 60 * 24));
                 if (currentAge < 0) currentAge = 0;
-            } else if (b.quailAge) { // للتوافق مع الداتا القديمة لو مكتوبة يدوي
-                currentAge = parseInt(b.quailAge.replace(/\D/g, '')) || '';
             }
 
             document.getElementById('batch-current-age').value = currentAge;
             document.getElementById('batch-slaughter-age').value = b.slaughterAge || 40;
-            document.getElementById('batch-customer-msg').value = b.customerMsg || '';
+            document.getElementById('batch-urgent-note').value = b.urgentNote || '';
             
-            // حفظ حالة فتح الدفعة للبريفيو
             document.getElementById('batch-settings-modal').setAttribute('data-isopen', b.isOpen);
-
-            previewSmartMessage();
+            previewLiveMessage(); // يشغل البريفيو أول ما النافذة تفتح
             openModal('batch-settings-modal');
         };
 
@@ -2952,32 +2949,36 @@
             
             let btn = document.getElementById('btn-save-batch-settings');
             let origText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تفعيل المخ...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
             btn.disabled = true;
 
             let currentAge = parseInt(document.getElementById('batch-current-age').value) || 0;
             let slaughterAge = parseInt(document.getElementById('batch-slaughter-age').value) || 40;
-            let customerMsg = document.getElementById('batch-customer-msg').value.trim();
+            let urgentNote = document.getElementById('batch-urgent-note').value.trim();
 
-            // 🧠 السحر هنا: بنحسب تاريخ ميلاد السمان (الفقس) ونحفظه!
-            let hatchDate = Date.now() - (currentAge * 24 * 60 * 60 * 1000);
+            // 🧠 السحر كله هنا: السيستم بيحسب "تاريخ الفقس" ويخزنه
+            let hatchDate = storeBatches[bId].hatchDate;
+            // لو إنت عدلت العمر بإيدك، السيستم بيصحح تاريخ الفقس
+            if (currentAge > 0) {
+                 hatchDate = Date.now() - (currentAge * 24 * 60 * 60 * 1000);
+            } else if (!hatchDate) {
+                 hatchDate = Date.now();
+            }
 
+            // تحديث المتغير المحلي
             storeBatches[bId].hatchDate = hatchDate;
             storeBatches[bId].slaughterAge = slaughterAge;
-            storeBatches[bId].customerMsg = customerMsg;
-            
-            // تنظيف الحقول اليدوية القديمة لو موجودة
-            delete storeBatches[bId].quailAge;
-            delete storeBatches[bId].daysLeft;
-            delete storeBatches[bId].deliveryStart;
-            delete storeBatches[bId].deliveryEnd;
+            storeBatches[bId].urgentNote = urgentNote;
 
             try {
+                // حفظ البيانات في قاعدة البيانات
                 await db.collection("inventory").doc("batches").set({
                     [bId]: {
                         hatchDate: hatchDate,
                         slaughterAge: slaughterAge,
-                        customerMsg: customerMsg,
+                        urgentNote: urgentNote,
+                        // بنمسح أي بيانات قديمة ملهاش لازمة
+                        customerMsg: firebase.firestore.FieldValue.delete(),
                         quailAge: firebase.firestore.FieldValue.delete(),
                         daysLeft: firebase.firestore.FieldValue.delete(),
                         deliveryStart: firebase.firestore.FieldValue.delete(),
@@ -2985,13 +2986,14 @@
                     }
                 }, { merge: true });
                 
-                alert("تم تشغيل الذكاء التلقائي للدفعة! 🤖\nالسيستم هيعد الأيام لوحده ويغير رسالة العميل كل يوم.");
+                alert("تم الحفظ! 🚀\nالسيستم دلوقتي هيتابع عمر الدفعة أوتوماتيك ويغير رسائل العملاء كل يوم مع نفسه بناءً على الزمن.");
                 closeModal('batch-settings-modal');
             } catch(e) { alert("حدث خطأ في الحفظ!"); }
             
             btn.innerHTML = origText;
             btn.disabled = false;
         };
+
 
 
         window.processTickTickCSV = (event) => {
