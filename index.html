@@ -847,7 +847,6 @@
                     <p class="text-[9px] text-blue-600 font-bold leading-relaxed">اكتب عمر السمان النهاردة بس والسيستم هيحفظ (تاريخ ميلاده). موقع العميل هيحسب العمر كل يوم أوتوماتيك ويغير الرسالة لوحده من غير ما يظهر للعميل أي أرقام تلزمك بميعاد.</p>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
                 <!-- تواريخ التسليم (للعرض في المتجر) -->
                 <div class="grid grid-cols-2 gap-3 mb-2">
                     <div>
@@ -888,8 +887,13 @@
                 </div>
             </div>
 
-
+            <!-- زرار الحفظ أهو رجع مكانه -->
+            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
+                <button onclick="saveBatchSettings()" id="btn-save-batch-settings" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> حفظ الإعدادات</button>
+            </div>
+        </div>
     </div>
+
 
     <div id="freezer-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
