@@ -4625,7 +4625,6 @@ window.deleteProductUI = async (id) => {
                     let payStr = (o.paymentMethod === 'online') ? '(أونلاين)' : '(كاش)';
                     badge = `<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-[10px] font-black border border-emerald-100">تم التسليم ${payStr}</span>`;
                     priceClass = 'text-brand-primary';
-                }
                 } else if (o.status === 'dispatched') {
                     badge = '<span class="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-[10px] font-black border border-indigo-100 animate-pulse">بالطريق (معلق)</span>';
                     priceClass = 'text-indigo-400';
