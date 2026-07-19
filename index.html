@@ -2707,8 +2707,12 @@
                         .replace(/{التوصيل}/g, o.deliveryFee || 0)
                         .replace(/{الإجمالي_النهائي}/g, o.total);
 
-                    msg += `\n${i+1}- ` + orderMsg + `\n`; if (o.driverNote) msg += `🛵 ملاحظة للمندوب: ${o.driverNote}\n`;
+                    msg += `\n${i+1}- ` + orderMsg + `\n`; 
+                    if (o.driverNote) msg += `🛵 ملاحظة للمندوب: ${o.driverNote}\n`;
+                    // التنبيه السحري للمندوب عشان ما يطالبش العميل بفلوس
+                    if (o.paymentMethod === 'online') msg += `💳 *تنبيه للمندوب: الحساب خالص (مدفوع أونلاين)*\n`;
                 }); 
+
                 msg += `\n➖➖➖➖➖➖➖➖\n\n`; 
             });
             
