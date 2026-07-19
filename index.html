@@ -475,10 +475,20 @@
             </div>
             <div class="p-6 overflow-y-auto custom-scroll space-y-6 bg-slate-50/50">
 
-                <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100 mb-4">
-                    <label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (للطوارئ)</label>
-                    <input type="tel" id="edit-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="إضافة رقم آخر...">
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل</label>
+                        <input type="tel" id="edit-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="إضافة رقم...">
+                    </div>
+                    <div class="bg-emerald-50/50 p-5 rounded-2xl shadow-soft border border-emerald-100">
+                        <label class="text-[10px] font-black text-emerald-700 block mb-1.5"><i class="fa-solid fa-money-bill-wave mr-1"></i> طريقة الدفع</label>
+                        <select id="edit-payment-method" class="w-full border border-emerald-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-300 font-bold bg-white transition-all text-sm text-emerald-800">
+                            <option value="cash">كاش</option>
+                            <option value="online">أونلاين (خالص)</option>
+                        </select>
+                    </div>
                 </div>
+
                 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
                     <label class="text-sm font-black text-slate-800 block mb-4"><i class="fa-solid fa-boxes-stacked text-indigo-500 mr-2"></i> الكميات المطلوبة</label>
@@ -579,6 +589,13 @@
 
 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
+                    <div class="mb-4 p-3 bg-emerald-50/50 rounded-xl border border-emerald-100">
+                        <label class="text-[10px] font-black text-slate-800 block mb-1.5"><i class="fa-solid fa-money-bill-wave text-emerald-500 mr-1"></i> طريقة الدفع (حالة الحساب)</label>
+                        <select id="no-payment-method" class="w-full border border-emerald-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-300 text-sm font-bold text-emerald-800 bg-white transition-all shadow-sm">
+                            <option value="cash">💵 الدفع كاش عند الاستلام (حساب مفتوح)</option>
+                            <option value="online">💳 الحساب خالص (مدفوع أونلاين / فودافون كاش)</option>
+                        </select>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="text-[10px] font-black text-slate-800 block mb-1.5"><i class="fa-solid fa-lock text-red-400 mr-1"></i> ملاحظات إدارية (سرية لك)</label>
@@ -1801,6 +1818,10 @@
                             '<span class="bg-slate-50 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black">ملغي</span>'))));
                 
                 let customTagHtml = o.customTag ? `<span onclick="document.getElementById('search-order').value='${o.customTag}'; renderOrdersList();" class="text-[10px] bg-purple-50 text-purple-600 border border-purple-100 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-purple-500 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه المجموعة"><i class="fa-solid fa-hashtag"></i> ${o.customTag}</span>` : '';
+                let paymentBadge = (o.paymentMethod === 'online') 
+                    ? '<span class="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-sm" title="تم الدفع مسبقاً"><i class="fa-solid fa-check-double"></i> خالص (أونلاين)</span>' 
+                    : '<span class="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-sm"><i class="fa-solid fa-money-bill-1-wave"></i> كاش</span>';
+
                 let batchTagHtml = o.batchName ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
 
                 let phone2Html = o.customerPhone2 ? `
@@ -1835,9 +1856,10 @@
                         </div>
                     </div>
                     
-                    <div class="flex flex-wrap gap-1 mb-1.5">
-                        ${batchTagHtml} ${customTagHtml}
+                     <div class="flex flex-wrap gap-1 mb-1.5">
+                        ${paymentBadge} ${batchTagHtml} ${customTagHtml}
                     </div>
+
 
                     <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5">
                         ${itemsStr}
@@ -2408,6 +2430,7 @@
             let customTag = document.getElementById('no-custom-tag') ? document.getElementById('no-custom-tag').value.trim() : '';
             let deliveryStart = document.getElementById('no-delivery-start') ? document.getElementById('no-delivery-start').value : '';
             let deliveryEnd = document.getElementById('no-delivery-end') ? document.getElementById('no-delivery-end').value : '';
+            let paymentMethod = document.getElementById('no-payment-method') ? document.getElementById('no-payment-method').value : 'cash';
             
             if(!phone || !name || total === 0) return alert('برجاء استكمال بيانات العميل وقيمة الطلب الأساسية!');
             if(!zone) return alert('يجب تحديد منطقة التوصيل!');
@@ -2460,9 +2483,11 @@
                     batchId: batchId, 
                     batchName: batchName, 
                     customTag: customTag, 
-                    deliveryStart: deliveryStart, // السطر ده جديد
-                    deliveryEnd: deliveryEnd,     // والسطر ده جديد
+                    deliveryStart: deliveryStart,
+                    deliveryEnd: deliveryEnd,
+                    paymentMethod: paymentMethod, // 💳 إضافة طريقة الدفع للسيستم
                     total: total, 
+
 
                     subtotal: subtotal, 
                     deliveryFee: delivery, 
@@ -3311,6 +3336,8 @@ window.deleteProductUI = async (id) => {
             
             if(document.getElementById('edit-custom-tag')) { document.getElementById('edit-custom-tag').value = editingOrderData.customTag || ''; }
             if(document.getElementById('edit-phone-2')) document.getElementById('edit-phone-2').value = editingOrderData.customerPhone2 || '';
+            if(document.getElementById('edit-payment-method')) document.getElementById('edit-payment-method').value = editingOrderData.paymentMethod || 'cash';
+
             if(document.getElementById('edit-delivery-start')) document.getElementById('edit-delivery-start').value = editingOrderData.deliveryStart || '';
             if(document.getElementById('edit-delivery-end')) document.getElementById('edit-delivery-end').value = editingOrderData.deliveryEnd || '';
 
@@ -4382,6 +4409,8 @@ window.deleteProductUI = async (id) => {
             let newBatchName = newBatchId ? storeBatches[newBatchId].name : '';
             let newCustomTag = document.getElementById('edit-custom-tag') ? document.getElementById('edit-custom-tag').value.trim() : '';
             let newPhone2 = document.getElementById('edit-phone-2') ? document.getElementById('edit-phone-2').value.trim() : '';
+            let newPaymentMethod = document.getElementById('edit-payment-method') ? document.getElementById('edit-payment-method').value : 'cash';
+
             let newDeliveryStart = document.getElementById('edit-delivery-start') ? document.getElementById('edit-delivery-start').value : '';
             let newDeliveryEnd = document.getElementById('edit-delivery-end') ? document.getElementById('edit-delivery-end').value : '';
             
@@ -4395,7 +4424,7 @@ window.deleteProductUI = async (id) => {
                 let orderRef = db.collection('orders').doc(editingOrderData.id);
                 atomicBatch.update(orderRef, { 
                     items: newItems, subtotal: newSubtotal, deliveryFee: newDelivery, discount: newDiscount, total: newTotal, 
-                    batchId: newBatchId, batchName: newBatchName, customTag: newCustomTag, customerPhone2: newPhone2,
+                    batchId: newBatchId, batchName: newBatchName, customTag: newCustomTag, customerPhone2: newPhone2, paymentMethod: newPaymentMethod,
                     deliveryStart: newDeliveryStart,
                     deliveryEnd: newDeliveryEnd     
                 });
@@ -4583,10 +4612,16 @@ window.deleteProductUI = async (id) => {
                 let priceClass = 'text-slate-400 line-through'; 
                 
                 if (o.status === 'completed') {
-                    totalDeliveredCash += Number(o.total) || 0;
+                    // لو الحساب كاش هنضيفه لدرج المندوب، لو أونلاين مش هيتحسب كاش
+                    if (o.paymentMethod !== 'online') {
+                        totalDeliveredCash += Number(o.total) || 0;
+                    }
                     totalDeliveryFees += Number(o.deliveryFee) || 0; // بنجمع فلوس التوصيل
-                    badge = '<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-[10px] font-black border border-emerald-100">تم التسليم</span>';
+                    
+                    let payStr = (o.paymentMethod === 'online') ? '(أونلاين)' : '(كاش)';
+                    badge = `<span class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded text-[10px] font-black border border-emerald-100">تم التسليم ${payStr}</span>`;
                     priceClass = 'text-brand-primary';
+                }
                 } else if (o.status === 'dispatched') {
                     badge = '<span class="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-[10px] font-black border border-indigo-100 animate-pulse">بالطريق (معلق)</span>';
                     priceClass = 'text-indigo-400';
