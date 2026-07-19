@@ -2682,9 +2682,15 @@
                 let zName = o.zone || 'مناطق غير محددة'; 
                 if(!zonesMap[zName]) zonesMap[zName] = []; 
                 zonesMap[zName].push(o); 
-                totalMoneyToCollect += Number(o.total) || 0; 
+                
+                // التعديل: بنجمع فلوس الأوردرات الكاش فقط في إجمالي تحصيل المندوب
+                if (o.paymentMethod !== 'online') {
+                    totalMoneyToCollect += Number(o.total) || 0; 
+                }
+                
                 totalOrders++; 
             });            
+
             
             // كودك الأصلي للرسالة (لم يتم المساس به)
             let dispatchTemplate = storeSettings.dispatchTemplate || "📦 طلب من {اسم_العميل}\n📱 {رقم_العميل}\n📍 {المنطقة} - {العنوان}\n🛒 الطلبات:\n{تفاصيل_الطلبات}\n💰 الإجمالي: {الإجمالي_النهائي} ج.م";
@@ -2697,6 +2703,9 @@
                     // الحماية هنا اهي
                     let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(item => `${item.quantity} ${item.name}`).join(' + ') : 'بدون تفاصيل';
 
+                    // التعديل: لو الأوردر أونلاين، هنصفر الإجمالي اللي بيظهر للمندوب
+                    let finalTotalForDriver = (o.paymentMethod === 'online') ? '0 (الحساب خالص أونلاين)' : o.total;
+
                     let orderMsg = dispatchTemplate
                         .replace(/{اسم_العميل}/g, o.customerName || '')
                         .replace(/{رقم_العميل}/g, o.customerPhone || '')
@@ -2705,7 +2714,8 @@
                         .replace(/{تفاصيل_الطلبات}/g, itemsStr)
                         .replace(/{إجمالي_الطلب}/g, o.subtotal || o.total)
                         .replace(/{التوصيل}/g, o.deliveryFee || 0)
-                        .replace(/{الإجمالي_النهائي}/g, o.total);
+                        .replace(/{الإجمالي_النهائي}/g, finalTotalForDriver);
+
 
                     msg += `\n${i+1}- ` + orderMsg + `\n`; 
                     if (o.driverNote) msg += `🛵 ملاحظة للمندوب: ${o.driverNote}\n`;
