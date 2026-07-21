@@ -1123,16 +1123,26 @@
                     dispatchOrdersRaw = [];
 
                     recentSnap.forEach(doc => {
-                        // التعديل السحري: نمنع الأوردر القديم إنه يمسح التحديث اليدوي اللي عملناه (عشان قسم الملغي والمكتمل يفضل شغال)
                         if (!globalOrdersMap[doc.id] || !globalOrdersMap[doc.id].manuallyUpdated) {
-                            globalOrdersMap[doc.id] = {id: doc.id, ...doc.data()};
+                            let oData = doc.data();
+                            // 💡 السحر هنا: لو المتجر بعت الأوردر بدون اسم الدفعة، الـ CRM هيترجم الكود للاسم أوتوماتيك
+                            if (!oData.batchName && oData.batchId && storeBatches[oData.batchId]) {
+                                oData.batchName = storeBatches[oData.batchId].name;
+                            }
+                            globalOrdersMap[doc.id] = {id: doc.id, ...oData};
                         }
                     });
+                    
                     activeSnap.forEach(doc => {
-                        globalOrdersMap[doc.id] = {id: doc.id, ...doc.data()};
+                        let oData = doc.data();
+                        // 💡 السحر هنا: الترجمة شغالة كمان مع الأوردرات الحية اللي بتدخل لايف
+                        if (!oData.batchName && oData.batchId && storeBatches[oData.batchId]) {
+                            oData.batchName = storeBatches[oData.batchId].name;
+                        }
+                        globalOrdersMap[doc.id] = {id: doc.id, ...oData};
                         globalOrdersMap[doc.id].manuallyUpdated = false; // ريستارت للتحديث اليدوي
                     });
-                    
+
                     let mergedOrders = Object.values(globalOrdersMap);
 
                     
