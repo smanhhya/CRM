@@ -1376,7 +1376,8 @@
                     let z = o.zone || 'مناطق غير محددة';
                     zonesCount[z] = (zonesCount[z] || 0) + 1;
 
-                    let bName = o.batchName ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
+                    // التعديل: تجاهل كلمة undefined لو كانت متسجلة في أوردر قديم
+                    let bName = (o.batchName && o.batchName !== 'undefined') ? o.batchName : (o.customTag ? `تاج مخصص: ${o.customTag}` : "أوردرات عادية");
                     if(!summary[bName]) summary[bName] = { count: 0, revenue: 0, items: {} };
                     
                     summary[bName].count++;
