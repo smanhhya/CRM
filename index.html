@@ -2844,13 +2844,14 @@
             
             Object.keys(storeBatches).reverse().forEach(bId => { 
                 const b = storeBatches[bId]; 
-
                 // 👻 التعديل السحري: صائد الأشباح (Ghost Catcher)
-                // لو الدفعة اتخلقت بالغلط من غير اسم (بسبب تعديل أوردر قديم)، السيستم هيمسحها أوتوماتيك ويخفيها
-                if (b.name === undefined) {
+                // لو الدفعة اتخلقت بالغلط من غير اسم، السيستم هيمسحها أوتوماتيك من الداتا بيز ومن الذاكرة الحية
+                if (!b || !b.name || b.name === 'undefined' || b.name.trim() === '') {
                     db.collection('inventory').doc('batches').update({ [bId]: firebase.firestore.FieldValue.delete() }).catch(()=>{});
+                    delete storeBatches[bId]; // 🧹 السر هنا: مسحها من الذاكرة الحية عشان تختفي من القوائم
                     return; // تجاهل رسم الدفعة دي وكمل اللي بعدها
                 }
+
 
                 let stockHtml = '<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 border-t border-slate-100 pt-4">'; 
 
