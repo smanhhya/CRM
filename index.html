@@ -1828,9 +1828,16 @@
                 container.innerHTML = '<div class="text-center text-slate-400 py-16 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لا توجد طلبات في هذا القسم.</div>'; 
                 return; 
             }
-
             container.innerHTML = filtered.map(o => {
                 let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
+                
+                // إضافة عرض تاريخ التسليم لو الأوردر مكتمل
+                let completedDateHtml = '';
+                if (o.status === 'completed') {
+                    let cTime = o.completedTimeDisplay || (o.completedAtStr ? o.completedAtStr : 'تم التسليم');
+                    completedDateHtml = `<span class="text-[9px] text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded font-black mt-1 w-full text-center shadow-sm" title="تاريخ ووقت التسليم الفعلي"><i class="fa-solid fa-check-double"></i> ${cTime}</span>`;
+                }
+
                 let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map((i, idx) => 
                     `<span class="bg-white border border-slate-200 px-2.5 py-1.5 rounded-lg text-xs shadow-sm flex items-center gap-1.5 hover:border-brand-primary transition-colors">
                         <span class="font-black text-slate-800">${i.quantity}x ${i.name}</span>
@@ -1878,10 +1885,12 @@
                                 ${o.customerAddress ? `<span class="mx-1">-</span><span class="cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" ondblclick="inlineEdit(this, '${o.id}', 'customerAddress')">${o.customerAddress}</span>` : ''}
                             </p>
                         </div>
-                        <div class="flex flex-col items-end gap-1.5">
+                        <div class="flex flex-col items-end gap-1">
                             ${sBadge}
-                            <span class="text-[8px] text-slate-400 font-bold uppercase tracking-wider">${d}</span>
+                            <span class="text-[9px] text-slate-400 font-bold tracking-wider" title="تاريخ الطلب الأصلي">طلب: ${d}</span>
+                            ${completedDateHtml}
                         </div>
+
                     </div>
                     
                      <div class="flex flex-wrap gap-1 mb-1.5">
@@ -4370,9 +4379,15 @@ window.deleteProductUI = async (id) => {
                 globalOrdersMap[id].manuallyUpdated = true;
             }
             if (s === 'completed') {
-                o.completedAtStr = new Date().toLocaleDateString('en-US');
-                if(globalOrdersMap[id]) globalOrdersMap[id].completedAtStr = o.completedAtStr;
+                let nowObj = new Date();
+                o.completedAtStr = nowObj.toLocaleDateString('en-US'); // عشان حسابات لوحة القيادة
+                o.completedTimeDisplay = nowObj.toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }); // عشان العرض للعميل
+                if(globalOrdersMap[id]) {
+                    globalOrdersMap[id].completedAtStr = o.completedAtStr;
+                    globalOrdersMap[id].completedTimeDisplay = o.completedTimeDisplay;
+                }
             }
+
             renderOrdersList();
             if (s === 'trash') renderTrashUI();
             // ---------------------------------------------------------
@@ -4389,8 +4404,10 @@ window.deleteProductUI = async (id) => {
                 
                 if (s === 'completed') {
                     updateData.completedAtStr = new Date().toLocaleDateString('en-US');
+                    updateData.completedTimeDisplay = new Date().toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                     updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
                 }
+
 
                 atomicBatch.update(orderRef, updateData); 
                 
