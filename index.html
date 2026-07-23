@@ -387,6 +387,28 @@
                         <div><label class="text-xs font-bold text-slate-500 block mb-2">رقم الواتساب للاستقبال</label><input type="text" id="st-phone" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-slate-200 bg-slate-50 focus:bg-white transition-colors text-left" dir="ltr"></div>
                         <div><label class="text-xs font-bold text-slate-500 block mb-2">الحد الأدنى لقيمة الطلب (ج.م)</label><input type="number" id="st-min-order" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-slate-200 bg-slate-50 focus:bg-white transition-colors text-center"></div>
                     </div>
+                    
+                    <!-- 🎁 نظام نقاط الولاء والمحفظة النقدية 🎁 -->
+                    <div class="mt-6 p-5 bg-amber-50/50 border border-amber-200 rounded-2xl shadow-sm">
+                        <div class="flex justify-between items-center mb-4 pb-3 border-b border-amber-100">
+                            <h4 class="font-black text-amber-800 text-sm"><i class="fa-solid fa-coins text-amber-500 mr-2"></i> نظام الولاء والمحفظة النقدية للعملاء</h4>
+                            <button onclick="calculateRetroactivePoints()" id="btn-retro-points" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-[10px] font-black shadow-md transition-all flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles"></i> تفعيل للمسجلين قديماً</button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="text-xs font-bold text-amber-700 block mb-2">كل 100 جنيه مشتريات تساوي كام نقطة؟</label>
+                                <input type="number" id="st-pts-per-100" class="w-full border border-amber-200 rounded-xl p-3 font-black text-amber-900 bg-white outline-none focus:ring-2 focus:ring-amber-300 transition-colors text-center shadow-sm" placeholder="مثال: 5">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-amber-700 block mb-2">قيمة النقطة الواحدة بالجنيه (مخفي عن العميل)</label>
+                                <input type="number" step="0.01" id="st-pts-value" class="w-full border border-amber-200 rounded-xl p-3 font-black text-amber-900 bg-white outline-none focus:ring-2 focus:ring-amber-300 transition-colors text-center shadow-sm" placeholder="مثال: 0.40">
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-bold text-amber-600 mt-3"><i class="fa-solid fa-circle-info mr-1"></i> (مثال 2% كاش باك: ضع 5 نقاط لكل 100ج، وقيمة النقطة 0.40 ج.م)</p>
+                    </div>
+
+                    <div class="mt-6 flex flex-wrap items-center gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+
                     <div class="mt-6 flex flex-wrap items-center gap-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
                         <label class="flex items-center gap-2 cursor-pointer font-black text-sm text-emerald-700"><input type="checkbox" id="st-is-open" class="w-5 h-5 text-emerald-600 rounded"> المتجر مفتوح ويستقبل طلبات</label>
                         <div class="h-6 w-px bg-slate-300 hidden md:block"></div>
@@ -3312,6 +3334,8 @@ window.deleteProductUI = async (id) => {
             document.getElementById('st-free-del').checked = storeSettings.freeDeliveryActive; 
             document.getElementById('st-free-th').value = storeSettings.freeDeliveryThreshold || 0; 
             document.getElementById('st-free-th').disabled = !storeSettings.freeDeliveryActive; 
+            document.getElementById('st-pts-per-100').value = storeSettings.pointsPer100 || 5; 
+            document.getElementById('st-pts-value').value = storeSettings.pointValueInEGP || 0.40; 
             
             const zCont = document.getElementById('zones-list-container'); 
             if(zCont) { 
@@ -3346,7 +3370,7 @@ window.deleteProductUI = async (id) => {
 
             try {
                 if(document.getElementById('st-name')) { 
-                    storeSettings.storeName = document.getElementById('st-name').value; storeSettings.storePhone = document.getElementById('st-phone').value; storeSettings.minOrder = parseInt(document.getElementById('st-min-order').value) || 0; storeSettings.storeOpen = document.getElementById('st-is-open').checked; storeSettings.freeDeliveryActive = document.getElementById('st-free-del').checked; storeSettings.freeDeliveryThreshold = parseInt(document.getElementById('st-free-th').value) || 0; 
+                    storeSettings.storeName = document.getElementById('st-name').value; storeSettings.storePhone = document.getElementById('st-phone').value; storeSettings.minOrder = parseInt(document.getElementById('st-min-order').value) || 0; storeSettings.storeOpen = document.getElementById('st-is-open').checked; storeSettings.freeDeliveryActive = document.getElementById('st-free-del').checked; storeSettings.freeDeliveryThreshold = parseInt(document.getElementById('st-free-th').value) || 0; storeSettings.pointsPer100 = parseFloat(document.getElementById('st-pts-per-100').value) || 5; storeSettings.pointValueInEGP = parseFloat(document.getElementById('st-pts-value').value) || 0.40;
                 }
                 
                 if(document.getElementById('admin-whatsapp-template')) { 
@@ -4408,7 +4432,21 @@ window.deleteProductUI = async (id) => {
                     updateData.completedAtStr = new Date().toLocaleDateString('en-US');
                     updateData.completedTimeDisplay = new Date().toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                     updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
+                    
+                    // 🎁 تحديث محفظة نقاط العميل بناءً على قيمة المنتجات فقط (Subtotal) 🎁
+                    let ptsPer100 = storeSettings.pointsPer100 || 5;
+                    let orderSubtotal = Number(o.subtotal) || 0;
+                    if (orderSubtotal >= 100 && o.customerPhone) {
+                        let earnedPoints = Math.floor(orderSubtotal / 100) * ptsPer100;
+                        if (earnedPoints > 0) {
+                            let cleanPhone = o.customerPhone.startsWith('0') ? o.customerPhone : '0' + o.customerPhone;
+                            atomicBatch.set(db.collection('customers').doc(cleanPhone), { 
+                                walletPoints: firebase.firestore.FieldValue.increment(earnedPoints) 
+                            }, { merge: true });
+                        }
+                    }
                 }
+
 
 
                 atomicBatch.update(orderRef, updateData); 
@@ -4994,6 +5032,58 @@ window.deleteProductUI = async (id) => {
                 </div>`;
             });
             container.innerHTML = html;
+        };
+        // 🎁 الدالة السرية: حساب النقاط للعملاء القدامى (مفعول رجعي) 🎁
+        window.calculateRetroactivePoints = async () => {
+            let ptsPer100 = storeSettings.pointsPer100 || 5;
+            
+            if(!confirm(`⚠️ تحذير: هذه العملية ستقوم بالمرور على جميع عملائك في الأرشيف.\nسيتم حساب ( ${ptsPer100} نقطة لكل 100 جنيه ) مشتريات مسجلة لكل عميل.\n\nهل أنت متأكد من رغبتك في إهداء هذه النقاط לعملائك؟`)) return;
+
+            const btn = document.getElementById('btn-retro-points');
+            const origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري شحن المحافظ...';
+            btn.disabled = true;
+
+            try {
+                let dbBatch = db.batch();
+                let count = 0;
+                let batchesCommits = [];
+
+                // بنلف على كل العملاء اللي السيستم سحبهم
+                customersData.forEach(c => {
+                    let totalSpent = Number(c.totalSpent) || 0;
+                    if (totalSpent >= 100) {
+                        // المعادلة: (إجمالي الإنفاق / 100) * عدد النقط لكل 100ج
+                        let earnedPoints = Math.floor(totalSpent / 100) * ptsPer100;
+                        
+                        if (earnedPoints > 0) {
+                            let cleanPhone = c.phone.startsWith('0') ? c.phone : '0' + c.phone;
+                            let ref = db.collection('customers').doc(cleanPhone);
+                            // وضع الرصيد (استخدمنا set بـ merge عشان نحافظ على داتا العميل القديمة)
+                            dbBatch.set(ref, { walletPoints: earnedPoints }, { merge: true });
+                            count++;
+                            
+                            // فايربيس آخره 500 عملية في الدفعة الواحدة
+                            if (count === 400) {
+                                batchesCommits.push(dbBatch.commit());
+                                dbBatch = db.batch();
+                                count = 0;
+                            }
+                        }
+                    }
+                });
+
+                if (count > 0) batchesCommits.push(dbBatch.commit());
+                await Promise.all(batchesCommits);
+                
+                alert('🎉 العملية تمت بنجاح!\nتم شحن محافظ كل العملاء اللي ليهم مشتريات سابقة بالنقاط اللي يستحقوها.');
+            } catch(e) {
+                console.error("Retroactive Points Error:", e);
+                alert('حدث خطأ أثناء معالجة البيانات!');
+            }
+
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
         };
 
     </script>
