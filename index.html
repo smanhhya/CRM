@@ -5013,11 +5013,11 @@ window.deleteProductUI = async (id) => {
             });
             container.innerHTML = html;
         };
-        // 🎁 الدالة السرية: حساب النقاط للعملاء القدامى (مفعول رجعي) 🎁
+        // 🎁 الدالة السرية: حساب النقاط للعملاء القدامى (مُحصنة ضد الأخطاء) 🎁
         window.calculateRetroactivePoints = async () => {
             let ptsPer100 = storeSettings.pointsPer100 || 5;
             
-            if(!confirm(`⚠️ تحذير: هذه العملية ستقوم بالمرور على جميع عملائك في الأرشيف.\nسيتم حساب ( ${ptsPer100} نقطة لكل 100 جنيه ) مشتريات مسجلة لكل عميل.\n\nهل أنت متأكد من رغبتك في إهداء هذه النقاط לعملائك؟`)) return;
+            if(!confirm(`⚠️ تحذير: هذه العملية ستقوم بالمرور على جميع عملائك في الأرشيف.\nسيتم حساب ( ${ptsPer100} نقطة لكل 100 جنيه ) مشتريات مسجلة لكل عميل.\n\nهل أنت متأكد من رغبتك في إهداء هذه النقاط لعملائك؟`)) return;
 
             const btn = document.getElementById('btn-retro-points');
             const origHtml = btn.innerHTML;
@@ -5031,14 +5031,22 @@ window.deleteProductUI = async (id) => {
 
                 // بنلف على كل العملاء اللي السيستم سحبهم
                 customersData.forEach(c => {
+                    // 🛡️ الحماية: لو العميل ملوش رقم تليفون متسجل، نتجاهله عشان الكود ميضربش
+                    if (!c || !c.phone) return;
+
                     let totalSpent = Number(c.totalSpent) || 0;
                     if (totalSpent >= 100) {
                         // المعادلة: (إجمالي الإنفاق / 100) * عدد النقط لكل 100ج
                         let earnedPoints = Math.floor(totalSpent / 100) * ptsPer100;
                         
                         if (earnedPoints > 0) {
-                            let cleanPhone = c.phone.startsWith('0') ? c.phone : '0' + c.phone;
+                            // 🛡️ الحماية 2: تحويل التليفون لنص صريح قبل التعديل عليه
+                            let phoneStr = String(c.phone).trim();
+                            if (phoneStr === '') return;
+
+                            let cleanPhone = phoneStr.startsWith('0') ? phoneStr : '0' + phoneStr;
                             let ref = db.collection('customers').doc(cleanPhone);
+                            
                             // وضع الرصيد (استخدمنا set بـ merge عشان نحافظ على داتا العميل القديمة)
                             dbBatch.set(ref, { walletPoints: earnedPoints }, { merge: true });
                             count++;
@@ -5059,7 +5067,7 @@ window.deleteProductUI = async (id) => {
                 alert('🎉 العملية تمت بنجاح!\nتم شحن محافظ كل العملاء اللي ليهم مشتريات سابقة بالنقاط اللي يستحقوها.');
             } catch(e) {
                 console.error("Retroactive Points Error:", e);
-                alert('حدث خطأ أثناء معالجة البيانات!');
+                alert('حدث خطأ أثناء معالجة البيانات: ' + e.message); // إظهار سبب الخطأ الفعلي لو تكرر
             }
 
             btn.innerHTML = origHtml;
