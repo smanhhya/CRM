@@ -10268,8 +10268,8 @@ window.deleteProductUI = async (id) => {
                 }
             });
             
-            // 🛡️ التعديل الجذري هنا: استخدام دالة getSafeTime لضمان عدم تعطل الكود مع أوردرات شهر 6
-            redemptionHistory.sort((a, b) => window.getSafeTime(b.createdAt) - window.getSafeTime(a.createdAt));
+            // ترتيب الأحدث (استخدمنا الطريقة المباشرة لتفادي الدالة المفقودة)
+            redemptionHistory.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
             // --- رسم الواجهة ---
             
@@ -10342,6 +10342,7 @@ window.deleteProductUI = async (id) => {
 
             openModal('points-dashboard-modal');
         };
+
 
 
 
