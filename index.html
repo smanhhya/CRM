@@ -1130,136 +1130,116 @@
                 renderReconciliationUI();
             }).catch(e => console.log("خطأ في جلب بيانات لوحة الإدارة:", e));
 
-            // 💡 جلب الطلبات بذكاء: هنجيب آخر 150 طلب (للمكتمل والملغي)، وكل الطلبات الحية (عشان مفيش أوردر قديم يضيع)
-            // 💡 جلب الطلبات بذكاء: الأوردرات القديمة هتيجي مرة واحدة، والحية هتفضل لايف
-            const recentOrdersQuery = db.collection('orders').orderBy('createdAt', 'desc').limit(150);
-            const activeOrdersQuery = db.collection('orders').where('status', 'in', ['new', 'processing', 'dispatched', 'deferred', 'no_answer']);
+            // 🚀 التعديل الجذري: سحب كل الطلبات من أول يوم شغل بدون أي ليميت (Limit) 🚀
+            db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
 
-            // 🛑 قتلنا الفيروس: سحبنا القديم بـ get() بدل onSnapshot عشان نمنع التكرار الكارثي 🛑
-            recentOrdersQuery.get().then(recentSnap => {
-                activeOrdersQuery.onSnapshot(activeSnap => {
+                // --- 1. الأساسيات اللي السيستم كله قايم عليها (ممنوع المساس بيها) ---
+                let counts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
+                allOrdersRaw = []; 
+                dispatchOrdersRaw = [];
+                globalOrdersMap = {}; // تفريغ الخريطة عشان نعيد بنائها بالكامل نظيفة
 
-                    // --- 1. الأساسيات اللي السيستم كله قايم عليها (ممنوع المساس بيها) ---
-                    let counts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
-                    allOrdersRaw = []; 
-                    dispatchOrdersRaw = [];
-
-                    recentSnap.forEach(doc => {
-                        if (!globalOrdersMap[doc.id] || !globalOrdersMap[doc.id].manuallyUpdated) {
-                            let oData = doc.data();
-                            // 💡 السحر هنا: لو المتجر بعت الأوردر بدون اسم الدفعة، الـ CRM هيترجم الكود للاسم أوتوماتيك
-                            if (!oData.batchName && oData.batchId && storeBatches[oData.batchId]) {
-                                oData.batchName = storeBatches[oData.batchId].name;
-                            }
-                            globalOrdersMap[doc.id] = {id: doc.id, ...oData};
-                        }
-                    });
-                    
-                    activeSnap.forEach(doc => {
-                        let oData = doc.data();
-                        // 💡 السحر هنا: الترجمة شغالة كمان مع الأوردرات الحية اللي بتدخل لايف
-                        if (!oData.batchName && oData.batchId && storeBatches[oData.batchId]) {
-                            oData.batchName = storeBatches[oData.batchId].name;
-                        }
-                        globalOrdersMap[doc.id] = {id: doc.id, ...oData};
-                        globalOrdersMap[doc.id].manuallyUpdated = false; // ريستارت للتحديث اليدوي
-                    });
-
-                    let mergedOrders = Object.values(globalOrdersMap);
-
-                    
-                    // ترتيب الأوردرات من الأحدث للأقدم زي ما السيستم متعود
-                    mergedOrders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-
-                    // --- 2. متغيرات لوحة القيادة الجديدة المخصصة لليوم الفعلي ---
-                    let todayCompletedOrdersCount = 0;
-                    let todayProductsRevenue = 0;
-                    let todayDeliveryRevenue = 0;
-                    let todayTotalRevenue = 0;
-                    let todayItemsSold = {}; 
-                    let todayOrdersList = []; // السجل التفصيلي لعملاء اليوم
-
-                    const nowStr = new Date().toLocaleDateString('en-US'); 
-
-                    mergedOrders.forEach(o => {
-                        const stat = o.status || 'new';
-                        
-                        // تغذية الأساسيات (لشاشات الطلبات والتوجيه)
-                        allOrdersRaw.push(o);
-                        if (stat === 'processing') dispatchOrdersRaw.push(o); 
-                        if (counts[stat] !== undefined) counts[stat]++;
-
-                        // حسابات لوحة القيادة (مبنية على تاريخ الاكتمال الفعلي)
-                        if (stat === 'completed' && o.completedAtStr === nowStr) {
-                            todayCompletedOrdersCount++;
-                            todayProductsRevenue += Number(o.subtotal) || 0; 
-                            todayDeliveryRevenue += Number(o.deliveryFee) || 0; 
-                            todayTotalRevenue += Number(o.total) || 0;
-                            
-                            // تجميع المنتجات
-                            if(o.items && Array.isArray(o.items)){
-                                o.items.forEach(i => {
-                                    todayItemsSold[i.name] = (todayItemsSold[i.name] || 0) + i.quantity;
-                                });
-                            }
-                            
-                            // إضافة الأوردر للقائمة عشان الجدول التفصيلي
-                            todayOrdersList.push(o); 
-                        }
-                    });
-
-                    // --- 3. تحديث واجهة لوحة القيادة (Dashboard UI) ---
-                    
-                    // الكروت العلوية الأربعة (استخدمت if checks كحماية إضافية للأساسيات)
-                    let elCompleted = document.getElementById('dash-completed-today');
-                    if(elCompleted) elCompleted.innerText = todayCompletedOrdersCount;
-                    
-                    let elProducts = document.getElementById('dash-products-today');
-                    if(elProducts) elProducts.innerHTML = `${todayProductsRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
-                    
-                    let elDelivery = document.getElementById('dash-delivery-today');
-                    if(elDelivery) elDelivery.innerHTML = `${todayDeliveryRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
-                    
-                    let elTotal = document.getElementById('dash-total-today');
-                    if(elTotal) elTotal.innerHTML = `${todayTotalRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
-                    
-                    // تفصيل المنتجات المجمعة
-                    let itemsHtml = Object.keys(todayItemsSold).sort((a,b) => todayItemsSold[b] - todayItemsSold[a]).map(itemName => 
-                        `<div class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-lg font-black text-brand-primary">${todayItemsSold[itemName]}</span></div>`
-                    ).join('');
-                    let dashItems = document.getElementById('dash-items-today');
-                    if(dashItems) dashItems.innerHTML = itemsHtml || '<div class="col-span-full text-center text-slate-400 text-xs font-bold mt-4">لم يتم تسليم منتجات اليوم حتى الآن.</div>';
-
-                    // الجدول التفصيلي (مين استلم إيه النهاردة)
-                    let tableBodyHtml = todayOrdersList.map(o => {
-                        let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `<span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold inline-block m-0.5 border border-emerald-100">${i.quantity}x ${i.name}</span>`).join('') : '-';
-                        return `
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="py-3 px-4 border-b border-slate-50">
-                                <div class="font-black text-slate-800">${o.customerName || 'بدون اسم'}</div>
-                                <div class="text-[10px] font-bold text-slate-400" dir="ltr">${o.customerPhone || ''}</div>
-                            </td>
-                            <td class="py-3 px-4 border-b border-slate-50 text-center whitespace-normal min-w-[200px] leading-loose">${itemsStr}</td>
-                            <td class="py-3 px-4 border-b border-slate-50 text-center font-bold text-slate-500 text-xs">${o.orderDate || 'غير محدد'}</td>
-                            <td class="py-3 px-4 border-b border-slate-50 text-center font-black text-brand-primary text-base">${o.total} ج</td>
-                        </tr>`;
-                    }).join('');
-                    
-                    let tbodyEl = document.getElementById('dash-today-orders-tbody');
-                    if(tbodyEl) {
-                        tbodyEl.innerHTML = tableBodyHtml || `<tr><td colspan="4" class="text-center py-8 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد طلبات تم تسليمها اليوم.</td></tr>`;
+                snap.forEach(doc => {
+                    let oData = doc.data();
+                    // 💡 السحر هنا: لو المتجر بعت الأوردر بدون اسم الدفعة، الـ CRM هيترجم الكود للاسم أوتوماتيك
+                    if (!oData.batchName && oData.batchId && storeBatches[oData.batchId]) {
+                        oData.batchName = storeBatches[oData.batchId].name;
                     }
-
-                    // --- 4. تحديث الأساسيات (أرقام التبويبات الحية) ---
-                    // أضفنا canceled هنا عشان العداد يشتغل
-                    ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed', 'canceled'].forEach(s => { 
-                        let b = document.getElementById(`badge-${s}`); 
-                        if(b) b.innerText = counts[s] || 0; 
-                    });
-
-                    
-                    scheduleSystemRender();
+                    globalOrdersMap[doc.id] = {id: doc.id, ...oData};
+                    globalOrdersMap[doc.id].manuallyUpdated = false; // ريستارت للتحديث اليدوي
                 });
+
+                let mergedOrders = Object.values(globalOrdersMap);
+
+                // ترتيب الأوردرات من الأحدث للأقدم زي ما السيستم متعود
+                mergedOrders.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+
+                // --- 2. متغيرات لوحة القيادة الجديدة المخصصة لليوم الفعلي ---
+                let todayCompletedOrdersCount = 0;
+                let todayProductsRevenue = 0;
+                let todayDeliveryRevenue = 0;
+                let todayTotalRevenue = 0;
+                let todayItemsSold = {}; 
+                let todayOrdersList = []; // السجل التفصيلي لعملاء اليوم
+
+                const nowStr = new Date().toLocaleDateString('en-US'); 
+
+                mergedOrders.forEach(o => {
+                    const stat = o.status || 'new';
+                    
+                    // تغذية الأساسيات (لشاشات الطلبات والتوجيه)
+                    allOrdersRaw.push(o);
+                    if (stat === 'processing') dispatchOrdersRaw.push(o); 
+                    if (counts[stat] !== undefined) counts[stat]++;
+
+                    // حسابات لوحة القيادة (مبنية على تاريخ الاكتمال الفعلي)
+                    if (stat === 'completed' && o.completedAtStr === nowStr) {
+                        todayCompletedOrdersCount++;
+                        todayProductsRevenue += Number(o.subtotal) || 0; 
+                        todayDeliveryRevenue += Number(o.deliveryFee) || 0; 
+                        todayTotalRevenue += Number(o.total) || 0;
+                        
+                        // تجميع المنتجات
+                        if(o.items && Array.isArray(o.items)){
+                            o.items.forEach(i => {
+                                todayItemsSold[i.name] = (todayItemsSold[i.name] || 0) + i.quantity;
+                            });
+                        }
+                        
+                        // إضافة الأوردر للقائمة عشان الجدول التفصيلي
+                        todayOrdersList.push(o); 
+                    }
+                });
+
+                // --- 3. تحديث واجهة لوحة القيادة (Dashboard UI) ---
+                
+                // الكروت العلوية الأربعة (استخدمت if checks كحماية إضافية للأساسيات)
+                let elCompleted = document.getElementById('dash-completed-today');
+                if(elCompleted) elCompleted.innerText = todayCompletedOrdersCount;
+                
+                let elProducts = document.getElementById('dash-products-today');
+                if(elProducts) elProducts.innerHTML = `${todayProductsRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                
+                let elDelivery = document.getElementById('dash-delivery-today');
+                if(elDelivery) elDelivery.innerHTML = `${todayDeliveryRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                
+                let elTotal = document.getElementById('dash-total-today');
+                if(elTotal) elTotal.innerHTML = `${todayTotalRevenue.toLocaleString()} <span class="text-sm text-slate-400 font-bold">ج</span>`;
+                
+                // تفصيل المنتجات المجمعة
+                let itemsHtml = Object.keys(todayItemsSold).sort((a,b) => todayItemsSold[b] - todayItemsSold[a]).map(itemName => 
+                    `<div class="bg-slate-50 border border-slate-100 p-3 rounded-xl text-center shadow-sm"><span class="block text-[10px] font-bold text-slate-500 mb-1 truncate">${itemName}</span><span class="text-lg font-black text-brand-primary">${todayItemsSold[itemName]}</span></div>`
+                ).join('');
+                let dashItems = document.getElementById('dash-items-today');
+                if(dashItems) dashItems.innerHTML = itemsHtml || '<div class="col-span-full text-center text-slate-400 text-xs font-bold mt-4">لم يتم تسليم منتجات اليوم حتى الآن.</div>';
+
+                // الجدول التفصيلي (مين استلم إيه النهاردة)
+                let tableBodyHtml = todayOrdersList.map(o => {
+                    let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(i => `<span class="bg-emerald-50 text-emerald-700 px-2 py-1 rounded text-[10px] font-bold inline-block m-0.5 border border-emerald-100">${i.quantity}x ${i.name}</span>`).join('') : '-';
+                    return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 px-4 border-b border-slate-50">
+                            <div class="font-black text-slate-800">${o.customerName || 'بدون اسم'}</div>
+                            <div class="text-[10px] font-bold text-slate-400" dir="ltr">${o.customerPhone || ''}</div>
+                        </td>
+                        <td class="py-3 px-4 border-b border-slate-50 text-center whitespace-normal min-w-[200px] leading-loose">${itemsStr}</td>
+                        <td class="py-3 px-4 border-b border-slate-50 text-center font-bold text-slate-500 text-xs">${o.orderDate || 'غير محدد'}</td>
+                        <td class="py-3 px-4 border-b border-slate-50 text-center font-black text-brand-primary text-base">${o.total} ج</td>
+                    </tr>`;
+                }).join('');
+                
+                let tbodyEl = document.getElementById('dash-today-orders-tbody');
+                if(tbodyEl) {
+                    tbodyEl.innerHTML = tableBodyHtml || `<tr><td colspan="4" class="text-center py-8 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-xl">لا توجد طلبات تم تسليمها اليوم.</td></tr>`;
+                }
+
+                // --- 4. تحديث الأساسيات (أرقام التبويبات الحية) ---
+                ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed', 'canceled'].forEach(s => { 
+                    let b = document.getElementById(`badge-${s}`); 
+                    if(b) b.innerText = counts[s] || 0; 
+                });
+
+                scheduleSystemRender();
             });
 
 
