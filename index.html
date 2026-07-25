@@ -1131,7 +1131,7 @@
             }).catch(e => console.log("خطأ في جلب بيانات لوحة الإدارة:", e));
 
             // 🚀 التعديل الجذري: سحب كل الطلبات من أول يوم شغل بدون أي ليميت (Limit) 🚀
-            db.collection('orders').orderBy('createdAt', 'desc').onSnapshot(snap => {
+            db.collection('orders').onSnapshot(snap => {
 
                 // --- 1. الأساسيات اللي السيستم كله قايم عليها (ممنوع المساس بيها) ---
                 let counts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
