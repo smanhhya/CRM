@@ -5122,28 +5122,31 @@ window.deleteProductUI = async (id) => {
         };
 
         // ==========================================
-        // 🏆 نظام إحصائيات المحفظة ونقاط الولاء 🏆
+        // 🏆 نظام إحصائيات المحفظة ونقاط الولاء (المُحصن) 🏆
         // ==========================================
         window.openPointsDashboard = () => {
-            // 1. فلترة العملاء اللي معاهم أرصدة نقاط
-            let customersWithPoints = customersData.filter(c => (c.walletPoints || 0) > 0);
+            // 1. فلترة العملاء اللي معاهم أرصدة نقاط مع تحويل القيم لأرقام لضمان عدم حدوث أخطاء
+            let customersWithPoints = customersData.filter(c => (Number(c.walletPoints) || 0) > 0);
+            
             // ترتيب تنازلي (من الأكبر للأصغر)
-            customersWithPoints.sort((a, b) => b.walletPoints - a.walletPoints);
+            customersWithPoints.sort((a, b) => (Number(b.walletPoints) || 0) - (Number(a.walletPoints) || 0));
 
             // حساب الإجمالي
-            let totalPointsInMarket = customersWithPoints.reduce((sum, c) => sum + c.walletPoints, 0);
-            let pointValue = storeSettings.pointValueInEGP || 0.40;
+            let totalPointsInMarket = customersWithPoints.reduce((sum, c) => sum + (Number(c.walletPoints) || 0), 0);
+            let pointValue = Number(storeSettings.pointValueInEGP) || 0.40;
             let liabilityInEGP = totalPointsInMarket * pointValue;
 
-            // 2. البحث عن عمليات استبدال النقاط (بنعرفها من الملاحظات الإدارية اللي السيستم بيكتبها أوتوماتيك)
+            // 2. البحث عن عمليات استبدال النقاط في الملاحظات الإدارية
             let redemptionHistory = [];
             allOrdersRaw.forEach(o => {
-                if (o.adminNote && (o.adminNote.includes('استبدل نقاطه') || o.adminNote.includes('فعّل خصم المحفظة'))) {
+                // حماية: التأكد إن الملاحظة موجودة وعبارة عن نص
+                if (o.adminNote && typeof o.adminNote === 'string' && (o.adminNote.includes('استبدل نقاطه') || o.adminNote.includes('فعّل خصم المحفظة'))) {
                     redemptionHistory.push(o);
                 }
             });
-            // ترتيب الأحدث
-            redemptionHistory.sort((a, b) => window.getSafeTime(b.createdAt) - window.getSafeTime(a.createdAt));
+            
+            // ترتيب الأحدث (استخدمنا الطريقة المباشرة لتفادي الدالة المفقودة)
+            redemptionHistory.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
 
             // --- رسم الواجهة ---
             
@@ -5169,7 +5172,7 @@ window.deleteProductUI = async (id) => {
                 topHtml = '<p class="text-center text-xs text-slate-400 font-bold py-10">لا يوجد عملاء يمتلكون نقاط حالياً.</p>';
             } else {
                 customersWithPoints.slice(0, 50).forEach((c, index) => {
-                    let cashEquiv = c.walletPoints * pointValue;
+                    let cashEquiv = (Number(c.walletPoints) * pointValue).toFixed(2);
                     // أول 3 ليهم لون مميز
                     let medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : (index === 2 ? '🥉' : `<span class="text-slate-400 text-xs">${index+1}</span>`));
                     topHtml += `
@@ -5216,6 +5219,7 @@ window.deleteProductUI = async (id) => {
 
             openModal('points-dashboard-modal');
         };
+
 
     </script>
 
