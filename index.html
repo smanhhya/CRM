@@ -5049,11 +5049,11 @@ window.deleteProductUI = async (id) => {
             });
             container.innerHTML = html;
         };
-        // 🎁 الدالة السرية المحدثة: حساب النقاط من إجمالي الطلبات الفعلية (شاملة شهر 6 والبداية) 🎁
+        // 🎁 الدالة السرية المحدثة: حساب النقاط من إجمالي الطلبات (المكتملة فقط) 🎁
         window.calculateRetroactivePoints = async () => {
             let ptsPer100 = storeSettings.pointsPer100 || 5;
             
-            if(!confirm(`⚠️ تحذير: هذه العملية ستقوم بجمع (جميع الطلبات السابقة في الأرشيف منذ بداية السيستم وشهر 6).\nسيتم حساب ( ${ptsPer100} نقطة لكل 100 جنيه ) لكل عميل بدقة.\n\nهل أنت متأكد من المتابعة؟`)) return;
+            if(!confirm(`⚠️ تحذير: هذه العملية ستقوم بجمع (الطلبات المكتملة فقط) في الأرشيف.\nسيتم حساب ( ${ptsPer100} نقطة لكل 100 جنيه ) من قيمة السمان لكل عميل.\n\nهل أنت متأكد من المتابعة؟`)) return;
 
             const btn = document.getElementById('btn-retro-points');
             const origHtml = btn.innerHTML;
@@ -5061,19 +5061,20 @@ window.deleteProductUI = async (id) => {
             btn.disabled = true;
 
             try {
-                // 🧠 السحر هنا: تجميع إجمالي المشتريات مباشرة من جدول الطلبات الخام (allOrdersRaw) لضمان عدم سقوط أي أوردر قديم
+                // 🧠 السحر هنا: تجميع إجمالي المشتريات للطلبات المسلمة بنجاح فقط
                 let customerSpendingMap = {};
                 
                 allOrdersRaw.forEach(o => {
-                    // استبعاد الطلبات الملغية أو المحذوفة
-                    if (o.status === 'canceled' || o.status === 'trash') return;
-                    if (!o.customerPhone) return;
+                    // ✂️ التعديل الجذري هنا: الشرط بقى صارم جداً، الطلبات "المكتملة" فقط هي اللي بتتحسب
+                    if (o.status !== 'completed') return; 
                     
+                    if (!o.customerPhone) return;
                     let normPhone = window.normalizePhone(o.customerPhone);
                     if (!normPhone) return;
                     
-                    let orderTotal = Number(o.total) || 0;
-                    customerSpendingMap[normPhone] = (customerSpendingMap[normPhone] || 0) + orderTotal;
+                    // التعديل التاني: حساب النقط على (المنتجات فقط) عشان مصاريف التوصيل مفيش عليها كاش باك
+                    let orderSubtotal = Number(o.subtotal) || Number(o.total) || 0; 
+                    customerSpendingMap[normPhone] = (customerSpendingMap[normPhone] || 0) + orderSubtotal;
                 });
 
                 let dbBatch = db.batch();
@@ -5111,7 +5112,7 @@ window.deleteProductUI = async (id) => {
                 if (count > 0) batchesCommits.push(dbBatch.commit());
                 await Promise.all(batchesCommits);
                 
-                alert('🎉 تمت العملية بنجاح!\nتم حساب كل أوردرات شهر 6 والبداية وشحن محافظ العملاء بالنقاط المستحقة فوراً.');
+                alert('🎉 تمت العملية بنجاح!\nتم حساب كل الأوردرات (المكتملة فقط) وشحن محافظ العملاء بالنقاط المستحقة.');
             } catch(e) {
                 console.error("Retroactive Points Error:", e);
                 alert('حدث خطأ أثناء معالجة البيانات: ' + e.message);
@@ -5120,6 +5121,7 @@ window.deleteProductUI = async (id) => {
             btn.innerHTML = origHtml;
             btn.disabled = false;
         };
+
 
         // ==========================================
         // 🏆 نظام إحصائيات المحفظة ونقاط الولاء (المُحصن) 🏆
