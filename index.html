@@ -2963,9 +2963,10 @@
 
         window.addNewBatchUI = () => { 
             const bId = 'batch_' + Date.now(); 
-            storeBatches[bId] = { name: "", isOpen: true, stock: {}, booked: {} }; 
+            storeBatches[bId] = { name: "دفعة جديدة", isOpen: true, stock: {}, booked: {} }; 
             renderBatchesUI(); 
         };
+
         
         window.updateBatchStock = (bId, pId, val) => { 
             if(!storeBatches[bId].stock) storeBatches[bId].stock = {}; 
