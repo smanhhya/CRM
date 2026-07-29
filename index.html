@@ -3006,9 +3006,17 @@
             let slaughterAge = parseInt(slaughterInput);
             let remaining = slaughterAge - currentAge;
             let autoMsg = "";
+            let b = storeBatches[currentEditingBatchId]; // استدعاء بيانات الدفعة الحالية
 
-            // هنا بنبرمج الحالات، والسيستم بيختار الجملة بناءً على الحسبة (بدون أي ذكر للأيام)
-            if (!isOpen) {
+            // 🧠 اللوجيك الذكي الجديد (العداد الزمني لـ 3 أيام بعد الذبح)
+            if (b && b.slaughteredAt) {
+                let daysSinceSlaughter = (Date.now() - b.slaughteredAt) / (1000 * 60 * 60 * 24);
+                if (daysSinceSlaughter >= 3) {
+                    autoMsg = "✅ تم تسليم هذه الدفعة للعملاء بالكامل. بالهنا والشفا!";
+                } else {
+                    autoMsg = "🛵 تم الذبح وجاري التوزيع.. انتظروا تواصل المناديب للتسليم!";
+                }
+            } else if (!isOpen) {
                 autoMsg = "✅ الدورة اكتملت واكتفينا بالحجز! السمان الآن في مرحلة التجهيز والذبح وجاري ترتيب مواعيد التسليم.";
             } else if (remaining <= 0) {
                 autoMsg = "🔪 السمان وصل لمرحلة النضج وجاهز فريش! سيتم قفل الحجز وتحديد مواعيد التسليم قريباً.";
@@ -3024,6 +3032,7 @@
             let finalHtml = urgentNote ? `<strong class="block mb-1 text-amber-600">📌 تنبيه: ${urgentNote}</strong>${autoMsg}` : autoMsg;
             previewEl.innerHTML = finalHtml;
         };
+
 
         window.openBatchSettings = (bId) => {
             currentEditingBatchId = bId;
@@ -5308,21 +5317,24 @@ window.deleteProductUI = async (id) => {
 
             try {
                 let dbBatch = db.batch();
+                let slaughterTime = Date.now(); // ⏱️ توقيت الذبح بالثانية
                 
-                storeBatches[bId].isOpen = false; // قفل الحجز عشان محدش يطلب جديد
-                storeBatches[bId].isVisible = true; // تفضل ظاهرة في الموقع عشان الناس تتابع التحديث
+                storeBatches[bId].isOpen = false; // قفل الحجز
+                storeBatches[bId].isVisible = true; // تفضل ظاهرة في الموقع
                 storeBatches[bId].slaughtered = slaughteredData;
                 storeBatches[bId].expectedValue = expectedValue;
-                storeBatches[bId].urgentNote = "🔪 تم الذبح وجاري التوزيع.. انتظروا تواصل المناديب للتسليم!";
+                storeBatches[bId].slaughteredAt = slaughterTime; // تسجيل توقيت الذبح في الذاكرة
+                storeBatches[bId].urgentNote = ""; // بنفضي الرسالة اليدوية عشان السيستم الذكي يشتغل مكانه
                 
                 let batchRef = db.collection('inventory').doc('batches');
                 dbBatch.set(batchRef, { 
                     [bId]: { 
                         isOpen: false,
                         isVisible: true,
-                        urgentNote: storeBatches[bId].urgentNote,
+                        urgentNote: firebase.firestore.FieldValue.delete(), // بنمسح الرسالة من الداتا بيز عشان الذكاء الاصطناعي يحل محلها
                         slaughtered: slaughteredData,
-                        expectedValue: expectedValue
+                        expectedValue: expectedValue,
+                        slaughteredAt: slaughterTime // حفظ التوقيت في فايربيس
                     } 
                 }, { merge: true });
 
@@ -5336,7 +5348,6 @@ window.deleteProductUI = async (id) => {
                 closeModal('slaughter-modal');
                 renderBatchesUI(); 
                 
-                // تحديث واجهة الفريزر إذا كانت مفتوحة في الخلفية
                 let freezerCont = document.getElementById('freezer-items-container');
                 if(freezerCont && freezerCont.innerHTML !== '') {
                     Object.keys(storeFreezer).forEach(id => {
@@ -5345,7 +5356,7 @@ window.deleteProductUI = async (id) => {
                     });
                 }
 
-                alert(`✅ تم إتمام الذبح بنجاح!\n- تم إغلاق الحجز وتحديث التتبع للعملاء.\n- تم ترحيل الكميات للفريزر.\n- القيمة المتوقعة للدفعة: ${expectedValue.toLocaleString()} ج.م`);
+                alert(`✅ تم إتمام الذبح بنجاح!\n- تم إغلاق الحجز وبدأ عداد الـ 3 أيام للعملاء.\n- تم ترحيل الكميات للفريزر.\n- القيمة المتوقعة للدفعة: ${expectedValue.toLocaleString()} ج.م`);
                 
             } catch(e) {
                 console.error(e);
@@ -5355,6 +5366,7 @@ window.deleteProductUI = async (id) => {
             btn.innerHTML = origHtml;
             btn.disabled = false;
         };
+
 
     </script>
 
