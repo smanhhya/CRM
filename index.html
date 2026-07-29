@@ -5378,8 +5378,8 @@ window.deleteProductUI = async (id) => {
             let totalTarget = parseInt(totalInput);
             if (isNaN(totalTarget) || totalTarget <= 0) return alert("⛔ برجاء إدخال رقم صحيح للعدد الكلي!");
 
-            // سؤال المستخدم عن عدد الدفعات اللي عايز يحسب عليها
-            let batchCountInput = prompt("📊 كم عدد الدفعات السابقة التي تريد بناء التوقع عليها؟\n\n- اكتب 1 (لآخر دفعة فقط)\n- اكتب 3 (لآخر 3 دفعات)\n- اترك المربع فارغاً (للمتوسط العام لكل الدفعات السابقة)");
+            // 💬 تعديل الرسالة لتطابق طلبك وتكون واضحة
+            let batchCountInput = prompt("📊 تحب نحسب التوقع بناءً على آخر كام دفعة؟\n\n- اكتب 1 (للحساب على آخر دفعة فقط)\n- اكتب 2 (لمتوسط آخر دفعتين)\n- اكتب 3 (لمتوسط آخر 3 دفعات)\n- اترك المربع فارغاً (لمتوسط كل الدفعات السابقة)");
             
             let limit = 0; // صفر يعني هيحسب على الكل
             if (batchCountInput && batchCountInput.trim() !== "") {
@@ -5425,7 +5425,7 @@ window.deleteProductUI = async (id) => {
 
             // 3. تطبيق خوارزمية التوزيع (Largest Remainder Method) لضمان دقة 100% بدون تقريب خاطئ
             let newStock = storeBatches[bId].stock || {};
-            let textLog = `📊 تقرير التوزيع الذكي لـ (${totalTarget}) جوز (مبني على ${limit > 0 ? 'آخر ' + limit + ' دفعات' : 'كل الدفعات'}):\n\n`;
+            let textLog = `📊 تقرير التوزيع الذكي لـ (${totalTarget}) جوز (مبني على ${limit > 0 ? 'متوسط آخر ' + limit + ' دفعات' : 'متوسط كل الدفعات'}):\n\n`;
             
             let exactCalculations = [];
             let currentSum = 0;
@@ -5480,6 +5480,8 @@ window.deleteProductUI = async (id) => {
                 alert("حدث خطأ أثناء حفظ التوزيع الذكي!");
             }
         };
+
+           
 
 
     </script>
