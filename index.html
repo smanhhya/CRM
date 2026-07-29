@@ -1451,13 +1451,12 @@
                 }
             });
 
-
             // الدالة السحرية (الذكية التراكمية) لتركيب الفلاتر - بدعم المدخلات المنفصلة (Exact Entities)
             window.filterOrdersFromAnalysis = (keyword, secondKeyword = null) => {
                 closeModal('analysis-modal');
                 let searchBox = document.getElementById('search-order');
                 if(searchBox) {
-                    if (keyword === "أوردرات عادية" || keyword === "مسح") {
+                    if (keyword === "مسح") {
                         searchBox.value = "";
                     } else {
                         let k1 = `"${keyword}"`;
@@ -1475,6 +1474,7 @@
                     renderOrdersList();
                 }
             };
+
 
 
 
