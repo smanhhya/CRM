@@ -2950,8 +2950,9 @@
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2">
+                                <button onclick="smartDistributeBatch('${bId}')" class="bg-indigo-50 text-indigo-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-indigo-100" title="توزيع الكميات أوتوماتيكياً بناءً على تاريخ الدفعات السابقة"><i class="fa-solid fa-wand-magic-sparkles"></i> توزيع ذكي</button>
                                 <button onclick="openSlaughterModal('${bId}')" class="bg-rose-50 text-rose-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-rose-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-rose-100"><i class="fa-solid fa-knife-kitchen"></i> تم الذبح</button>
-                                <button onclick="archiveBatch('${bId}')" class="bg-amber-50 text-amber-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-amber-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-amber-100"><i class="fa-solid fa-box-archive"></i> ترحيل</button>
+                                <button onclick="archiveBatch('${bId}')" class="bg-amber-50 text-amber-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-amber-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-amber-100"><i class="fa-solid fa-box-archive"></i> إغلاق وترحيل</button>
                                 <button onclick="viewBatchBookings('${bId}')" class="bg-blue-50 text-blue-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-blue-100"><i class="fa-solid fa-list-check"></i> الكشف</button>
                                 <button onclick="openBatchSettings('${bId}')" class="bg-purple-50 text-purple-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-purple-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-purple-100"><i class="fa-solid fa-bullhorn"></i> إعدادات</button>
                                 <button onclick="deleteBatchUI('${bId}')" class="bg-red-50 text-red-500 w-8 h-8 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center active:scale-95 border border-red-100"><i class="fa-solid fa-trash"></i></button>
@@ -5367,6 +5368,72 @@ window.deleteProductUI = async (id) => {
             btn.disabled = false;
         };
 
+        // ==========================================
+        // 🔮 نظام التوزيع الذكي والتحليل التوقعي للكميات 🔮
+        // ==========================================
+        window.smartDistributeBatch = async (bId) => {
+            let totalInput = prompt("🔮 نظام التوزيع الذكي:\n\nأدخل العدد الكلي التقريبي للسمان في هذه الدفعة (مثال: 500):\nالسيستم سيقوم بدراسة الدفعات السابقة وتوزيع هذا الرقم أوتوماتيكياً على الأصناف الأساسية.");
+            if (!totalInput) return;
+            
+            let totalTarget = parseInt(totalInput);
+            if (isNaN(totalTarget) || totalTarget <= 0) return alert("⛔ برجاء إدخال رقم صحيح!");
+
+            // 1. فلترة وتجهيز الأصناف الأساسية فقط (تجاهل البيض والكتاكيت)
+            let validMainProducts = {};
+            Object.keys(storeProducts).forEach(id => {
+                if (!storeProducts[id].isExtra) {
+                    validMainProducts[storeProducts[id].name] = id;
+                }
+            });
+
+            // 2. تحليل الأرشيف التاريخي
+            let historyItems = {};
+            let grandTotalHistory = 0;
+
+            archivedBatchesData.forEach(a => {
+                if (a.itemsSummary) {
+                    Object.keys(a.itemsSummary).forEach(itemName => {
+                        // حساب الأصناف الأساسية فقط
+                        if (validMainProducts[itemName]) {
+                            let q = a.itemsSummary[itemName];
+                            historyItems[itemName] = (historyItems[itemName] || 0) + q;
+                            grandTotalHistory += q;
+                        }
+                    });
+                }
+            });
+
+            if (grandTotalHistory === 0) {
+                return alert("⛔ لا يوجد سجل تاريخي كافي للأصناف الأساسية في الدفعات المغلقة لعمل التحليل التوقعي!\nبرجاء إغلاق دفعة واحدة على الأقل بنجاح ليتعلم منها النظام.");
+            }
+
+            // 3. تطبيق خوارزمية التوزيع بناءً على النسب المئوية التاريخية
+            let newStock = storeBatches[bId].stock || {};
+            let textLog = `📊 تقرير التوزيع الذكي لـ (${totalTarget}) جوز:\n\n`;
+            
+            Object.keys(historyItems).forEach(itemName => {
+                let id = validMainProducts[itemName];
+                let percentage = historyItems[itemName] / grandTotalHistory;
+                let predictedQty = Math.round(percentage * totalTarget);
+                
+                newStock[id] = predictedQty;
+                textLog += `- ${itemName}: ${predictedQty} (بنسبة ${Math.round(percentage * 100)}%)\n`;
+            });
+
+            // 4. حفظ البيانات في الذاكرة الحية وقاعدة البيانات
+            storeBatches[bId].stock = newStock;
+            
+            try {
+                await db.collection('inventory').doc('batches').update({
+                    [`${bId}.stock`]: newStock
+                });
+                renderBatchesUI();
+                alert(textLog + "\n✅ تم تحديث كميات الدفعة بنجاح!");
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ أثناء حفظ التوزيع الذكي!");
+            }
+        };
 
     </script>
 
