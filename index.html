@@ -5369,14 +5369,23 @@ window.deleteProductUI = async (id) => {
         };
 
         // ==========================================
-        // 🔮 نظام التوزيع الذكي والتحليل التوقعي للكميات 🔮
+        // 🔮 نظام التوزيع الذكي والتحليل التوقعي للكميات (مُحدث بالدقة المتناهية) 🔮
         // ==========================================
         window.smartDistributeBatch = async (bId) => {
-            let totalInput = prompt("🔮 نظام التوزيع الذكي:\n\nأدخل العدد الكلي التقريبي للسمان في هذه الدفعة (مثال: 500):\nالسيستم سيقوم بدراسة الدفعات السابقة وتوزيع هذا الرقم أوتوماتيكياً على الأصناف الأساسية.");
+            let totalInput = prompt("🔮 نظام التوزيع الذكي:\n\nأدخل العدد الكلي التقريبي للسمان في هذه الدفعة (مثال: 500):");
             if (!totalInput) return;
             
             let totalTarget = parseInt(totalInput);
-            if (isNaN(totalTarget) || totalTarget <= 0) return alert("⛔ برجاء إدخال رقم صحيح!");
+            if (isNaN(totalTarget) || totalTarget <= 0) return alert("⛔ برجاء إدخال رقم صحيح للعدد الكلي!");
+
+            // سؤال المستخدم عن عدد الدفعات اللي عايز يحسب عليها
+            let batchCountInput = prompt("📊 كم عدد الدفعات السابقة التي تريد بناء التوقع عليها؟\n\n- اكتب 1 (لآخر دفعة فقط)\n- اكتب 3 (لآخر 3 دفعات)\n- اترك المربع فارغاً (للمتوسط العام لكل الدفعات السابقة)");
+            
+            let limit = 0; // صفر يعني هيحسب على الكل
+            if (batchCountInput && batchCountInput.trim() !== "") {
+                limit = parseInt(batchCountInput);
+                if (isNaN(limit) || limit < 0) return alert("⛔ برجاء إدخال رقم صحيح لعدد الدفعات!");
+            }
 
             // 1. فلترة وتجهيز الأصناف الأساسية فقط (تجاهل البيض والكتاكيت)
             let validMainProducts = {};
@@ -5386,11 +5395,18 @@ window.deleteProductUI = async (id) => {
                 }
             });
 
-            // 2. تحليل الأرشيف التاريخي
+            // 2. تحليل الأرشيف التاريخي بناءً على اختيارك
             let historyItems = {};
             let grandTotalHistory = 0;
 
-            archivedBatchesData.forEach(a => {
+            // أخذ العدد المطلوب من الدفعات الأحدث فقط
+            let batchesToAnalyze = limit > 0 ? archivedBatchesData.slice(0, limit) : archivedBatchesData;
+
+            if (batchesToAnalyze.length === 0) {
+                return alert("⛔ لا يوجد سجل تاريخي كافي في الأرشيف لعمل التحليل!");
+            }
+
+            batchesToAnalyze.forEach(a => {
                 if (a.itemsSummary) {
                     Object.keys(a.itemsSummary).forEach(itemName => {
                         // حساب الأصناف الأساسية فقط
@@ -5404,36 +5420,67 @@ window.deleteProductUI = async (id) => {
             });
 
             if (grandTotalHistory === 0) {
-                return alert("⛔ لا يوجد سجل تاريخي كافي للأصناف الأساسية في الدفعات المغلقة لعمل التحليل التوقعي!\nبرجاء إغلاق دفعة واحدة على الأقل بنجاح ليتعلم منها النظام.");
+                return alert("⛔ لا توجد مبيعات للأصناف الأساسية في الدفعات المحددة لعمل التحليل التوقعي!");
             }
 
-            // 3. تطبيق خوارزمية التوزيع بناءً على النسب المئوية التاريخية
+            // 3. تطبيق خوارزمية التوزيع (Largest Remainder Method) لضمان دقة 100% بدون تقريب خاطئ
             let newStock = storeBatches[bId].stock || {};
-            let textLog = `📊 تقرير التوزيع الذكي لـ (${totalTarget}) جوز:\n\n`;
+            let textLog = `📊 تقرير التوزيع الذكي لـ (${totalTarget}) جوز (مبني على ${limit > 0 ? 'آخر ' + limit + ' دفعات' : 'كل الدفعات'}):\n\n`;
             
+            let exactCalculations = [];
+            let currentSum = 0;
+
             Object.keys(historyItems).forEach(itemName => {
                 let id = validMainProducts[itemName];
                 let percentage = historyItems[itemName] / grandTotalHistory;
-                let predictedQty = Math.round(percentage * totalTarget);
+                let exactValue = percentage * totalTarget;
+                let floorValue = Math.floor(exactValue); // بناخد الرقم الصحيح الأول
+                let remainder = exactValue - floorValue; // ونعزل الكسر
                 
-                newStock[id] = predictedQty;
-                textLog += `- ${itemName}: ${predictedQty} (بنسبة ${Math.round(percentage * 100)}%)\n`;
+                exactCalculations.push({
+                    itemName: itemName,
+                    id: id,
+                    floorValue: floorValue,
+                    remainder: remainder,
+                    percentage: percentage
+                });
+                
+                currentSum += floorValue;
+            });
+
+            // توزيع الباقي على الأصناف صاحبة أكبر كسر عشري عشان نكمل الرقم المستهدف بالظبط
+            let difference = totalTarget - currentSum;
+            exactCalculations.sort((a, b) => b.remainder - a.remainder); // ترتيب تنازلي حسب الكسر
+
+            for (let i = 0; i < difference; i++) {
+                exactCalculations[i % exactCalculations.length].floorValue += 1;
+            }
+
+            // إدراج الأرقام النهائية المعالجة
+            exactCalculations.forEach(item => {
+                newStock[item.id] = item.floorValue;
+                textLog += `- ${item.itemName}: ${item.floorValue} (بنسبة ${Math.round(item.percentage * 100)}%)\n`;
             });
 
             // 4. حفظ البيانات في الذاكرة الحية وقاعدة البيانات
             storeBatches[bId].stock = newStock;
             
             try {
+                let btn = document.querySelector(`button[onclick="smartDistributeBatch('${bId}')"]`);
+                let origHtml = btn ? btn.innerHTML : '';
+                if(btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري...';
+
                 await db.collection('inventory').doc('batches').update({
                     [`${bId}.stock`]: newStock
                 });
                 renderBatchesUI();
-                alert(textLog + "\n✅ تم تحديث كميات الدفعة بنجاح!");
+                alert(textLog + "\n✅ تم التوزيع بدقة 100% وتحديث الكميات بنجاح!");
             } catch (e) {
                 console.error(e);
                 alert("حدث خطأ أثناء حفظ التوزيع الذكي!");
             }
         };
+
 
     </script>
 
