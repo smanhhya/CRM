@@ -2943,9 +2943,12 @@
                         </div>
                         <div class="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto justify-between shrink-0">
                             <div class="flex items-center gap-4">
-                                <label class="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-600"><input type="checkbox" ${b.isOpen ? 'checked' : ''} onchange="storeBatches['${bId}'].isOpen = this.checked; renderBatchesUI();" class="w-4 h-4 text-emerald-600 rounded"> مفتوحة للحجز</label>
-                                ${b.expectedValue ? `<span class="bg-rose-50 text-rose-600 border border-rose-100 px-2 py-1 rounded-lg text-[10px] font-black shadow-sm">قيمة الذبح: ${b.expectedValue.toLocaleString()} ج</span>` : ''}
+                                <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-blue-600"><input type="checkbox" ${b.isVisible !== false ? 'checked' : ''} onchange="storeBatches['${bId}'].isVisible = this.checked; renderBatchesUI();" class="w-4 h-4 text-blue-600 rounded"> ظاهرة بالموقع</label>
+                                <div class="w-px h-4 bg-slate-200"></div>
+                                <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-emerald-600"><input type="checkbox" ${b.isOpen ? 'checked' : ''} onchange="storeBatches['${bId}'].isOpen = this.checked; renderBatchesUI();" class="w-4 h-4 text-emerald-600 rounded"> تستقبل حجوزات</label>
+                                ${b.expectedValue ? `<span class="bg-rose-50 text-rose-600 border border-rose-100 px-2 py-1 rounded-lg text-[10px] font-black shadow-sm" title="القيمة المتوقعة بناءً على ما تم ذبحه">قيمة الذبح: ${b.expectedValue.toLocaleString()} ج</span>` : ''}
                             </div>
+
                             <div class="flex flex-wrap items-center gap-2">
                                 <button onclick="openSlaughterModal('${bId}')" class="bg-rose-50 text-rose-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-rose-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-rose-100"><i class="fa-solid fa-knife-kitchen"></i> تم الذبح</button>
                                 <button onclick="archiveBatch('${bId}')" class="bg-amber-50 text-amber-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-amber-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-amber-100"><i class="fa-solid fa-box-archive"></i> ترحيل</button>
@@ -2963,9 +2966,11 @@
 
         window.addNewBatchUI = () => { 
             const bId = 'batch_' + Date.now(); 
-            storeBatches[bId] = { name: "دفعة جديدة", isOpen: true, stock: {}, booked: {} }; 
+            // تم إضافة isVisible: true كإعداد افتراضي
+            storeBatches[bId] = { name: "دفعة جديدة", isOpen: true, isVisible: true, stock: {}, booked: {} }; 
             renderBatchesUI(); 
         };
+
 
         
         window.updateBatchStock = (bId, pId, val) => { 
@@ -5304,15 +5309,17 @@ window.deleteProductUI = async (id) => {
             try {
                 let dbBatch = db.batch();
                 
-                storeBatches[bId].isOpen = false; // قفل الحجز أوتوماتيك
+                storeBatches[bId].isOpen = false; // قفل الحجز عشان محدش يطلب جديد
+                storeBatches[bId].isVisible = true; // تفضل ظاهرة في الموقع عشان الناس تتابع التحديث
                 storeBatches[bId].slaughtered = slaughteredData;
                 storeBatches[bId].expectedValue = expectedValue;
-                storeBatches[bId].urgentNote = "🔪 تم ذبح الدورة وتجهيزها فريش.. جاري ترتيب خطوط التوزيع والتواصل للتسليم!";
+                storeBatches[bId].urgentNote = "🔪 تم الذبح وجاري التوزيع.. انتظروا تواصل المناديب للتسليم!";
                 
                 let batchRef = db.collection('inventory').doc('batches');
                 dbBatch.set(batchRef, { 
                     [bId]: { 
                         isOpen: false,
+                        isVisible: true,
                         urgentNote: storeBatches[bId].urgentNote,
                         slaughtered: slaughteredData,
                         expectedValue: expectedValue
