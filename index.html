@@ -2795,15 +2795,14 @@
                 if(document.getElementById('no-debt')) document.getElementById('no-debt').value = '0';
 
                 
-                // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
-                if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
+        // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
+        if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
 
-                window.refreshCustomersData(); // تحديث شامل لأرشيف العملاء وشاشة الديون
-               });
-                
-            } catch(e) { alert('خطأ أثناء الحفظ بقاعدة البيانات!'); }
-            btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
-        };
+        window.refreshCustomersData(); // تحديث شامل لأرشيف العملاء وشاشة الديون
+        
+    } catch(e) { alert('خطأ أثناء الحفظ بقاعدة البيانات!'); }
+    btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
+};
 
 
         // === 8. المناديب (واتساب) والتوجيه الذكي ===
