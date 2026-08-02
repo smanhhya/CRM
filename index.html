@@ -102,6 +102,7 @@
             <button onclick="switchTab('orders', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-bolt w-7 text-center text-amber-400"></i> الطلبات الحية</button>
             <button onclick="switchTab('customers', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-users w-7 text-center text-blue-400"></i> أرشيف العملاء</button>
             <button onclick="switchTab('notes', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-clipboard-list w-7 text-center text-rose-400"></i> مركز الملاحظات</button>
+            <button onclick="switchTab('debts', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-500/20 hover:text-white text-emerald-100/70 transition-all border-b border-emerald-900/50 pb-4 mb-2"><i class="fa-solid fa-book-journal-whills w-7 text-center text-red-400"></i> سجل المديونيات</button>
 
             <div class="pt-6 pb-2 px-2 text-[10px] uppercase font-black text-emerald-300/50 tracking-wider">التحكم والتجهيز</div>
             <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-boxes-packing w-7 text-center text-indigo-400"></i> الأصناف والأسعار</button>
@@ -326,6 +327,35 @@
                                 </tr>
                             </thead>
                             <tbody id="customers-tbody" class="divide-y divide-slate-50"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!-- شاشة سجل المديونيات الجديدة -->
+            <div id="view-debts" class="page-view h-full flex flex-col max-w-7xl mx-auto">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 w-full bg-white p-5 rounded-[1.5rem] shadow-soft border border-red-100 shrink-0">
+                    <div>
+                        <h2 class="text-xl font-black text-red-700"><i class="fa-solid fa-book-journal-whills mr-2"></i> سجل المديونيات (باقي الحساب)</h2>
+                        <p class="text-xs text-slate-500 font-bold mt-1.5">إجمالي الأموال المتبقية لك في السوق: <span id="total-market-debt" class="text-red-600 font-black text-lg bg-red-50 px-2 py-0.5 rounded-lg border border-red-100">0</span> ج.م</p>
+                    </div>
+                    <div class="relative w-full md:w-1/3">
+                        <i class="fa-solid fa-search absolute right-4 top-3.5 text-slate-400"></i>
+                        <input type="search" id="search-debts" onkeyup="renderDebtsUI()" placeholder="ابحث بالاسم أو الرقم..." class="w-full pl-4 pr-11 py-2.5 rounded-xl border-none outline-none text-sm font-bold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-200 transition-all">
+                    </div>
+                </div>
+
+                <div class="bg-white border border-slate-100 rounded-[1.5rem] shadow-soft overflow-hidden flex-1 flex flex-col">
+                    <div class="overflow-x-auto custom-scroll flex-1">
+                        <table class="w-full text-right text-sm whitespace-nowrap">
+                            <thead class="bg-red-50 text-red-700 sticky top-0 z-10 border-b border-red-100">
+                                <tr>
+                                    <th class="py-4 px-6 font-black text-xs uppercase tracking-wider">العميل</th>
+                                    <th class="py-4 px-6 font-black text-xs uppercase tracking-wider text-center">المنطقة</th>
+                                    <th class="py-4 px-6 font-black text-xs uppercase tracking-wider text-center">باقي الحساب</th>
+                                    <th class="py-4 px-6 font-black text-xs uppercase tracking-wider text-center">الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="debts-tbody" class="divide-y divide-slate-50"></tbody>
                         </table>
                     </div>
                 </div>
@@ -656,6 +686,11 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
+                    <div class="mb-4 p-3 bg-red-50/50 rounded-xl border border-red-100">
+                        <label class="text-[10px] font-black text-red-800 block mb-1.5"><i class="fa-solid fa-hand-holding-dollar text-red-500 mr-1"></i> هل يوجد باقي حساب لم يُدفع؟ (آجل/تقسيط)</label>
+                        <input type="number" id="no-debt" class="w-full border border-red-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-red-300 text-sm font-bold text-red-800 bg-white transition-all shadow-sm" placeholder="اكتب المبلغ المتبقي على العميل هنا..." value="0">
+                    </div>
+
                             <label class="text-[10px] font-black text-slate-800 block mb-1.5"><i class="fa-solid fa-lock text-red-400 mr-1"></i> ملاحظات إدارية (سرية لك)</label>
                             <textarea id="no-notes" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-red-100 text-xs font-bold text-slate-700 bg-slate-50 focus:bg-white transition-all resize-none" rows="2" placeholder="حسابات، أسرار العميل..."></textarea>
                         </div>
@@ -1097,6 +1132,7 @@
             if(tabId === 'trash') renderTrashUI();            
             if(tabId === 'notes') renderNotesUI();
             if(tabId === 'reconciliation') renderReconciliationUI();
+            if(tabId === 'debts') renderDebtsUI();
 
             // الموبايل: نقفل القائمة الجانبية لو داس بإيده بس (عشان متبقاش مزعجة في الرجوع)
             if(window.innerWidth < 768 && !isFromBackButton) toggleSidebar();
@@ -2165,6 +2201,8 @@
             document.getElementById('cm-address').innerText = (c.zone ? c.zone + ' - ' : '') + (c.address || 'لم يتم تسجيل عنوان تفصيلي');
             document.getElementById('cm-ltv').innerText = `${(c.totalSpent || 0).toLocaleString()} ج`; 
             document.getElementById('cm-orders').innerText = c.ordersCount || 0;
+            document.getElementById('cm-debt').innerText = (c.debt || 0) + ' ج';
+
             document.getElementById('cm-btn-wa').href = `https://wa.me/${(c.phone||'').startsWith('0')?'2'+c.phone:c.phone}`;
             document.getElementById('cm-btn-call').href = `tel:${c.phone}`;
             
@@ -2247,6 +2285,57 @@
             renderAltPhonesList(c.phone); 
 
             openModal('customer-modal');
+        };
+
+        // دالة إدارة مديونية العميل (إضافة أو تسديد)
+        window.manageCustomerDebt = async (action) => {
+            const phone = document.getElementById('cm-phone').innerText;
+            const currentDebt = parseInt(document.getElementById('cm-debt').innerText) || 0;
+            if(!phone) return;
+
+            let promptMsg = action === 'pay' ? 
+                `المديونية الحالية: ${currentDebt} ج\nأدخل المبلغ الذي سدده العميل الآن لخصمه من حسابه:` : 
+                `أدخل المبلغ الجديد المراد إضافته كمديونية على هذا العميل:`;
+
+            let amountStr = prompt(promptMsg);
+            if(amountStr !== null && amountStr.trim() !== '') {
+                let amount = parseInt(amountStr);
+                if(isNaN(amount) || amount <= 0) return alert("الرجاء إدخال مبلغ صحيح!");
+                
+                if(action === 'pay' && amount > currentDebt) return alert("مبلغ السداد أكبر من المديونية الحالية!");
+
+                try {
+                    let cleanPhoneDb = phone.startsWith('0') ? phone : '0' + phone;
+                    let incrementValue = action === 'pay' ? -amount : amount;
+                    
+                    await db.collection('customers').doc(cleanPhoneDb).update({
+                        debt: firebase.firestore.FieldValue.increment(incrementValue)
+                    });
+
+                    // تسجيل العملية في كشكول العميل تلقائياً
+                    let actionText = action === 'pay' ? `سداد مديونية بمبلغ ${amount} ج` : `إضافة مديونية جديدة بمبلغ ${amount} ج`;
+                    let note = `[${new Date().toLocaleDateString('ar-EG')}] ${actionText}.`;
+                    
+                    await db.collection('customers').doc(cleanPhoneDb).update({
+                         timelineNotes: firebase.firestore.FieldValue.arrayUnion({ id: 'debt_'+Date.now(), text: note, type: 'note', timestamp: Date.now() })
+                    });
+
+                    alert("تم تحديث مديونية العميل بنجاح!");
+                    openCustomerCard(phone); // تحديث واجهة العميل فوراً
+                    
+                    // إعادة تحميل جدول العملاء في الخلفية لتحديث الشارة الحمراء
+                    db.collection('customers').get().then(snap => {
+                        customersData = [];
+                        snap.forEach(doc => customersData.push(doc.data()));
+                        
+                        // 👇 السطر اللي كان ناقص اتضاف هنا أهو عشان يحدث الشاشة فوراً 👇
+                        if(document.getElementById('view-debts').classList.contains('active')) renderDebtsUI();
+                    });
+
+                } catch(e) { 
+                    alert("حدث خطأ أثناء تحديث المديونية!"); 
+                }
+            }
         };
 
 
@@ -2528,6 +2617,7 @@
             let deliveryStart = document.getElementById('no-delivery-start') ? document.getElementById('no-delivery-start').value : '';
             let deliveryEnd = document.getElementById('no-delivery-end') ? document.getElementById('no-delivery-end').value : '';
             let paymentMethod = document.getElementById('no-payment-method') ? document.getElementById('no-payment-method').value : 'cash';
+            let debtAmount = Number(document.getElementById('no-debt') ? document.getElementById('no-debt').value : 0) || 0;
             
             if(!phone || !name || total === 0) return alert('برجاء استكمال بيانات العميل وقيمة الطلب الأساسية!');
             if(!zone) return alert('يجب تحديد منطقة التوصيل!');
@@ -2611,7 +2701,7 @@
                 // 3. تحديث العميل
                 let cleanPhoneForDB = phone.startsWith('0') ? phone : '0'+phone;
                 let customerRef = db.collection('customers').doc(cleanPhoneForDB);
-                atomicBatch.set(customerRef, { name: name, phone: cleanPhoneForDB, phone2: phone2, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                atomicBatch.set(customerRef, { name: name, phone: cleanPhoneForDB, phone2: phone2, zone: zone, address: address, ordersCount: firebase.firestore.FieldValue.increment(1), totalSpent: firebase.firestore.FieldValue.increment(total), debt: firebase.firestore.FieldValue.increment(debtAmount), lastOrder: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
 
                 // 4. تحديث الدفعة (لو موجودة)
                 if(batchId) {
@@ -2689,6 +2779,7 @@
                 if(document.getElementById('no-driver-notes')) document.getElementById('no-driver-notes').value = '';
                 if(document.getElementById('no-delivery-start')) document.getElementById('no-delivery-start').value = '';
                 if(document.getElementById('no-delivery-end')) document.getElementById('no-delivery-end').value = '';
+                if(document.getElementById('no-debt')) document.getElementById('no-debt').value = '0';
 
                 
                 // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
@@ -5481,6 +5572,58 @@ window.deleteProductUI = async (id) => {
             }
         };
 
+        // دالة رسم شاشة المديونيات وتجميع الحسابات
+        window.renderDebtsUI = () => {
+            const tbody = document.getElementById('debts-tbody');
+            if(!tbody) return;
+            
+            let searchTerm = (document.getElementById('search-debts').value || '').toLowerCase().trim();
+            let totalMarketDebt = 0;
+            
+            // فلترة العملاء الذين لديهم مديونية أكبر من صفر
+            let indebtedCustomers = customersData.filter(c => (Number(c.debt) || 0) > 0);
+            
+            // تطبيق البحث الذكي
+            if (searchTerm) {
+                indebtedCustomers = indebtedCustomers.filter(c => 
+                    (c.name || '').toLowerCase().includes(searchTerm) || 
+                    (c.phone || '').includes(searchTerm)
+                );
+            }
+            
+            // ترتيب العملاء من الأعلى مديونية للأقل
+            indebtedCustomers.sort((a, b) => (Number(b.debt) || 0) - (Number(a.debt) || 0));
+            
+            let html = '';
+            indebtedCustomers.forEach(c => {
+                let currentDebt = Number(c.debt) || 0;
+                totalMarketDebt += currentDebt;
+                
+                html += `
+                <tr class="hover:bg-red-50/40 transition-colors">
+                    <td class="py-4 px-6">
+                        <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل غير مسجل'}</div>
+                        <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone}</div>
+                    </td>
+                    <td class="py-4 px-6 text-center font-bold text-slate-600 text-xs">${c.zone || '<span class="text-slate-300">غير مسجل</span>'}</td>
+                    <td class="py-4 px-6 text-center">
+                        <span class="bg-white text-red-600 px-3 py-1.5 rounded-lg font-black text-sm shadow-sm border border-red-200 inline-block w-24 text-center">${currentDebt} ج</span>
+                    </td>
+                    <td class="py-4 px-6 text-center">
+                        <button onclick="openCustomerCard('${c.phone}')" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-slate-900 transition-all shadow-sm flex items-center justify-center gap-2 mx-auto"><i class="fa-solid fa-wallet text-red-400"></i> السداد / كشف الحساب</button>
+                    </td>
+                </tr>`;
+            });
+            
+            if (indebtedCustomers.length === 0) {
+                html = `<tr><td colspan="4" class="text-center py-16 text-slate-400 font-bold border-2 border-dashed border-slate-200 rounded-[2rem] m-4">الحمد لله.. لا توجد مديونيات متأخرة في السوق حالياً.</td></tr>`;
+            }
+            
+            tbody.innerHTML = html;
+            
+            let debtTotalEl = document.getElementById('total-market-debt');
+            if (debtTotalEl) debtTotalEl.innerText = totalMarketDebt.toLocaleString();
+        };
            
 
 
