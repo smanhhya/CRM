@@ -1964,6 +1964,11 @@
                 let paymentBadge = (o.paymentMethod === 'online') 
                     ? '<span class="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-sm" title="تم الدفع مسبقاً"><i class="fa-solid fa-check-double"></i> خالص (أونلاين)</span>' 
                     : '<span class="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-sm"><i class="fa-solid fa-money-bill-1-wave"></i> كاش</span>';
+                
+                // إضافة بادج أحمر لو الأوردر ده اتعمل عليه فلوس متبقية
+                if(o.debt && o.debt > 0) {
+                    paymentBadge += ` <span class="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i> آجل (${o.debt} ج)</span>`;
+                }
                 // التعديل: عدم رسم بادج الدفعة لو كان اسمها undefined
                 let batchTagHtml = (o.batchName && o.batchName !== 'undefined') ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
 
@@ -2629,6 +2634,13 @@
             let deliveryEnd = document.getElementById('no-delivery-end') ? document.getElementById('no-delivery-end').value : '';
             let paymentMethod = document.getElementById('no-payment-method') ? document.getElementById('no-payment-method').value : 'cash';
             let debtAmount = Number(document.getElementById('no-debt') ? document.getElementById('no-debt').value : 0) || 0;
+
+            // --- السحر هنا: لو فيه مديونية، اكتبها ملاحظة إدارية أوتوماتيك جوا الأوردر ---
+            if(debtAmount > 0) {
+                let debtMsg = `[تنبيه مالي] العميل عليه باقي حساب (${debtAmount} ج) من هذا الطلب.`;
+                notes = notes ? notes + '\n---\n' + debtMsg : debtMsg;
+            }
+            // ----------------------------------------------------
             
             if(!phone || !name || total === 0) return alert('برجاء استكمال بيانات العميل وقيمة الطلب الأساسية!');
             if(!zone) return alert('يجب تحديد منطقة التوصيل!');
@@ -2684,7 +2696,9 @@
                     deliveryStart: deliveryStart,
                     deliveryEnd: deliveryEnd,
                     paymentMethod: paymentMethod, // 💳 إضافة طريقة الدفع للسيستم
+                    debt: debtAmount, // 🔴 تسجيل المديونية جوه الأوردر نفسه عشان مننساش
                     total: total, 
+
 
 
                     subtotal: subtotal, 
@@ -2795,6 +2809,13 @@
                 
                 // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
                 if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
+
+                // --- تحديث بيانات العملاء فوراً عشان المديونية تسمّع في شاشة الديون ---
+                db.collection('customers').get().then(snap => {
+                    customersData = [];
+                    snap.forEach(doc => customersData.push(doc.data()));
+                    if(document.getElementById('view-debts').classList.contains('active')) renderDebtsUI();
+                });
                 
             } catch(e) { alert('خطأ أثناء الحفظ بقاعدة البيانات!'); }
             btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
