@@ -1200,6 +1200,54 @@
         };
         
         window.logoutApp = () => { if(confirm("الخروج من النظام؟")) auth.signOut(); };
+        // دالة مركزية لإنعاش جداول العملاء والديون فوراً
+        window.refreshCustomersData = () => {
+            db.collection('customers').get().then(snap => {
+                customersData = [];
+                snap.forEach(doc => customersData.push(doc.data()));
+                
+                let dashCust = document.getElementById('dash-customers');
+                if(dashCust) dashCust.innerText = customersData.length;
+                
+                customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0));
+
+                let tbody = '';
+                customersData.forEach(c => {
+                    let location = c.zone || '';
+                    if(c.address) location += ' - ' + c.address;
+                    let details = c.notebook ? `<div class="text-[10px] text-amber-600 font-bold mt-1.5 max-w-[180px] truncate mx-auto bg-amber-50 px-2 py-1 rounded" title="${c.notebook}"><i class="fa-solid fa-book"></i> نوت: ${c.notebook}</div>` : '';
+                    let normPhone = window.normalizePhone(c.phone);
+
+                    tbody += `
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location} ${c.notebook || ''}">
+                        <td class="py-4 px-6">
+                            <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">
+                                ${c.name || 'عميل'} 
+                                ${(c.debt && c.debt > 0) ? `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-black inline-block ml-1 border border-red-200" title="عليه فلوس متبقية">عليه ${c.debt} ج</span>` : ''}
+                            </div>
+                            <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone || ''}</div>
+                        </td>
+                        <td class="py-4 px-6 text-center">
+                            <div class="text-xs font-bold text-slate-700">${location || '<span class="text-slate-400">غير مسجل</span>'}</div>
+                            ${details}
+                        </td>
+                        <td class="py-4 px-6 text-center font-black text-slate-700 text-base">${c.ordersCount || 0}</td>
+                        <td class="py-4 px-6 text-center font-black text-emerald-600 text-base">${(c.totalSpent || 0).toLocaleString()} <span class="text-[10px]">ج</span></td>
+                        <td class="py-4 px-6 text-center">
+                            <button onclick="openCustomerCard('${c.phone}')" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm">الأرشيف</button>
+                        </td>
+                    </tr>`;
+                });
+                let tbEl = document.getElementById('customers-tbody');
+                if(tbEl) {
+                    tbEl.innerHTML = tbody || `<tr><td colspan="5" class="text-center p-12 text-slate-400 font-bold text-sm">لا يوجد عملاء حتى الآن</td></tr>`;
+                    if(document.getElementById('search-customer') && document.getElementById('search-customer').value.trim() !== '') filterCustomers();
+                }
+                
+                // تحديث شاشة المديونيات في كل مرة الأرشيف يتحدث
+                renderDebtsUI(); 
+            }).catch(err => console.log("خطأ في جلب الأرشيف: ", err));
+        };
 
         function startCRM() {
             const nowStr = new Date().toLocaleDateString('en-US');
@@ -1343,60 +1391,7 @@
                 scheduleSystemRender();
             });
 
-
-
-            // 👇 التعديل هنا فقط: استخدمنا get().then بدل onSnapshot عشان نوقف نزيف القراءات
-            db.collection('customers').get().then(snap => {
-                customersData = [];
-                snap.forEach(doc => customersData.push(doc.data()));
-                
-                let dashCust = document.getElementById('dash-customers');
-                if(dashCust) dashCust.innerText = customersData.length;
-                
-                customersData.sort((a, b) => (b.ordersCount || 0) - (a.ordersCount || 0));
-
-                
-                let tbody = '';
-                customersData.forEach(c => {
-                    let location = c.zone || '';
-                    if(c.address) location += ' - ' + c.address;
-                    let details = c.notebook ? `<div class="text-[10px] text-amber-600 font-bold mt-1.5 max-w-[180px] truncate mx-auto bg-amber-50 px-2 py-1 rounded" title="${c.notebook}"><i class="fa-solid fa-book"></i> نوت: ${c.notebook}</div>` : '';
-                    
-                    // السطر ده بينظف الأرقام كلها عشان البحث يلقطها
-                    let normPhone = window.normalizePhone(c.phone);
-                    let normPhone2 = window.normalizePhone(c.phone2 || '');
-                    let altPhonesStr = (c.altPhones || []).join(' ');
-
-
-                    tbody += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location} ${c.notebook || ''}">
-                        <td class="py-4 px-6">
-                            <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">
-                                ${c.name || 'عميل'} 
-                                ${(c.debt && c.debt > 0) ? `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-black inline-block ml-1 border border-red-200" title="عليه فلوس متبقية">عليه ${c.debt} ج</span>` : ''}
-                            </div>
-                            <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone || ''}</div>
-                        </td>
-
-                        <td class="py-4 px-6 text-center">
-                            <div class="text-xs font-bold text-slate-700">${location || '<span class="text-slate-400">غير مسجل</span>'}</div>
-                            ${details}
-                        </td>
-                        <td class="py-4 px-6 text-center font-black text-slate-700 text-base">${c.ordersCount || 0}</td>
-                        <td class="py-4 px-6 text-center font-black text-emerald-600 text-base">${(c.totalSpent || 0).toLocaleString()} <span class="text-[10px]">ج</span></td>
-                        <td class="py-4 px-6 text-center">
-                            <button onclick="openCustomerCard('${c.phone}')" class="bg-indigo-50 text-indigo-600 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm">الأرشيف</button>
-                        </td>
-                    </tr>`;
-                });
-
-                document.getElementById('customers-tbody').innerHTML = tbody || `<tr><td colspan="5" class="text-center p-12 text-slate-400 font-bold text-sm">لا يوجد عملاء حتى الآن</td></tr>`;
-                
-                // تحديث البحث فورا لو اليوزر كاتب حاجة
-                if(document.getElementById('search-customer').value.trim() !== '') {
-                    filterCustomers();
-                }
-            }).catch(err => console.log("خطأ في جلب الأرشيف: ", err)); // 👈 قفلة الـ get الجديدة
+            window.refreshCustomersData(); // استدعاء دالة تحديث العملاء والديون
 
         }
 
@@ -2340,14 +2335,7 @@
                     alert("تم تحديث مديونية العميل بنجاح!");
                     openCustomerCard(phone); // تحديث واجهة العميل فوراً
                     
-                    // إعادة تحميل جدول العملاء في الخلفية لتحديث الشارة الحمراء
-                    db.collection('customers').get().then(snap => {
-                        customersData = [];
-                        snap.forEach(doc => customersData.push(doc.data()));
-                        
-                        // 👇 هذا هو السطر الجديد أضفناه هنا داخل القوسين 👇
-                        if(document.getElementById('view-debts').classList.contains('active')) renderDebtsUI();
-                    });
+                    window.refreshCustomersData(); // تحديث شامل لأرشيف العملاء وشاشة الديون
 
                 } catch(e) { 
                     alert("حدث خطأ أثناء تحديث المديونية!"); 
@@ -2810,12 +2798,8 @@
                 // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
                 if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
 
-                // --- تحديث بيانات العملاء فوراً عشان المديونية تسمّع في شاشة الديون ---
-                db.collection('customers').get().then(snap => {
-                    customersData = [];
-                    snap.forEach(doc => customersData.push(doc.data()));
-                    if(document.getElementById('view-debts').classList.contains('active')) renderDebtsUI();
-                });
+                window.refreshCustomersData(); // تحديث شامل لأرشيف العملاء وشاشة الديون
+               });
                 
             } catch(e) { alert('خطأ أثناء الحفظ بقاعدة البيانات!'); }
             btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
@@ -5604,7 +5588,6 @@ window.deleteProductUI = async (id) => {
             }
         };
 
-        // دالة رسم شاشة المديونيات وتجميع الحسابات
         window.renderDebtsUI = () => {
             const tbody = document.getElementById('debts-tbody');
             if(!tbody) return;
@@ -5612,10 +5595,8 @@ window.deleteProductUI = async (id) => {
             let searchTerm = (document.getElementById('search-debts').value || '').toLowerCase().trim();
             let totalMarketDebt = 0;
             
-            // فلترة العملاء الذين لديهم مديونية أكبر من صفر
             let indebtedCustomers = customersData.filter(c => (Number(c.debt) || 0) > 0);
             
-            // تطبيق البحث الذكي
             if (searchTerm) {
                 indebtedCustomers = indebtedCustomers.filter(c => 
                     (c.name || '').toLowerCase().includes(searchTerm) || 
@@ -5623,26 +5604,41 @@ window.deleteProductUI = async (id) => {
                 );
             }
             
-            // ترتيب العملاء من الأعلى مديونية للأقل
             indebtedCustomers.sort((a, b) => (Number(b.debt) || 0) - (Number(a.debt) || 0));
             
             let html = '';
             indebtedCustomers.forEach(c => {
                 let currentDebt = Number(c.debt) || 0;
                 totalMarketDebt += currentDebt;
+
+                // 🔥 سحر تتبع الأوردر: بنجيب الأوردرات اللي فيها دين للعميل ده
+                let cNormPhone = window.normalizePhone(c.phone);
+                let debtOrders = allOrdersRaw.filter(o => window.normalizePhone(o.customerPhone) === cNormPhone && o.debt > 0);
+                
+                let debtSourcesHtml = '';
+                if(debtOrders.length > 0) {
+                    debtSourcesHtml = '<div class="mt-2 text-right space-y-1.5">';
+                    debtOrders.forEach(o => {
+                        debtSourcesHtml += `<span onclick="openOrderTracking('${o.id}')" class="bg-red-50 text-red-700 border border-red-200 px-2 py-1.5 rounded-lg text-[10px] font-black inline-flex items-center gap-1 cursor-pointer hover:bg-red-500 hover:text-white transition-all shadow-sm" title="اضغط لتتبع هذا الطلب"><i class="fa-solid fa-link"></i> أوردر (${o.orderDate}) عليه: ${o.debt} ج</span><br>`;
+                    });
+                    debtSourcesHtml += '</div>';
+                } else {
+                    debtSourcesHtml = '<div class="mt-2"><span class="bg-slate-50 text-slate-500 border border-slate-200 px-2 py-1 rounded-lg text-[10px] font-black inline-block"><i class="fa-solid fa-circle-info mr-1"></i> أضيف يدوياً (أو من أرشيف قديم)</span></div>';
+                }
                 
                 html += `
-                <tr class="hover:bg-red-50/40 transition-colors">
-                    <td class="py-4 px-6">
+                <tr class="hover:bg-red-50/40 transition-colors border-b border-slate-50">
+                    <td class="py-4 px-6 align-top">
                         <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل غير مسجل'}</div>
-                        <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone}</div>
+                        <div class="text-[11px] text-slate-500 font-bold mt-0.5 mb-2" dir="ltr">${c.phone}</div>
+                        ${debtSourcesHtml}
                     </td>
-                    <td class="py-4 px-6 text-center font-bold text-slate-600 text-xs">${c.zone || '<span class="text-slate-300">غير مسجل</span>'}</td>
-                    <td class="py-4 px-6 text-center">
-                        <span class="bg-white text-red-600 px-3 py-1.5 rounded-lg font-black text-sm shadow-sm border border-red-200 inline-block w-24 text-center">${currentDebt} ج</span>
+                    <td class="py-4 px-6 text-center font-bold text-slate-600 text-xs align-top">${c.zone || '<span class="text-slate-300">غير مسجل</span>'}</td>
+                    <td class="py-4 px-6 text-center align-top">
+                        <span class="bg-white text-red-600 px-3 py-1.5 rounded-lg font-black text-base shadow-sm border border-red-200 inline-block min-w-[80px] text-center">${currentDebt} ج</span>
                     </td>
-                    <td class="py-4 px-6 text-center">
-                        <button onclick="openCustomerCard('${c.phone}')" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-slate-900 transition-all shadow-sm flex items-center justify-center gap-2 mx-auto"><i class="fa-solid fa-wallet text-red-400"></i> السداد / كشف الحساب</button>
+                    <td class="py-4 px-6 text-center align-top">
+                        <button onclick="openCustomerCard('${c.phone}')" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-black hover:bg-slate-900 transition-all shadow-sm flex items-center justify-center gap-2 mx-auto"><i class="fa-solid fa-wallet text-red-400"></i> السداد وكشف الحساب</button>
                     </td>
                 </tr>`;
             });
@@ -5656,8 +5652,6 @@ window.deleteProductUI = async (id) => {
             let debtTotalEl = document.getElementById('total-market-debt');
             if (debtTotalEl) debtTotalEl.innerText = totalMarketDebt.toLocaleString();
         };
-           
-
 
     </script>
 
