@@ -753,10 +753,19 @@
                         </div>
                     </div>
           
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100 text-center"><p class="text-[10px] font-bold text-emerald-600 mb-1">إجمالي الإنفاق</p><p id="cm-ltv" class="text-lg font-black text-emerald-700">0 ج</p></div>
-                        <div class="bg-blue-50/50 rounded-xl p-3 border border-blue-100 text-center"><p class="text-[10px] font-bold text-blue-600 mb-1">عدد الطلبات</p><p id="cm-orders" class="text-lg font-black text-blue-700">0</p></div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100 text-center"><p class="text-[10px] font-bold text-emerald-600 mb-1">الإنفاق</p><p id="cm-ltv" class="text-base font-black text-emerald-700">0 ج</p></div>
+                        <div class="bg-blue-50/50 rounded-xl p-3 border border-blue-100 text-center"><p class="text-[10px] font-bold text-blue-600 mb-1">الطلبات</p><p id="cm-orders" class="text-base font-black text-blue-700">0</p></div>
+                        <div class="bg-red-50/50 rounded-xl p-3 border border-red-100 text-center relative group">
+                            <p class="text-[10px] font-bold text-red-600 mb-1">عليه (باقي)</p>
+                            <p id="cm-debt" class="text-base font-black text-red-700">0 ج</p>
+                            <div class="absolute inset-0 bg-red-100/90 rounded-xl flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="manageCustomerDebt('add')" class="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600" title="إضافة مديونية"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                                <button onclick="manageCustomerDebt('pay')" class="w-6 h-6 bg-emerald-500 text-white rounded flex items-center justify-center hover:bg-emerald-600" title="تسديد مبلغ"><i class="fa-solid fa-check text-[10px]"></i></button>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
 
                 <div class="bg-amber-50/80 border border-amber-200/60 rounded-2xl p-5 shadow-soft">
