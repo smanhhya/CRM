@@ -1132,7 +1132,6 @@
             if(tabId === 'trash') renderTrashUI();            
             if(tabId === 'notes') renderNotesUI();
             if(tabId === 'reconciliation') renderReconciliationUI();
-            if(tabId === 'debts') renderDebtsUI();
 
             // الموبايل: نقفل القائمة الجانبية لو داس بإيده بس (عشان متبقاش مزعجة في الرجوع)
             if(window.innerWidth < 768 && !isFromBackButton) toggleSidebar();
@@ -1363,9 +1362,13 @@
                     tbody += `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location} ${c.notebook || ''}">
                         <td class="py-4 px-6">
-                            <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">${c.name || 'عميل'}</div>
+                            <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">
+                                ${c.name || 'عميل'} 
+                                ${(c.debt && c.debt > 0) ? `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-black inline-block ml-1 border border-red-200" title="عليه فلوس متبقية">عليه ${c.debt} ج</span>` : ''}
+                            </div>
                             <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone || ''}</div>
                         </td>
+
                         <td class="py-4 px-6 text-center">
                             <div class="text-xs font-bold text-slate-700">${location || '<span class="text-slate-400">غير مسجل</span>'}</div>
                             ${details}
@@ -2328,7 +2331,7 @@
                         customersData = [];
                         snap.forEach(doc => customersData.push(doc.data()));
                         
-                        // 👇 السطر اللي كان ناقص اتضاف هنا أهو عشان يحدث الشاشة فوراً 👇
+                        // 👇 هذا هو السطر الجديد أضفناه هنا داخل القوسين 👇
                         if(document.getElementById('view-debts').classList.contains('active')) renderDebtsUI();
                     });
 
@@ -2337,7 +2340,6 @@
                 }
             }
         };
-
 
         window.saveCustomerNotebook = async () => {
             const phone = document.getElementById('cm-phone').innerText;
