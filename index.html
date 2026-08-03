@@ -3094,6 +3094,98 @@
         };
         // ==========================================
         let currentEditingBatchId = null;
+// =====================================================================
+// 🧠 خوارزمية التوزيع الذكي بناءً على آخر دفعتين (Smart Distribution)
+// =====================================================================
+window.smartDistributeBatch = async (bId) => {
+    const currentBatch = storeBatches[bId];
+    if (!currentBatch) return;
+
+    // 1. تحديد العدد الكلي للأجواز المراد توزيعه
+    let totalToDistribute = currentBatch.expectedPairs;
+    
+    // إذا لم يجد السيستم "عدد متوقع" قادم من المزرعة، سيطلب منك إدخاله يدوياً
+    if (!totalToDistribute || totalToDistribute <= 0) {
+        const userInput = prompt(`لم نجد عدد أجواز مٌرحّل من المزرعة لدفعة (${currentBatch.name}).\nأدخل العدد الكلي للأجواز المراد توزيعه بذكاء:`);
+        if (!userInput) return;
+        totalToDistribute = parseInt(userInput);
+        if (isNaN(totalToDistribute) || totalToDistribute <= 0) return alert("عدد غير صحيح!");
+    }
+
+    // 2. البحث عن آخر دفعتين تم توزيع الأصناف فيهما (للتعلم منهما)
+    let sortedBatchIds = Object.keys(storeBatches)
+        .filter(id => id !== bId && storeBatches[id].stock && Object.values(storeBatches[id].stock).some(v => v > 0))
+        .sort((a, b) => b.localeCompare(a)); // الترتيب من الأحدث للأقدم
+
+    let lastTwoIds = sortedBatchIds.slice(0, 2);
+
+    if (lastTwoIds.length === 0) {
+        return alert("لا توجد دفعات سابقة بها مخزن ليتعلم النظام منها! قم بتوزيع هذه الدفعة يدوياً، وسيتعلم النظام للمرات القادمة.");
+    }
+
+    // 3. تجميع وحساب نسب الأصناف في آخر دفعتين
+    let aggregatedStock = {};
+    let totalReferenceStock = 0;
+
+    lastTwoIds.forEach(id => {
+        let s = storeBatches[id].stock;
+        Object.keys(s).forEach(pId => {
+            let qty = s[pId] || 0;
+            aggregatedStock[pId] = (aggregatedStock[pId] || 0) + qty;
+            totalReferenceStock += qty;
+        });
+    });
+
+    if (totalReferenceStock === 0) {
+        return alert("مخزن الدفعات السابقة صفر! لا يمكن حساب النسب.");
+    }
+
+    // 4. تطبيق الخوارزمية لتوزيع العدد الجديد بناءً على النسب المئوية
+    let newStock = {};
+    let remainingToDistribute = totalToDistribute;
+    
+    // ترتيب الأصناف تنازلياً لضمان عدم وجود كسور أو تبقي أجواز غير موزعة
+    let productIds = Object.keys(aggregatedStock).sort((a,b) => aggregatedStock[b] - aggregatedStock[a]); 
+
+    productIds.forEach((pId, index) => {
+        let ratio = aggregatedStock[pId] / totalReferenceStock;
+        let allocated = Math.round(totalToDistribute * ratio);
+        
+        // منع تجاوز العدد الكلي ووضع البواقي في آخر صنف
+        if (allocated > remainingToDistribute || index === productIds.length - 1) {
+            allocated = remainingToDistribute; 
+        }
+        
+        if (allocated > 0) {
+            newStock[pId] = allocated;
+            remainingToDistribute -= allocated;
+        }
+    });
+
+    // 5. تأكيد وحفظ التوزيع الذكي
+    let confirmationMsg = `سيتم توزيع (${totalToDistribute}) جوز بذكاء بناءً على سلوك آخر دفعتين كالتالي:\n\n`;
+    Object.keys(newStock).forEach(pId => {
+        confirmationMsg += `- ${storeProducts[pId].name}: ${newStock[pId]} جوز\n`;
+    });
+    confirmationMsg += `\nهل توافق على هذا التوزيع؟`;
+
+    if (confirm(confirmationMsg)) {
+        // تحديث الذاكرة الحية
+        currentBatch.stock = newStock;
+        
+        // الإرسال لقاعدة البيانات (Firestore)
+        try {
+            await db.collection("inventory").doc("batches").set({
+                [bId]: { stock: newStock }
+            }, { merge: true });
+            
+            renderBatchesUI();
+            showToast("تم التوزيع الذكي بنجاح! ✨");
+        } catch(e) {
+            alert("حدث خطأ أثناء حفظ التوزيع الذكي في قاعدة البيانات!");
+        }
+    }
+};
 
         // الدالة دي بتوريك شكل الرسالة أوتوماتيك وإنت بتكتب عشان تطمن (بدون أي أرقام للعميل)
         window.previewLiveMessage = () => {
