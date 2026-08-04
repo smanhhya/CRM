@@ -3056,13 +3056,13 @@
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pl-2">
                         <div class="flex-1 w-full relative">
                             <i class="fa-solid fa-pen absolute right-3 top-3.5 text-slate-300 text-xs"></i>
-                            <input type="text" value="${b.name}" onchange="storeBatches['${bId}'].name = this.value" class="border-none bg-slate-50 hover:bg-slate-100 rounded-xl p-3 pr-8 text-sm font-black text-slate-800 w-full md:w-3/4 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm" placeholder="اسم الدورة (مثال: حجز 15-7)">
+                            <input type="text" value="${b.name}" onchange="storeBatches['${bId}'].name = this.value; db.collection('inventory').doc('batches').update({[\`${bId}.name\`]: this.value});" class="border-none bg-slate-50 hover:bg-slate-100 rounded-xl p-3 pr-8 text-sm font-black text-slate-800 w-full md:w-3/4 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm" placeholder="اسم الدورة (مثال: حجز 15-7)">
                         </div>
                         <div class="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto justify-between shrink-0">
                             <div class="flex items-center gap-4">
-                                <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-blue-600"><input type="checkbox" ${b.isVisible !== false ? 'checked' : ''} onchange="storeBatches['${bId}'].isVisible = this.checked; renderBatchesUI();" class="w-4 h-4 text-blue-600 rounded"> ظاهرة بالموقع</label>
+                                <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-blue-600"><input type="checkbox" ${b.isVisible !== false ? 'checked' : ''} onchange="storeBatches['${bId}'].isVisible = this.checked; db.collection('inventory').doc('batches').update({[\`${bId}.isVisible\`]: this.checked}); renderBatchesUI();" class="w-4 h-4 text-blue-600 rounded"> ظاهرة بالموقع</label>
                                 <div class="w-px h-4 bg-slate-200"></div>
-                                <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-emerald-600"><input type="checkbox" ${b.isOpen ? 'checked' : ''} onchange="storeBatches['${bId}'].isOpen = this.checked; renderBatchesUI();" class="w-4 h-4 text-emerald-600 rounded"> تستقبل حجوزات</label>
+                                <label class="flex items-center gap-2 text-[11px] font-bold cursor-pointer text-emerald-600"><input type="checkbox" ${b.isOpen ? 'checked' : ''} onchange="storeBatches['${bId}'].isOpen = this.checked; db.collection('inventory').doc('batches').update({[\`${bId}.isOpen\`]: this.checked}); renderBatchesUI();" class="w-4 h-4 text-emerald-600 rounded"> تستقبل حجوزات</label>
                                 ${b.expectedValue ? `<span class="bg-rose-50 text-rose-600 border border-rose-100 px-2 py-1 rounded-lg text-[10px] font-black shadow-sm" title="القيمة المتوقعة بناءً على ما تم ذبحه">قيمة الذبح: ${b.expectedValue.toLocaleString()} ج</span>` : ''}
                             </div>
 
@@ -3082,10 +3082,14 @@
             });
         };
 
-        window.addNewBatchUI = () => { 
+        window.addNewBatchUI = async () => { 
             const bId = 'batch_' + Date.now(); 
             // تم إضافة isVisible: true كإعداد افتراضي
             storeBatches[bId] = { name: "دفعة جديدة", isOpen: true, isVisible: true, stock: {}, booked: {} }; 
+            try {
+                // حفظ الدفعة فوراً في القاعدة حتى لا تحدث أخطاء عند التعديل
+                await db.collection("inventory").doc("batches").set({ [bId]: storeBatches[bId] }, { merge: true });
+            } catch(e) { console.error("خطأ في الإنشاء"); }
             renderBatchesUI(); 
         };
 
@@ -3095,13 +3099,15 @@
             if(!storeBatches[bId].stock) storeBatches[bId].stock = {}; 
             storeBatches[bId].stock[pId] = parseInt(val) || 0; 
             
-            // سحر الحفظ التلقائي في الخلفية لحماية المخزن
             try {
+                // استخدام المسار الدقيق (Dot Notation) لضمان عدم مسح أي بيانات أخرى في الدفعة
+                await db.collection("inventory").doc("batches").update({
+                    [`${bId}.stock.${pId}`]: storeBatches[bId].stock[pId]
+                });
+            } catch(e) {
                 await db.collection("inventory").doc("batches").set({
                     [bId]: { stock: storeBatches[bId].stock }
                 }, { merge: true });
-            } catch(e) {
-                console.error("خطأ في حفظ المخزن");
             }
             renderBatchesUI(); 
         };
