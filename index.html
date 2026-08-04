@@ -3330,6 +3330,12 @@ window.smartDistributeBatch = async (bId) => {
             let b = storeBatches[currentEditingBatchId]; // استدعاء بيانات الدفعة الحالية
 
             // 🧠 اللوجيك الذكي الجديد (العداد الزمني لـ 3 أيام بعد الذبح)
+            // التعديل السحري: فصل حالة "الإخفاء التام" عن "قفل الحجز"
+            if (b && b.isVisible === false) {
+                previewEl.innerHTML = '<strong class="text-red-500"><i class="fa-solid fa-eye-slash mr-1"></i> هذه الدفعة مخفية تماماً ولن تظهر للعملاء في المتجر من الأساس.</strong>';
+                return; // نوقف اللوجيك هنا عشان ميكملش ويقول اكتملت
+            }
+
             if (b && b.slaughteredAt) {
                 let daysSinceSlaughter = (Date.now() - b.slaughteredAt) / (1000 * 60 * 60 * 24);
                 if (daysSinceSlaughter >= 3) {
