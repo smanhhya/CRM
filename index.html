@@ -2542,7 +2542,6 @@
                 let q = Number(document.getElementById(`${prefix}-q-${id}`)?.value) || 0; 
                 let price = storePrices[id] || storeProducts[id].basePrice || 0; 
                 
-                // لو مفعلين السعر القديم، والصنف ده ليه سعر قديم متسجل، استخدمه أوتوماتيك
                 if(useOldPrice && storeProducts[id].oldBatchPrice > 0) {
                     price = storeProducts[id].oldBatchPrice;
                 }
@@ -2550,7 +2549,19 @@
                 itemsTotal += (q * price); 
             });
             document.getElementById(`${prefix}-price`).value = itemsTotal;
+            
             let d = Number(document.getElementById(`${prefix}-delivery`).value) || 0; 
+            
+            // 🚚 سحر التوصيل المجاني: لو الإعداد متفعل والمبلغ اتكسر، صفر التوصيل!
+            if(storeSettings.freeDeliveryActive && storeSettings.freeDeliveryThreshold > 0) {
+                if(itemsTotal >= storeSettings.freeDeliveryThreshold) {
+                    d = 0; // خصم التوصيل
+                    document.getElementById(`${prefix}-delivery`).value = 0;
+                    // حط رسالة سريعة تفرح اللي بيعمل الأوردر
+                    showToast("🎉 تم تطبيق التوصيل المجاني لتخطي الحد المسموح!");
+                }
+            }
+
             let disc = Number(document.getElementById(`${prefix}-discount`).value) || 0;
             
             let final = itemsTotal + d - disc;
@@ -3080,20 +3091,125 @@
 
 
         
-        window.updateBatchStock = (bId, pId, val) => { 
+        window.updateBatchStock = async (bId, pId, val) => { 
             if(!storeBatches[bId].stock) storeBatches[bId].stock = {}; 
             storeBatches[bId].stock[pId] = parseInt(val) || 0; 
+            
+            // سحر الحفظ التلقائي في الخلفية لحماية المخزن
+            try {
+                await db.collection("inventory").doc("batches").set({
+                    [bId]: { stock: storeBatches[bId].stock }
+                }, { merge: true });
+            } catch(e) {
+                console.error("خطأ في حفظ المخزن");
+            }
             renderBatchesUI(); 
         };
         
-        window.deleteBatchUI = (bId) => { 
-            if(confirm("سيتم حذف الدفعة. تأكيد؟")) { 
-                delete storeBatches[bId]; 
-                renderBatchesUI(); 
+        window.deleteBatchUI = async (bId) => { 
+            if(confirm("هل أنت متأكد من حذف هذه الدفعة نهائياً من السيستم؟")) { 
+                try {
+                    // أمر قاطع لفايربيس بالحذف من الداتابيز
+                    await db.collection("inventory").doc("batches").update({
+                        [bId]: firebase.firestore.FieldValue.delete()
+                    });
+                    // حذفها من الذاكرة الحية والشاشة
+                    delete storeBatches[bId]; 
+                    renderBatchesUI(); 
+                    showToast("تم الحذف النهائي للدفعة 🗑️");
+                } catch(e) {
+                    alert("حدث خطأ أثناء الحذف من قاعدة البيانات!");
+                }
             } 
         };
         // ==========================================
         let currentEditingBatchId = null;
+        // =========================================================
+        // 🔪 نظام إتمام الذبح وترحيل البواقي من الدفعة للفريزر 🔪
+        // =========================================================
+        window.openSlaughterModal = (bId) => {
+            const b = storeBatches[bId];
+            if(!b) return;
+            document.getElementById('slaughter-batch-id').value = bId;
+            
+            let html = '';
+            Object.keys(storeProducts).forEach(pId => {
+                let qty = (b.stock && b.stock[pId]) ? b.stock[pId] : 0;
+                let booked = (b.booked && b.booked[pId]) ? b.booked[pId] : 0;
+                let remaining = qty - booked; // بنجيب الصافي اللي متباعش
+                
+                if(remaining > 0) {
+                    html += `
+                    <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 mb-2">
+                        <span class="font-black text-sm">${storeProducts[pId].name}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-400">الكمية المتبقية:</span>
+                            <input type="number" id="slaughter-qty-${pId}" value="${remaining}" max="${remaining}" min="0" class="w-16 border border-slate-200 rounded p-1 text-center font-bold text-rose-600 outline-none focus:ring-2 focus:ring-rose-200">
+                        </div>
+                    </div>`;
+                }
+            });
+            
+            if(html === '') html = '<div class="text-center text-slate-400 text-xs font-bold py-4">كل الكميات في هذه الدفعة محجوزة أو مباعة! لا يوجد شيء للترحيل.</div>';
+            document.getElementById('slaughter-items-container').innerHTML = html;
+            openModal('slaughter-modal');
+        };
+
+        window.confirmBatchSlaughter = async () => {
+            let bId = document.getElementById('slaughter-batch-id').value;
+            let b = storeBatches[bId];
+            if(!b) return;
+
+            let btn = document.getElementById('btn-confirm-slaughter');
+            let origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الترحيل...';
+            btn.disabled = true;
+
+            let fzUpdates = {};
+            let newStock = {...b.stock};
+            let totalMoved = 0;
+
+            Object.keys(storeProducts).forEach(pId => {
+                let input = document.getElementById(`slaughter-qty-${pId}`);
+                if(input) {
+                    let val = parseInt(input.value) || 0;
+                    if(val > 0) {
+                        fzUpdates[pId] = firebase.firestore.FieldValue.increment(val);
+                        storeFreezer[pId] = (storeFreezer[pId] || 0) + val; // تحديث الفريزر اللحظي
+                        newStock[pId] -= val; // خصم اللي اترحّل من الدفعة
+                        totalMoved += val;
+                    }
+                }
+            });
+
+            if(totalMoved > 0) {
+                try {
+                    let atomicBatch = db.batch();
+                    // تزويد الفريزر
+                    atomicBatch.set(db.collection('inventory').doc('freezer'), fzUpdates, { merge: true });
+                    // خصم من الدفعة وتقفيلها للعملاء
+                    atomicBatch.set(db.collection('inventory').doc('batches'), { 
+                        [bId]: { stock: newStock, isOpen: false, isVisible: false } 
+                    }, { merge: true });
+                    
+                    await atomicBatch.commit();
+                    
+                    b.stock = newStock;
+                    b.isOpen = false;
+                    b.isVisible = false;
+                    renderBatchesUI();
+                    closeModal('slaughter-modal');
+                    showToast("تم ترحيل المتبقي للفريزر بنجاح! ❄️");
+                } catch (e) {
+                    alert("حدث خطأ أثناء الترحيل لقاعدة البيانات!");
+                }
+            } else {
+                alert("لم تقم بتحديد كميات لترحيلها!");
+            }
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+        };
+
 // =====================================================================
 // 🧠 خوارزمية التوزيع الذكي بناءً على آخر دفعتين (Smart Distribution)
 // =====================================================================
