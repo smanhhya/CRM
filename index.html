@@ -961,6 +961,18 @@
                     </div>
                 </div>
 
+                <!-- سقف الأعداد (الفعلي وللجمهور) -->
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-700 block mb-1">عدد الدفعة الفعلي (إجمالي لك)</label>
+                        <input type="number" id="batch-actual-pairs" placeholder="مثال: 200" class="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white text-center">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-700 block mb-1">العدد المتاح للجمهور (سقف المتجر)</label>
+                        <input type="number" id="batch-public-pairs" placeholder="مثال: 190" class="w-full border border-slate-200 rounded-lg p-2.5 text-xs font-bold outline-none focus:ring-2 focus:ring-purple-200 bg-white text-center">
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[10px] font-black text-slate-700 block mb-1">عمر السمان الفعلي (مخفي للعميل)</label>
@@ -3009,6 +3021,46 @@
                 detailsDiv.classList.add('hidden'); icon.style.transform = 'rotate(0deg)'; 
             } 
         };
+        // 🔄 دالة جديدة لتحديث اسم الدفعة في المخزون وفي كل الطلبات الحية المرتبطة بها معاً
+        window.updateBatchNameAndOrders = async (bId, newName) => {
+            if (!newName || newName.trim() === '') {
+                alert("لا يمكن ترك اسم الدفعة فارغاً!");
+                renderBatchesUI();
+                return;
+            }
+            storeBatches[bId].name = newName;
+            
+            try {
+                let batchProcess = db.batch();
+                
+                // 1. تحديث اسم الدفعة في المخزون
+                batchProcess.update(db.collection('inventory').doc('batches'), {
+                    [`${bId}.name`]: newName
+                });
+                
+                // 2. البحث عن كل الطلبات المرتبطة بالدفعة دي وتحديث اسمها
+                let snap = await db.collection('orders').where('batchId', '==', bId).get();
+                snap.forEach(doc => {
+                    batchProcess.update(doc.ref, { batchName: newName });
+                });
+                
+                await batchProcess.commit();
+                
+                // 3. تحديث الذاكرة الحية للطلبات عشان متعملش ريفريش للصفحة
+                allOrdersRaw.forEach(o => {
+                    if (o.batchId === bId) {
+                        o.batchName = newName;
+                        if(globalOrdersMap[o.id]) globalOrdersMap[o.id].batchName = newName;
+                    }
+                });
+                
+                renderOrdersList(); 
+                alert("تم تحديث اسم الدفعة في إعدادات المتجر وفي كل الطلبات الحية المرتبطة بها بنجاح! 🚀");
+            } catch (e) {
+                console.error("خطأ في تحديث الاسم:", e);
+                alert("حدث خطأ أثناء تحديث الاسم في الطلبات!");
+            }
+        };
 
         // === 9. نظام الدفعات والحجوزات ===
         window.renderBatchesUI = () => {
@@ -3021,12 +3073,12 @@
             
             Object.keys(storeBatches).reverse().forEach(bId => { 
                 const b = storeBatches[bId]; 
-                // 👻 التعديل السحري: صائد الأشباح (Ghost Catcher)
-                // لو الدفعة اتخلقت بالغلط من غير اسم، السيستم هيمسحها أوتوماتيك من الداتا بيز ومن الذاكرة الحية
-                if (!b || !b.name || b.name === 'undefined' || b.name.trim() === '') {
-                    db.collection('inventory').doc('batches').update({ [bId]: firebase.firestore.FieldValue.delete() }).catch(()=>{});
-                    delete storeBatches[bId]; // 🧹 السر هنا: مسحها من الذاكرة الحية عشان تختفي من القوائم
-                    return; // تجاهل رسم الدفعة دي وكمل اللي بعدها
+                // 🛡️ التعديل: إيقاف الحذف العشوائي (صائد الأشباح المعدل)
+                // لو الدفعة ملهاش اسم، هنديها اسم افتراضي بدل ما نمسحها ونضيع الشغل
+                if (!b || typeof b !== 'object') return;
+                if (!b.name || b.name === 'undefined' || b.name.trim() === '') {
+                    b.name = "دفعة غير مسماة";
+                    db.collection('inventory').doc('batches').update({ [`${bId}.name`]: b.name }).catch(()=>{});
                 }
 
 
@@ -3056,7 +3108,7 @@
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pl-2">
                         <div class="flex-1 w-full relative">
                             <i class="fa-solid fa-pen absolute right-3 top-3.5 text-slate-300 text-xs"></i>
-                            <input type="text" value="${b.name}" onchange="storeBatches['${bId}'].name = this.value; db.collection('inventory').doc('batches').update({[\`${bId}.name\`]: this.value});" class="border-none bg-slate-50 hover:bg-slate-100 rounded-xl p-3 pr-8 text-sm font-black text-slate-800 w-full md:w-3/4 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm" placeholder="اسم الدورة (مثال: حجز 15-7)">
+                            <input type="text" value="${b.name}" onchange="updateBatchNameAndOrders('${bId}', this.value)" class="border-none bg-slate-50 hover:bg-slate-100 rounded-xl p-3 pr-8 text-sm font-black text-slate-800 w-full md:w-3/4 outline-none focus:ring-2 focus:ring-brand-primary/20 transition-all shadow-sm" placeholder="اسم الدورة (مثال: حجز 15-7)">
                         </div>
                         <div class="flex flex-col md:flex-row items-start md:items-center gap-4 w-full md:w-auto justify-between shrink-0">
                             <div class="flex items-center gap-4">
@@ -3376,6 +3428,10 @@ window.smartDistributeBatch = async (bId) => {
             document.getElementById('batch-del-start').value = b.deliveryStart || '';
             document.getElementById('batch-del-end').value = b.deliveryEnd || '';
 
+            // إرجاع الأعداد للواجهة
+            document.getElementById('batch-actual-pairs').value = b.actualPairs || '';
+            document.getElementById('batch-public-pairs').value = b.publicPairs || '';
+
             document.getElementById('batch-current-age').value = currentAge;
             document.getElementById('batch-slaughter-age').value = b.slaughterAge || 40;
             document.getElementById('batch-urgent-note').value = b.urgentNote || '';
@@ -3402,6 +3458,10 @@ window.smartDistributeBatch = async (bId) => {
             let delStart = document.getElementById('batch-del-start').value;
             let delEnd = document.getElementById('batch-del-end').value;
 
+            // سحب أعداد الدفعة الفعلي وللجمهور
+            let actualPairs = parseInt(document.getElementById('batch-actual-pairs').value) || 0;
+            let publicPairs = parseInt(document.getElementById('batch-public-pairs').value) || 0;
+
             // 🧠 السحر كله هنا: السيستم بيحسب "تاريخ الفقس" ويخزنه
             let hatchDate = storeBatches[bId].hatchDate;
             if (currentAge > 0) {
@@ -3416,6 +3476,8 @@ window.smartDistributeBatch = async (bId) => {
             storeBatches[bId].urgentNote = urgentNote;
             storeBatches[bId].deliveryStart = delStart;
             storeBatches[bId].deliveryEnd = delEnd;
+            storeBatches[bId].actualPairs = actualPairs;
+            storeBatches[bId].publicPairs = publicPairs;
 
             try {
                 // حفظ البيانات في قاعدة البيانات (بما فيها تواريخ التسليم للمتجر)
@@ -3426,6 +3488,8 @@ window.smartDistributeBatch = async (bId) => {
                         urgentNote: urgentNote,
                         deliveryStart: delStart,
                         deliveryEnd: delEnd,
+                        actualPairs: actualPairs,
+                        publicPairs: publicPairs,
                         // بنمسح أي بيانات قديمة ملهاش لازمة بس سيبنا تواريخ التسليم!
                         customerMsg: firebase.firestore.FieldValue.delete(),
                         quailAge: firebase.firestore.FieldValue.delete(),
