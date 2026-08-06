@@ -1045,6 +1045,23 @@
             </div>
         </div>
     </div>
+    <!-- 🔗 شاشة ربط الطلب بأرشيف 🔗 -->
+    <div id="link-archive-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-solid fa-link text-indigo-500 mr-2"></i> ربط الطلب بدفعة مؤرشفة</h3>
+                <button onclick="closeModal('link-archive-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 bg-slate-50/50">
+                <p class="text-xs font-bold text-slate-500 mb-4 leading-relaxed">اختر الدفعة المؤرشفة التي تريد ترحيل هذا الطلب إليها (سيتم إضافة أرباح وأصناف هذا الطلب إلى التقرير الختامي للدفعة وسيختفي من الشاشة الحية):</p>
+                <select id="link-archive-select" class="w-full border border-slate-200 bg-white rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-indigo-200 transition-all text-sm mb-4 text-slate-700"></select>
+                <input type="hidden" id="link-archive-order-id">
+            </div>
+            <div class="p-4 bg-white border-t border-slate-100">
+                <button onclick="confirmLinkToArchive()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl shadow-md transition-all active:scale-95 flex justify-center items-center gap-2"><i class="fa-solid fa-check-double text-amber-400"></i> تأكيد وترحيل</button>
+            </div>
+        </div>
+    </div>
 
     <script>
 
@@ -2046,7 +2063,8 @@
                     <div class="flex flex-col sm:flex-row justify-between items-center pt-2 border-t border-slate-100 gap-3">
                         <div class="flex gap-1.5 w-full sm:w-auto">
                             ${o.status === 'completed' ? 
-                            `<button onclick="sendFollowUpWhatsApp('${o.customerPhone}', '${o.customerName}')" class="flex-1 sm:flex-none text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-heart-circle-check"></i> متابعة</button>` 
+                            `<button onclick="sendFollowUpWhatsApp('${o.customerPhone}', '${o.customerName}')" class="flex-1 sm:flex-none text-[10px] bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-solid fa-heart-circle-check"></i> متابعة</button>
+                            <button onclick="openLinkArchiveModal('${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95" title="ترحيل وربط هذا الطلب بتقرير دفعة مؤرشفة سابقة"><i class="fa-solid fa-link text-amber-400"></i> أرشفة للدفعة</button>` 
                             : 
                             `<button onclick="sendMessageToCustomer('${o.customerPhone}', '${o.id}')" class="flex-1 sm:flex-none text-[10px] bg-[#25D366] hover:bg-[#1ebd57] text-white px-3 py-1.5 rounded-lg font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-95"><i class="fa-brands fa-whatsapp"></i> واتساب</button>`
                             }
@@ -4578,6 +4596,8 @@ window.deleteProductUI = async (id) => {
                 
                 // 1. حفظ في الأرشيف
                 let newArchiveRef = db.collection('archived_batches').doc();
+                archiveData.id = newArchiveRef.id; // حفظ الـ ID
+                archivedBatchesData.unshift(archiveData); // التحديث الفوري في الذاكرة الحية لتظهر في قوائم الربط فوراً
                 batchProcess.set(newArchiveRef, archiveData);
                 
                 // 2. مسح من الدفعات الحية (الطريقة الأصح والأكثر أماناً لفايربيس)
@@ -4879,6 +4899,44 @@ window.deleteProductUI = async (id) => {
                     updateData.completedTimeDisplay = new Date().toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                     updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
                     
+                    // ✨ السحر الجديد: الأرشفة التلقائية لو الدفعة بتاعته كانت متأرشفة مسبقاً
+                    let targetArchive = archivedBatchesData.find(a => a.originalBatchId === o.batchId);
+                    if (targetArchive) {
+                        updateData.isArchived = true;
+                        o.isArchived = true;
+                        if(globalOrdersMap[id]) globalOrdersMap[id].isArchived = true;
+                        
+                        let oRev = Number(o.total) || 0;
+                        let oDel = Number(o.deliveryFee) || 0;
+                        let oDisc = Number(o.discount) || 0;
+                        
+                        let archiveUpdate = {
+                            totalRevenue: firebase.firestore.FieldValue.increment(oRev),
+                            totalDelivery: firebase.firestore.FieldValue.increment(oDel),
+                            totalDiscount: firebase.firestore.FieldValue.increment(oDisc),
+                            ordersCount: firebase.firestore.FieldValue.increment(1)
+                        };
+                        if (o.zone) archiveUpdate[`zonesSummary.${o.zone}`] = firebase.firestore.FieldValue.increment(1);
+                        if (o.items && Array.isArray(o.items)) {
+                            o.items.forEach(i => {
+                                archiveUpdate[`itemsSummary.${i.name}`] = firebase.firestore.FieldValue.increment(i.quantity);
+                            });
+                        }
+                        
+                        atomicBatch.update(db.collection('archived_batches').doc(targetArchive.id), archiveUpdate);
+                        
+                        // تحديث الذاكرة فوراً عشان تظهر في التقرير
+                        targetArchive.totalRevenue += oRev;
+                        targetArchive.totalDelivery += oDel;
+                        targetArchive.totalDiscount += oDisc;
+                        targetArchive.ordersCount += 1;
+                        if(o.zone) targetArchive.zonesSummary[o.zone] = (targetArchive.zonesSummary[o.zone] || 0) + 1;
+                        if(o.items) o.items.forEach(i => { targetArchive.itemsSummary[i.name] = (targetArchive.itemsSummary[i.name] || 0) + i.quantity; });
+                        
+                        setTimeout(() => alert(`✨ تم اكتشاف أن هذا الطلب ينتمي لدفعة مغلقة ومؤرشفة (${targetArchive.batchName}).
+تم تحويله للأرشيف وتحديث أرباح التقرير الختامي للدفعة تلقائياً!`), 800);
+                    }
+
                     // 🎁 تحديث محفظة نقاط العميل بناءً على قيمة المنتجات فقط (Subtotal) 🎁
                     let ptsPer100 = storeSettings.pointsPer100 || 5;
                     let orderSubtotal = Number(o.subtotal) || 0;
@@ -5934,6 +5992,106 @@ window.deleteProductUI = async (id) => {
             
             let debtTotalEl = document.getElementById('total-market-debt');
             if (debtTotalEl) debtTotalEl.innerText = totalMarketDebt.toLocaleString();
+        };
+        // ========================================================
+        // 🔗 دوال الربط اليدوي للطلبات المكتملة بالأرشيف 🔗
+        // ========================================================
+        window.openLinkArchiveModal = (orderId) => {
+            if (archivedBatchesData.length === 0) {
+                alert("لا توجد دفعات مؤرشفة لربط الطلب بها!");
+                return;
+            }
+            document.getElementById('link-archive-order-id').value = orderId;
+            let sel = document.getElementById('link-archive-select');
+            sel.innerHTML = '<option value="">-- اختر الدفعة المؤرشفة --</option>';
+            archivedBatchesData.forEach(a => {
+                sel.innerHTML += `<option value="${a.id}">${a.batchName}</option>`;
+            });
+            openModal('link-archive-modal');
+        };
+
+        window.confirmLinkToArchive = async () => {
+            let orderId = document.getElementById('link-archive-order-id').value;
+            let archiveId = document.getElementById('link-archive-select').value;
+            
+            if (!orderId || !archiveId) {
+                alert("رجاءً اختر الدفعة المؤرشفة أولاً!");
+                return;
+            }
+
+            let btn = document.querySelector('#link-archive-modal button');
+            let origHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الربط والترحيل...';
+            btn.disabled = true;
+
+            try {
+                let order = allOrdersRaw.find(o => o.id === orderId);
+                let archiveBatchData = archivedBatchesData.find(a => a.id === archiveId);
+
+                let batchProcess = db.batch();
+
+                // 1. تحديث الأوردر نفسه (نقل ملكيته للدفعة الجديدة وإخفاؤه)
+                let orderRef = db.collection('orders').doc(orderId);
+                batchProcess.update(orderRef, {
+                    isArchived: true,
+                    batchId: archiveBatchData.originalBatchId || archiveId,
+                    batchName: archiveBatchData.batchName
+                });
+
+                // 2. تحديث التقرير الختامي للدفعة المؤرشفة المستهدفة
+                let archiveRef = db.collection('archived_batches').doc(archiveId);
+                let oRev = Number(order.total) || 0;
+                let oDel = Number(order.deliveryFee) || 0;
+                let oDisc = Number(order.discount) || 0;
+                
+                let updatePayload = {
+                    totalRevenue: firebase.firestore.FieldValue.increment(oRev),
+                    totalDelivery: firebase.firestore.FieldValue.increment(oDel),
+                    totalDiscount: firebase.firestore.FieldValue.increment(oDisc),
+                    ordersCount: firebase.firestore.FieldValue.increment(1)
+                };
+                if (order.zone) updatePayload[`zonesSummary.${order.zone}`] = firebase.firestore.FieldValue.increment(1);
+                if (order.items && Array.isArray(order.items)) {
+                    order.items.forEach(i => {
+                        updatePayload[`itemsSummary.${i.name}`] = firebase.firestore.FieldValue.increment(i.quantity);
+                    });
+                }
+                batchProcess.update(archiveRef, updatePayload);
+                
+                await batchProcess.commit();
+
+                // 3. التحديث في الذاكرة الحية
+                if (order) {
+                    order.isArchived = true;
+                    order.batchId = archiveBatchData.originalBatchId || archiveId;
+                    order.batchName = archiveBatchData.batchName;
+                    if(globalOrdersMap[order.id]) {
+                        globalOrdersMap[order.id].isArchived = true;
+                        globalOrdersMap[order.id].batchId = order.batchId;
+                        globalOrdersMap[order.id].batchName = order.batchName;
+                    }
+                }
+                
+                // تحديث بيانات الأرشيف المحلي لتنعكس في الشاشة فوراً
+                archiveBatchData.totalRevenue += oRev;
+                archiveBatchData.totalDelivery += oDel;
+                archiveBatchData.totalDiscount += oDisc;
+                archiveBatchData.ordersCount += 1;
+                if(order.zone) archiveBatchData.zonesSummary[order.zone] = (archiveBatchData.zonesSummary[order.zone] || 0) + 1;
+                if(order.items) order.items.forEach(i => { archiveBatchData.itemsSummary[i.name] = (archiveBatchData.itemsSummary[i.name] || 0) + i.quantity; });
+
+                closeModal('link-archive-modal');
+                renderOrdersList();
+                renderArchiveUI();
+                alert("تمت العملية بنجاح! تم نقل الطلب وربطه بتقرير الدفعة المؤرشفة، واختفى من الشاشة الحية. 🔗✅");
+
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ أثناء الربط!");
+            }
+
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
         };
 
     </script>
