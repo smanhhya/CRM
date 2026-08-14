@@ -6158,13 +6158,62 @@ window.deleteProductUI = async (id) => {
             btn.disabled = false;
         };
         // ==========================================
-        // 🚀 محرك ترحيل الداتا القديمة للشيت (يُستخدم مرة واحدة) 🚀
+        // ==========================================
+        // 🚀 محرك ترحيل الداتا القديمة والأرشيف للشيت (يُستخدم مرة واحدة) 🚀
         // ==========================================
         window.migrateOldOrdersToSheet = async () => {
-            // هنجيب كل الأوردرات ما عدا اللي في السلة
-            let ordersToSync = allOrdersRaw.filter(o => o.status !== 'trash'); 
+            const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwp7qhmVx2Uz1ihRdvJ7bDEVsZfejG51116ylcWyVSiDm2OOTOWR_9A4UNDeHKuYgeQQw/exec";
             
-            if(!confirm(`هننقل ${ordersToSync.length} أوردر قديم للشيت المجاني.\nالعملية دي هتاخد شوية وقت صغيرين (ماتقفلش الصفحة لحد ما تظهرلك رسالة النجاح).\n\nنبدأ؟`)) return;
+            // 1. تجميع كل أرقام التليفونات من الأرشيف والأوردرات بدون تكرار
+            let allPhones = new Set();
+            customersData.forEach(c => { if(c.phone) allPhones.add(c.phone); });
+            allOrdersRaw.forEach(o => { if(o.customerPhone && o.status !== 'trash') allPhones.add(o.customerPhone); });
+            
+            let syncList = [];
+            
+            allPhones.forEach(phone => {
+                // تدوير على أحدث أوردر للرقم ده
+                let latestOrder = allOrdersRaw.find(o => o.customerPhone === phone && o.status !== 'trash');
+                let customerInfo = customersData.find(c => c.phone === phone);
+                
+                let name = (latestOrder && latestOrder.customerName) ? latestOrder.customerName : (customerInfo && customerInfo.name ? customerInfo.name : "بدون اسم");
+                let zone = (latestOrder && latestOrder.zone) ? latestOrder.zone : (customerInfo && customerInfo.zone ? customerInfo.zone : "---");
+                
+                if (latestOrder) {
+                    let statusAr = "جديد 🆕";
+                    if (latestOrder.status === "processing") statusAr = "⏳ قيد التجهيز";
+                    else if (latestOrder.status === "completed") statusAr = "✅ مكتمل";
+                    else if (latestOrder.status === "canceled") statusAr = "❌ ملغي";
+                    else if (latestOrder.status === "deferred") statusAr = "📅 مؤجل";
+                    else if (latestOrder.status === "dispatched") statusAr = "🛵 في الطريق";
+                    else if (latestOrder.status === "no_answer") statusAr = "📵 لم يرد";
+
+                    let itemsText = "";
+                    if (latestOrder.items && Array.isArray(latestOrder.items)) {
+                        itemsText = latestOrder.items.map(i => "▪️ " + i.quantity + "x " + i.name).join('\n');
+                    }
+
+                    let notesText = "";
+                    if (latestOrder.adminNote) notesText += "🔒 إداري: " + latestOrder.adminNote + "\n";
+                    if (latestOrder.driverNote) notesText += "🛵 مندوب: " + latestOrder.driverNote;
+
+                    syncList.push({
+                        action: "update", phone: phone, name: name, zone: zone, status: latestOrder.status,
+                        statusAr: statusAr, total: latestOrder.total || 0, batch: latestOrder.batchName || "أوردر عادي",
+                        details: itemsText || "لا توجد تفاصيل", notes: notesText.trim()
+                    });
+                } else {
+                    // العميل القديم أو اللي جي من الأرشيف ومندوش أوردر حالي
+                    syncList.push({
+                        action: "update", phone: phone, name: name, zone: zone, status: "archived",
+                        statusAr: "🗄️ مسجل (أرشيف)", total: 0, batch: "---",
+                        details: "هذا العميل مسجل في الأرشيف ولا يوجد له طلبات حية حالياً.",
+                        notes: (customerInfo && customerInfo.notebook) ? "كشكول العميل: " + customerInfo.notebook : ""
+                    });
+                }
+            });
+            
+            if(!confirm(`عظمة! لقينا [ ${syncList.length} ] عميل متسجلين في السيستم (اللي ليه أوردر واللي في الأرشيف).\nهننقلهم كلهم للشيت المجاني عشان الموبايل يتعرف على أي حد فيهم لما يرن.\n\nنبدأ النقل؟`)) return;
 
             let btn = document.getElementById('btn-migrate');
             if(btn) { 
@@ -6172,20 +6221,25 @@ window.deleteProductUI = async (id) => {
                 btn.disabled = true; 
             }
 
-            // هنبعتهم للشيت واحد ورا التاني بفاصل زمني بسيط عشان جوجل ميهنجش
-            for (let i = 0; i < ordersToSync.length; i++) {
-                window.syncOrderToGoogleSheet(ordersToSync[i], 'update');
-                // انتظار 400 جزء من الثانية بين كل أوردر والتاني
-                await new Promise(r => setTimeout(r, 400)); 
+            // إرسال البيانات للشيت بفاصل زمني عشان جوجل ميهنجش من السرعة
+            for (let i = 0; i < syncList.length; i++) {
+                fetch(WEB_APP_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(syncList[i])
+                }).catch(e => {}); 
+                
+                await new Promise(r => setTimeout(r, 350)); 
             }
 
-            alert('تم نقل كل الأوردرات القديمة للشيت بنجاح! 🎉\nدلوقتي أي رقم قديم هيرن هيظهر بياناته فوراً على الموبايل.');
+            alert('تم نسخ كل العملاء والأوردرات للشيت بنجاح! 🎉\nدلوقتي الموبايل هيتعرف على أي عميل سواء جديد أو من الأرشيف.');
             if(btn) { 
                 btn.innerHTML = '<i class="fa-solid fa-check-double"></i> تم النقل بنجاح'; 
                 btn.classList.replace('bg-blue-600', 'bg-emerald-600');
                 btn.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
             }
         };
+
 
     </script>
 
