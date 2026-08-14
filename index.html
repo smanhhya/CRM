@@ -421,7 +421,15 @@
                         <div><label class="text-xs font-bold text-slate-500 block mb-2">رقم الواتساب للاستقبال</label><input type="text" id="st-phone" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-slate-200 bg-slate-50 focus:bg-white transition-colors text-left" dir="ltr"></div>
                         <div><label class="text-xs font-bold text-slate-500 block mb-2">الحد الأدنى لقيمة الطلب (ج.م)</label><input type="number" id="st-min-order" class="w-full border border-slate-200 rounded-xl p-3 font-bold outline-none focus:ring-2 focus:ring-slate-200 bg-slate-50 focus:bg-white transition-colors text-center"></div>
                     </div>
-                    
+                           <!-- 🚀 زرار نقل الداتا القديمة للشيت 🚀 -->
+                    <div class="mt-6 p-5 bg-blue-50 border border-blue-200 rounded-2xl shadow-sm">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-black text-blue-800 text-sm"><i class="fa-solid fa-database text-blue-500 mr-2"></i> ترحيل الأرشيف القديم للشيت</h4>
+                            <button onclick="migrateOldOrdersToSheet()" id="btn-migrate" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"><i class="fa-solid fa-truck-fast"></i> نقل الداتا الآن</button>
+                        </div>
+                        <p class="text-[10px] font-bold text-blue-600">اضغط هنا مرة واحدة فقط لنسخ كل الطلبات السابقة إلى شيت جوجل لتظهر على الموبايلات فوراً.</p>
+                    </div>
+             
                     <!-- 🎁 نظام نقاط الولاء والمحفظة النقدية 🎁 -->
                     <div class="mt-6 p-5 bg-amber-50/50 border border-amber-200 rounded-2xl shadow-sm">
                         <div class="flex justify-between items-center mb-4 pb-3 border-b border-amber-100">
@@ -6148,6 +6156,35 @@ window.deleteProductUI = async (id) => {
 
             btn.innerHTML = origHtml;
             btn.disabled = false;
+        };
+        // ==========================================
+        // 🚀 محرك ترحيل الداتا القديمة للشيت (يُستخدم مرة واحدة) 🚀
+        // ==========================================
+        window.migrateOldOrdersToSheet = async () => {
+            // هنجيب كل الأوردرات ما عدا اللي في السلة
+            let ordersToSync = allOrdersRaw.filter(o => o.status !== 'trash'); 
+            
+            if(!confirm(`هننقل ${ordersToSync.length} أوردر قديم للشيت المجاني.\nالعملية دي هتاخد شوية وقت صغيرين (ماتقفلش الصفحة لحد ما تظهرلك رسالة النجاح).\n\nنبدأ؟`)) return;
+
+            let btn = document.getElementById('btn-migrate');
+            if(btn) { 
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري النقل...'; 
+                btn.disabled = true; 
+            }
+
+            // هنبعتهم للشيت واحد ورا التاني بفاصل زمني بسيط عشان جوجل ميهنجش
+            for (let i = 0; i < ordersToSync.length; i++) {
+                window.syncOrderToGoogleSheet(ordersToSync[i], 'update');
+                // انتظار 400 جزء من الثانية بين كل أوردر والتاني
+                await new Promise(r => setTimeout(r, 400)); 
+            }
+
+            alert('تم نقل كل الأوردرات القديمة للشيت بنجاح! 🎉\nدلوقتي أي رقم قديم هيرن هيظهر بياناته فوراً على الموبايل.');
+            if(btn) { 
+                btn.innerHTML = '<i class="fa-solid fa-check-double"></i> تم النقل بنجاح'; 
+                btn.classList.replace('bg-blue-600', 'bg-emerald-600');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
+            }
         };
 
     </script>
