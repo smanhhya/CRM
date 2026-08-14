@@ -2773,6 +2773,7 @@
 
                 // تنفيذ الطلقة كلها في نفس اللحظة
                 await atomicBatch.commit();
+                window.syncOrderToGoogleSheet(orderData, "update");
 
 
                 if (batchName) autoHashtags.push('#' + batchName.replace(/\s+/g, '_'));
@@ -4865,6 +4866,8 @@ window.deleteProductUI = async (id) => {
 
             // --- التحديث الفوري للواجهة ---
             o.status = s;
+            window.syncOrderToGoogleSheet(o, s === 'trash' ? 'delete' : 'update');
+        
             o.manuallyUpdated = true; // علامة التحديث اليدوي
             if(globalOrdersMap[id]) {
                 globalOrdersMap[id].status = s;
@@ -5170,8 +5173,15 @@ window.deleteProductUI = async (id) => {
                     }
                 }
                 
-                await atomicBatch.commit();
+                 await atomicBatch.commit();
+                
+                editingOrderData.total = newTotal; 
+                editingOrderData.items = newItems; 
+                editingOrderData.batchName = newBatchName;
+                window.syncOrderToGoogleSheet(editingOrderData, "update");
+                
                 closeModal('edit-order-modal');
+
             } catch(e) { alert("حدث خطأ أثناء حفظ التعديلات!"); console.log(e); }
 
             btn.innerHTML = origHtml; btn.disabled = false;
@@ -5235,6 +5245,52 @@ window.deleteProductUI = async (id) => {
                 alert("حدث خطأ أثناء الاستعادة! تأكد من قواعد حماية فايربيس."); 
             }
             btn.innerHTML = origHtml; btn.disabled = false;
+        };
+        // ==========================================
+        // 🚀 محرك الربط السري بشيت جوجل (الخزان المجاني) 🚀
+        // ==========================================
+        window.syncOrderToGoogleSheet = function(orderObj, action) {
+            if(!orderObj || !orderObj.customerPhone) return;
+            
+            const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwp7qhmVx2Uz1ihRdvJ7bDEVsZfejG51116ylcWyVSiDm2OOTOWR_9A4UNDeHKuYgeQQw/exec";
+            
+            let statusAr = "جديد 🆕";
+            if (orderObj.status === "processing") statusAr = "⏳ قيد التجهيز";
+            else if (orderObj.status === "completed") statusAr = "✅ مكتمل";
+            else if (orderObj.status === "canceled") statusAr = "❌ ملغي";
+            else if (orderObj.status === "deferred") statusAr = "📅 مؤجل";
+            else if (orderObj.status === "dispatched") statusAr = "🛵 في الطريق";
+            else if (orderObj.status === "no_answer") statusAr = "📵 لم يرد";
+            else if (orderObj.status === "trash") statusAr = "🗑️ محذوف";
+
+            let itemsText = "";
+            if (orderObj.items && Array.isArray(orderObj.items)) {
+                itemsText = orderObj.items.map(i => "▪️ " + i.quantity + "x " + i.name).join('\n');
+            }
+
+            let notesText = "";
+            if (orderObj.adminNote) notesText += "🔒 إداري: " + orderObj.adminNote + "\n";
+            if (orderObj.driverNote) notesText += "🛵 مندوب: " + orderObj.driverNote;
+
+            let payload = {
+                action: action || "update",
+                phone: orderObj.customerPhone,
+                name: orderObj.customerName || "بدون اسم",
+                zone: orderObj.zone || "---",
+                status: orderObj.status,
+                statusAr: statusAr,
+                total: orderObj.total || 0,
+                batch: orderObj.batchName || "أوردر عادي",
+                details: itemsText || "لا توجد تفاصيل",
+                notes: notesText.trim()
+            };
+
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).catch(e => console.log("خطأ في المزامنة مع الشيت"));
         };
 
         // ==========================================
