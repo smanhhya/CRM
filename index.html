@@ -286,6 +286,8 @@
                             <span id="bulk-count" class="bg-brand-primary px-2 py-0.5 rounded text-[10px]">0</span> محدد
                         </div>
                         <div class="flex gap-1.5">
+                            <button onclick="sendToSelectedOrders()" class="bg-[#25D366] hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm flex items-center gap-1"><i class="fa-brands fa-whatsapp"></i> للمحددين</button>
+                            <div class="w-px h-6 bg-slate-600 mx-0.5 hidden sm:block"></div>
                             <button onclick="bulkChangeStatus('processing')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm">لتجهيز</button>
                             <button onclick="bulkChangeStatus('no_answer')" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm">لم يرد</button>
                             <button onclick="bulkChangeStatus('completed')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm">مكتمل</button>
@@ -293,6 +295,7 @@
                             <button onclick="bulkChangeStatus('trash')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black transition-colors shadow-sm"><i class="fa-solid fa-trash"></i> للسلة</button>
                         </div>
                     </div>
+
                 </div>
 
                 <div id="orders-list-vertical" class="flex-1 space-y-3 pr-1 pb-4"></div>
@@ -6241,35 +6244,72 @@ window.deleteProductUI = async (id) => {
                 btn.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
             }
         };
-window.sendBulkMessageToBatch = async (batchId) => {
-    // 1. طلب نص الرسالة من أخوك
-    let message = prompt("اكتب الرسالة اللي عايز تبعتها لكل عملاء الدفعة دي:");
-    if(!message || message.trim() === '') return;
+        window.sendBulkMessageToBatch = async (batchId) => {
+            // 1. طلب نص الرسالة 
+            let message = prompt("اكتب الرسالة اللي عايز تبعتها لكل عملاء الدفعة دي:");
+            if(!message || message.trim() === '') return;
 
-    // 2. تجميع أرقام العملاء اللي في الدفعة دي من الطلبات الحية
-    let batchOrders = allOrdersRaw.filter(o => o.batchId === batchId && o.status !== 'canceled' && o.status !== 'trash');
-    
-    // تصفية الأرقام عشان ميبقاش فيها فراغات أو متكررة
-    let numbers = [...new Set(batchOrders.map(o => o.customerPhone).filter(p => p))];
+            // 2. تجميع أرقام العملاء اللي في الدفعة دي من الطلبات الحية
+            let batchOrders = allOrdersRaw.filter(o => o.batchId === batchId && o.status !== 'canceled' && o.status !== 'trash');
+            
+            // تصفية الأرقام عشان ميبقاش فيها فراغات أو متكررة
+            let numbers = [...new Set(batchOrders.map(o => o.customerPhone).filter(p => p))];
 
-    if(numbers.length === 0) return alert("مفيش أرقام مسجلة للدفعة دي!");
+            if(numbers.length === 0) return alert("مفيش أرقام مسجلة للدفعة دي!");
 
-    alert("✅ جاري إرسال الرسائل في الخلفية.. تقدر تكمل شغلك في السيستم عادي جداً!");
+            alert("✅ جاري إرسال الرسائل في الخلفية.. تقدر تكمل شغلك في السيستم عادي جداً!");
 
-    // 3. إرسال الأرقام والرسالة للسيرفر (هنحط الرابط بتاع Replit هنا)
-    let serverUrl = "https://b518c467-6d03-473f-8a97-9d64685ec8bb-00-lwxoojw2bu0b.worf.replit.dev/send-bulk";
+            // 3. إرسال الأرقام والرسالة للسيرفر 
+            let serverUrl = "https://b518c467-6d03-473f-8a97-9d64685ec8bb-00-lwxoojw2bu0b.worf.replit.dev/send-bulk";
 
-    try {
-        await fetch(serverUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ numbers: numbers, message: message })
-        });
-    } catch(e) {
-        console.log("خطأ في الاتصال بسيرفر الواتساب", e);
-    }
-};
+            try {
+                await fetch(serverUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ numbers: numbers, message: message })
+                });
+            } catch(e) {
+                console.log("خطأ في الاتصال بسيرفر الواتساب", e);
+            }
+        };
 
+
+        window.sendToSelectedOrders = async () => {
+            // 1. نجيب الـ IDs بتاعة الطلبات اللي متعلم عليها صح
+            let checkedIds = Array.from(document.querySelectorAll('.bulk-order-cb:checked')).map(cb => cb.value);
+            if(checkedIds.length === 0) return;
+
+            // 2. نستخرج الأرقام من الطلبات المحددة ونشيل الأرقام المتكررة
+            let selectedOrders = allOrdersRaw.filter(o => checkedIds.includes(o.id));
+            let numbers = [...new Set(selectedOrders.map(o => o.customerPhone).filter(p => p))];
+
+            if(numbers.length === 0) return alert("لا يوجد أرقام هواتف مسجلة للطلبات المحددة!");
+
+            // 3. نطلب نص الرسالة
+            let message = prompt(`اكتب الرسالة اللي عايز تبعتها لـ (${numbers.length}) عملاء:`);
+            if(!message || message.trim() === '') return;
+
+            alert("✅ جاري الإرسال في الخلفية.. تقدر تكمل شغل عادي!");
+
+            // 4. إرسال الأوامر لمحرك الواتساب
+            let serverUrl = "https://b518c467-6d03-473f-8a97-9d64685ec8bb-00-lwxoojw2bu0b.worf.replit.dev/send-bulk";
+
+            try {
+                await fetch(serverUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ numbers: numbers, message: message })
+                });
+                
+                // إخفاء الشريط وإزالة التحديد بعد الإرسال عشان الشاشة تنضف
+                document.querySelectorAll('.bulk-order-cb').forEach(cb => cb.checked = false);
+                document.getElementById('bulk-actions-bar').classList.add('hidden');
+                
+            } catch(e) {
+                console.log("خطأ في الاتصال بسيرفر الواتساب", e);
+            }
+        };
+        
 
     </script>
 
