@@ -3151,7 +3151,9 @@
                                 <button onclick="archiveBatch('${bId}')" class="bg-amber-50 text-amber-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-amber-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-amber-100"><i class="fa-solid fa-box-archive"></i> إغلاق وترحيل</button>
                                 <button onclick="viewBatchBookings('${bId}')" class="bg-blue-50 text-blue-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-blue-100"><i class="fa-solid fa-list-check"></i> الكشف</button>
                                 <button onclick="openBatchSettings('${bId}')" class="bg-purple-50 text-purple-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-purple-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-purple-100"><i class="fa-solid fa-bullhorn"></i> إعدادات</button>
+                                <button onclick="sendBulkMessageToBatch('${bId}')" class="bg-[#25D366]/10 text-[#25D366] px-3 py-2 rounded-xl text-xs font-bold hover:bg-[#25D366] hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-[#25D366]/20" title="إرسال رسالة واتساب جماعية لكل عملاء الدفعة"><i class="fa-brands fa-whatsapp"></i> إرسال للكل</button>
                                 <button onclick="deleteBatchUI('${bId}')" class="bg-red-50 text-red-500 w-8 h-8 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center active:scale-95 border border-red-100"><i class="fa-solid fa-trash"></i></button>
+                           
                             </div>
                         </div>
 
@@ -6239,6 +6241,34 @@ window.deleteProductUI = async (id) => {
                 btn.classList.replace('hover:bg-blue-700', 'hover:bg-emerald-700');
             }
         };
+window.sendBulkMessageToBatch = async (batchId) => {
+    // 1. طلب نص الرسالة من أخوك
+    let message = prompt("اكتب الرسالة اللي عايز تبعتها لكل عملاء الدفعة دي:");
+    if(!message || message.trim() === '') return;
+
+    // 2. تجميع أرقام العملاء اللي في الدفعة دي من الطلبات الحية
+    let batchOrders = allOrdersRaw.filter(o => o.batchId === batchId && o.status !== 'canceled' && o.status !== 'trash');
+    
+    // تصفية الأرقام عشان ميبقاش فيها فراغات أو متكررة
+    let numbers = [...new Set(batchOrders.map(o => o.customerPhone).filter(p => p))];
+
+    if(numbers.length === 0) return alert("مفيش أرقام مسجلة للدفعة دي!");
+
+    alert("✅ جاري إرسال الرسائل في الخلفية.. تقدر تكمل شغلك في السيستم عادي جداً!");
+
+    // 3. إرسال الأرقام والرسالة للسيرفر (هنحط الرابط بتاع Replit هنا)
+    let serverUrl = "https://b518c467-6d03-473f-8a97-9d64685ec8bb-00-lwxoojw2bu0b.worf.replit.dev/send-bulk";
+
+    try {
+        await fetch(serverUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ numbers: numbers, message: message })
+        });
+    } catch(e) {
+        console.log("خطأ في الاتصال بسيرفر الواتساب", e);
+    }
+};
 
 
     </script>
