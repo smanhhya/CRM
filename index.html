@@ -6275,40 +6275,48 @@ window.deleteProductUI = async (id) => {
 
 
         window.sendToSelectedOrders = async () => {
-            // 1. نجيب الـ IDs بتاعة الطلبات اللي متعلم عليها صح
             let checkedIds = Array.from(document.querySelectorAll('.bulk-order-cb:checked')).map(cb => cb.value);
             if(checkedIds.length === 0) return;
 
-            // 2. نستخرج الأرقام من الطلبات المحددة ونشيل الأرقام المتكررة
             let selectedOrders = allOrdersRaw.filter(o => checkedIds.includes(o.id));
-            let numbers = [...new Set(selectedOrders.map(o => o.customerPhone).filter(p => p))];
+            
+            // تجميع الأرقام وتظبيط كود الدولة (إضافة 2 لمصر أوتوماتيك)
+            let numbers = [...new Set(selectedOrders.map(o => {
+                let phone = (o.customerPhone || '').toString().trim();
+                return phone.startsWith('0') ? '2' + phone : phone;
+            }).filter(p => p.length > 10))]; 
 
             if(numbers.length === 0) return alert("لا يوجد أرقام هواتف مسجلة للطلبات المحددة!");
 
-            // 3. نطلب نص الرسالة
             let message = prompt(`اكتب الرسالة اللي عايز تبعتها لـ (${numbers.length}) عملاء:`);
             if(!message || message.trim() === '') return;
 
             alert("✅ جاري الإرسال في الخلفية.. تقدر تكمل شغل عادي!");
 
-            // 4. إرسال الأوامر لمحرك الواتساب
+            // الرابط بتاع سيرفرك (لو اتغير من Replit، غيره هنا)
             let serverUrl = "https://b518c467-6d03-473f-8a97-9d64685ec8bb-00-lwxoojw2bu0b.worf.replit.dev/send-bulk";
 
             try {
-                await fetch(serverUrl, {
+                let response = await fetch(serverUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ numbers: numbers, message: message })
                 });
                 
-                // إخفاء الشريط وإزالة التحديد بعد الإرسال عشان الشاشة تنضف
-                document.querySelectorAll('.bulk-order-cb').forEach(cb => cb.checked = false);
-                document.getElementById('bulk-actions-bar').classList.add('hidden');
+                if(response.ok) {
+                    document.querySelectorAll('.bulk-order-cb').forEach(cb => cb.checked = false);
+                    document.getElementById('bulk-actions-bar').classList.add('hidden');
+                    console.log("تم إرسال أمر الواتساب بنجاح للسيرفر");
+                } else {
+                    alert("⚠️ السيرفر شغال بس رفض الطلب، اتأكد من إن رابط Replit مفتوح للويب (مكتوب صح).");
+                }
                 
             } catch(e) {
                 console.log("خطأ في الاتصال بسيرفر الواتساب", e);
+                alert("❌ فشل الاتصال بسيرفر الواتساب! افتح صفحة Replit واضغط على (New tab) لتنشيط الرابط.");
             }
         };
+
         
 
     </script>
