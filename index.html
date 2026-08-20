@@ -6252,8 +6252,11 @@ window.deleteProductUI = async (id) => {
             // 2. تجميع أرقام العملاء اللي في الدفعة دي من الطلبات الحية
             let batchOrders = allOrdersRaw.filter(o => o.batchId === batchId && o.status !== 'canceled' && o.status !== 'trash');
             
-            // تصفية الأرقام عشان ميبقاش فيها فراغات أو متكررة
-            let numbers = [...new Set(batchOrders.map(o => o.customerPhone).filter(p => p))];
+            // تصفية الأرقام وتظبيط كود الدولة (إضافة 2 لمصر أوتوماتيك)
+            let numbers = [...new Set(batchOrders.map(o => {
+                let phone = (o.customerPhone || '').toString().trim();
+                return phone.startsWith('0') ? '2' + phone : phone;
+            }).filter(p => p.length >= 10))];
 
             if(numbers.length === 0) return alert("مفيش أرقام مسجلة للدفعة دي!");
 
@@ -6265,11 +6268,14 @@ window.deleteProductUI = async (id) => {
             try {
                 await fetch(serverUrl, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ numbers: numbers, message: message })
                 });
+                console.log("تم إرسال أمر الدفعة بنجاح");
             } catch(e) {
                 console.log("خطأ في الاتصال بسيرفر الواتساب", e);
+                alert("⚠️ الاتصال بالسيرفر فيه مشكلة، تأكد إن UptimeRobot لسه شغال.");
             }
         };
 
@@ -6299,6 +6305,7 @@ window.deleteProductUI = async (id) => {
             try {
                 let response = await fetch(serverUrl, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ numbers: numbers, message: message })
                 });
@@ -6316,6 +6323,7 @@ window.deleteProductUI = async (id) => {
                 alert("❌ فشل الاتصال بسيرفر الواتساب! افتح صفحة Replit واضغط على (New tab) لتنشيط الرابط.");
             }
         };
+
 
         
 
