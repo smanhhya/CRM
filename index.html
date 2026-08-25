@@ -1073,6 +1073,25 @@
             </div>
         </div>
     </div>
+    <!-- شاشة إرسال واتساب للدفعة -->
+    <div id="batch-broadcast-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
+                <h3 class="text-lg font-black text-slate-800"><i class="fa-brands fa-whatsapp text-[#25D366] mr-2"></i> إرسال رسالة للدفعة</h3>
+                <button onclick="closeModal('batch-broadcast-modal')" class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors flex items-center justify-center"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/50">
+                <div class="flex justify-between items-center mb-4 bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                    <label class="text-xs font-black text-slate-700">العملاء في هذه الدفعة:</label>
+                    <button onclick="toggleBroadcastCheckboxes()" class="text-[10px] bg-slate-100 px-3 py-1.5 rounded-lg font-bold text-slate-600 hover:bg-slate-200 transition-colors">تحديد الكل / إلغاء</button>
+                </div>
+                <div id="broadcast-customers-list" class="space-y-3"></div>
+            </div>
+            <div class="p-5 border-t border-slate-100 bg-white shrink-0">
+                <button onclick="executeBatchBroadcast()" class="w-full bg-[#25D366] hover:bg-[#1ebd57] text-white font-black py-4 rounded-xl transition-all shadow-lg shadow-[#25D366]/30 flex items-center justify-center gap-2 active:scale-95 text-base"><i class="fa-solid fa-paper-plane"></i> إرسال للمحددين فقط</button>
+            </div>
+        </div>
+    </div>
 
     <script>
 
@@ -3154,7 +3173,8 @@
                                 <button onclick="archiveBatch('${bId}')" class="bg-amber-50 text-amber-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-amber-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-amber-100"><i class="fa-solid fa-box-archive"></i> إغلاق وترحيل</button>
                                 <button onclick="viewBatchBookings('${bId}')" class="bg-blue-50 text-blue-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-blue-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-blue-100"><i class="fa-solid fa-list-check"></i> الكشف</button>
                                 <button onclick="openBatchSettings('${bId}')" class="bg-purple-50 text-purple-600 px-3 py-2 rounded-xl text-xs font-bold hover:bg-purple-600 hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-purple-100"><i class="fa-solid fa-bullhorn"></i> إعدادات</button>
-                                <button onclick="sendBulkMessageToBatch('${bId}')" class="bg-[#25D366]/10 text-[#25D366] px-3 py-2 rounded-xl text-xs font-bold hover:bg-[#25D366] hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-[#25D366]/20" title="إرسال رسالة واتساب جماعية لكل عملاء الدفعة"><i class="fa-brands fa-whatsapp"></i> إرسال للكل</button>
+                                <button onclick="openBatchBroadcastUI('${bId}')" class="bg-[#25D366]/10 text-[#25D366] px-3 py-2 rounded-xl text-xs font-bold hover:bg-[#25D366] hover:text-white transition-all shadow-sm flex items-center gap-1.5 active:scale-95 border border-[#25D366]/20" title="إرسال رسالة واتساب جماعية لكل عملاء الدفعة"><i class="fa-brands fa-whatsapp"></i> إرسال للكل</button>
+
                                 <button onclick="deleteBatchUI('${bId}')" class="bg-red-50 text-red-500 w-8 h-8 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center justify-center active:scale-95 border border-red-100"><i class="fa-solid fa-trash"></i></button>
                            
                             </div>
@@ -6324,6 +6344,70 @@ window.deleteProductUI = async (id) => {
             }
         };
 
+        // ==========================================
+        // 🚀 محرك إرسال واتساب المجمع (مع فلترة) 🚀
+        // ==========================================
+        window.openBatchBroadcastUI = async (bId) => {
+            const b = storeBatches[bId]; if(!b) return;
+
+            // بنجيب الأوردرات النشطة فقط للدفعة
+            const snap = await db.collection('orders').where('batchId', '==', bId).get();
+            let bOrders = [];
+            snap.forEach(doc => { 
+                let data = doc.data(); 
+                if(data.status !== 'canceled' && data.status !== 'trash') { 
+                    data.id = doc.id; bOrders.push(data); 
+                } 
+            });
+
+            const cont = document.getElementById('broadcast-customers-list');
+            if(bOrders.length === 0) {
+                cont.innerHTML = '<div class="text-center py-8 text-slate-400 font-bold text-xs">لا يوجد طلبات نشطة في هذه الدفعة.</div>';
+            } else {
+                cont.innerHTML = bOrders.map((o, index) => `
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 flex items-center gap-3 hover:border-[#25D366] transition-colors cursor-pointer" onclick="document.getElementById('bc-cb-${index}').click()">
+                        <input type="checkbox" id="bc-cb-${index}" class="bc-cb mt-0.5 accent-[#25D366] w-5 h-5 cursor-pointer pointer-events-none" value="${o.id}" checked>
+                        <div class="flex-1 pointer-events-none">
+                            <div class="flex justify-between items-start mb-1">
+                                <h5 class="font-black text-sm text-slate-800">${o.customerName || 'بدون اسم'}</h5>
+                                <span class="text-brand-primary font-black text-sm">${o.total} ج</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 font-bold" dir="ltr">${o.customerPhone}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            openModal('batch-broadcast-modal');
+        };
+
+        window.toggleBroadcastCheckboxes = () => {
+            let cbs = document.querySelectorAll('.bc-cb');
+            let allChecked = Array.from(cbs).every(cb => cb.checked);
+            cbs.forEach(cb => cb.checked = !allChecked);
+        };
+
+        window.executeBatchBroadcast = async () => {
+            let checked = document.querySelectorAll('.bc-cb:checked');
+            if(checked.length === 0) return alert("برجاء تحديد عميل واحد على الأقل!");
+
+            if(!confirm(`سيتم فتح محادثات واتساب لـ [ ${checked.length} ] عميل. متأكد؟`)) return;
+
+            // هيقفل الشاشة المنبثقة
+            closeModal('batch-broadcast-modal');
+
+            // هيلف على اللي إنت محدد عليهم بس
+            let selectedIds = Array.from(checked).map(cb => cb.value);
+            for (let i = 0; i < selectedIds.length; i++) {
+                let orderId = selectedIds[i];
+                // استدعاء دالة الواتساب الأصلية بتاعتك
+                let o = allOrdersRaw.find(x => x.id === orderId);
+                if (o) {
+                    window.sendMessageToCustomer(o.customerPhone, o.id);
+                    // انتظار ثانية بين كل رسالة والتانية عشان المتصفح ميهنجش
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+        };
 
         
 
