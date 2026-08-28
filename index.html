@@ -2860,10 +2860,6 @@
                 let stockUpdatesDB = {};
                 items.forEach(i => { stockUpdatesDB[i.id] = firebase.firestore.FieldValue.increment(-i.quantity); });
                 atomicBatch.set(db.collection("inventory").doc("stock"), stockUpdatesDB, { merge: true });
-                // 6. حفظ قائمة الأوزان الجديدة بعد الخصم في قاعدة البيانات
-                if (inventoryNeedsUpdate) {
-                    atomicBatch.set(db.collection("inventory").doc("settings"), { productsData: storeProducts }, { merge: true });
-                }
 
                 // تنفيذ الطلقة كلها في نفس اللحظة
                 await atomicBatch.commit();
