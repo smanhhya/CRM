@@ -2723,17 +2723,41 @@
             // جلب حالة الزرار بتاع السعر القديم
             let useOldPrice = document.getElementById('no-use-old-price') ? document.getElementById('no-use-old-price').checked : false;
 
+            let settingsUpdated = false; // متغير سحري عشان نعرف إن فيه أوزان اتسحبت
+
             Object.keys(storeProducts).forEach(id => {
-                let q = Number(document.getElementById(`no-q-${id}`)?.value) || 0;
+                let p = storeProducts[id];
+                let price = storePrices[id] || p.basePrice;
+                
+                // استخدام السعر القديم لو متفعل
+                if(useOldPrice && p.oldBatchPrice > 0) {
+                    price = p.oldBatchPrice;
+                }
+
+                let q = 0;
+                let selectedWeights = [];
+                let weightSelect = document.getElementById(`no-weights-${id}`);
+                
+                if (weightSelect && weightSelect.selectedOptions.length > 0) {
+                    Array.from(weightSelect.selectedOptions).forEach(opt => selectedWeights.push(parseInt(opt.value)));
+                    q = selectedWeights.reduce((a, b) => a + b, 0) / 1000; // بيجمعهم ويحولهم لكيلو أوتوماتيك
+                } else {
+                    q = Number(document.getElementById(`no-q-${id}`)?.value) || 0;
+                }
+
                 if(q > 0) { 
-                    let price = storePrices[id] || storeProducts[id].basePrice;
-                    
-                    // استخدام السعر القديم لو متفعل
-                    if(useOldPrice && storeProducts[id].oldBatchPrice > 0) {
-                        price = storeProducts[id].oldBatchPrice;
+                    let pName = p.name;
+                    if (selectedWeights.length > 0) {
+                        pName += ` (${selectedWeights.join('ج، ')}ج)`; // بيكتب وزن كل فرخة قدام العميل في الفاتورة وتيك تيك
+                        
+                        // حذف الفراخ اللي اتباعت من السيستم
+                        selectedWeights.forEach(sw => {
+                            let idx = p.weightsList.indexOf(sw);
+                            if (idx > -1) p.weightsList.splice(idx, 1);
+                        });
+                        settingsUpdated = true;
                     }
 
-                    let pName = storeProducts[id].name;
                     items.push({ id: id, name: pName, quantity: q, price: price }); 
                     subtotal += (q * price); 
                     if(batchId) batchUpdates[id] = q;
@@ -2744,6 +2768,7 @@
                     autoHashtags.push('#' + pName.replace(/\s+/g, '_'));
                 }
             });
+
             if(items.length === 0) return alert('يجب إضافة صنف واحد على الأقل للسلة!');
             
             let btn = document.getElementById('btn-save-order'); 
@@ -2813,6 +2838,11 @@
                 atomicBatch.set(db.collection("inventory").doc("stock"), stockUpdatesDB, { merge: true });
 
                 // تنفيذ الطلقة كلها في نفس اللحظة
+                       // 6. السطر ده بيحفظ الأوزان الجديدة في السيستم بعد ما اتشال منها الفراخ اللي اتباعت
+                if (settingsUpdated) {
+                    atomicBatch.set(db.collection("inventory").doc("settings"), { productsData: storeProducts }, { merge: true });
+                }
+ 
                 await atomicBatch.commit();
                 window.syncOrderToGoogleSheet(orderData, "update");
 
