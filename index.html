@@ -2772,7 +2772,7 @@
                     // خصم الأوزان المتباعة من قائمة المخزن أوتوماتيك
                     if (storeProducts[id].isWeightBased && details) {
                         let soldWeights = details.split(' و ');
-                        let currentWeightsList = (storeProducts[id].weightsList || '').split('
+                        let currentWeightsList = (storeProducts[id].weightsList || '').split('\
 ').map(w => w.trim()).filter(w => w !== '');
                         
                         soldWeights.forEach(sw => {
@@ -2780,7 +2780,7 @@
                             if (idx > -1) currentWeightsList.splice(idx, 1);
                         });
                         
-                        storeProducts[id].weightsList = currentWeightsList.join('
+                        storeProducts[id].weightsList = currentWeightsList.join('\
 ');
                         inventoryNeedsUpdate = true;
                     }
@@ -2856,14 +2856,20 @@
                     atomicBatch.set(db.collection("inventory").doc("batches"), { [batchId]: { booked: bookedUpdates } }, { merge: true });
                 }
 
-                // 5. خصم المخزون
+                                // 5. خصم المخزون
                 let stockUpdatesDB = {};
                 items.forEach(i => { stockUpdatesDB[i.id] = firebase.firestore.FieldValue.increment(-i.quantity); });
                 atomicBatch.set(db.collection("inventory").doc("stock"), stockUpdatesDB, { merge: true });
 
+                // 6. حفظ قائمة الأوزان الجديدة (بعد خصم المباع منها) في قاعدة البيانات
+                if (inventoryNeedsUpdate) {
+                    atomicBatch.set(db.collection("inventory").doc("settings"), { productsData: storeProducts }, { merge: true });
+                }
+
                 // تنفيذ الطلقة كلها في نفس اللحظة
                 await atomicBatch.commit();
                 window.syncOrderToGoogleSheet(orderData, "update");
+
 
 
                 if (batchName) autoHashtags.push('#' + batchName.replace(/\s+/g, '_'));
