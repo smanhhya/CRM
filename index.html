@@ -2779,7 +2779,7 @@
                 let batchName = batchId ? storeBatches[batchId].name : '';
                 let orderDateFormatted = new Date().toLocaleDateString('en-US');
                 
-                                const orderData = { 
+                const orderData = { 
                     customerName: name, 
                     customerPhone: phone, 
                     customerPhone2: phone2,
@@ -2793,9 +2793,6 @@
                     paymentMethod: paymentMethod, // 💳 إضافة طريقة الدفع للسيستم
                     debt: debtAmount, // 🔴 تسجيل المديونية جوه الأوردر نفسه عشان مننساش
                     total: total, 
-
-
-
                     subtotal: subtotal, 
                     deliveryFee: delivery, 
                     discount: discount, 
@@ -2807,7 +2804,6 @@
                     createdAt: firebase.firestore.FieldValue.serverTimestamp() 
                 };
 
-                
                 let atomicBatch = db.batch();
                 
                 // 1. إنشاء الأوردر
@@ -2837,15 +2833,17 @@
                 items.forEach(i => { stockUpdatesDB[i.id] = firebase.firestore.FieldValue.increment(-i.quantity); });
                 atomicBatch.set(db.collection("inventory").doc("stock"), stockUpdatesDB, { merge: true });
 
-                // تنفيذ الطلقة كلها في نفس اللحظة
-                       // 6. السطر ده بيحفظ الأوزان الجديدة في السيستم بعد ما اتشال منها الفراخ اللي اتباعت
+                // 6. السطر ده بيحفظ الأوزان الجديدة في السيستم بعد ما اتشال منها الفراخ اللي اتباعت
                 if (settingsUpdated) {
                     atomicBatch.set(db.collection("inventory").doc("settings"), { productsData: storeProducts }, { merge: true });
                 }
  
+                // تنفيذ الطلقة كلها في نفس اللحظة
                 await atomicBatch.commit();
-                window.syncOrderToGoogleSheet(orderData, "update");
-
+                
+                if (typeof window.syncOrderToGoogleSheet === 'function') {
+                    window.syncOrderToGoogleSheet(orderData, "update");
+                }
 
                 if (batchName) autoHashtags.push('#' + batchName.replace(/\s+/g, '_'));
                 if (customTag) autoHashtags.push(customTag.startsWith('#') ? customTag.replace(/\s+/g, '_') : '#' + customTag.replace(/\s+/g, '_'));
@@ -2907,15 +2905,14 @@
                 if(document.getElementById('no-delivery-end')) document.getElementById('no-delivery-end').value = '';
                 if(document.getElementById('no-debt')) document.getElementById('no-debt').value = '0';
 
-                
-        // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
-        if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
+                // إلغاء تفعيل زرار السعر القديم للأوردر الجاي
+                if(document.getElementById('no-use-old-price')) document.getElementById('no-use-old-price').checked = false;
 
-        window.refreshCustomersData(); // تحديث شامل لأرشيف العملاء وشاشة الديون
+                window.refreshCustomersData(); // تحديث شامل لأرشيف العملاء وشاشة الديون
         
-    } catch(e) { alert('خطأ أثناء الحفظ بقاعدة البيانات!'); }
-    btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
-};
+            } catch(e) { alert('خطأ أثناء الحفظ بقاعدة البيانات!'); }
+            btn.innerHTML = 'تأكيد وحفظ الطلب'; btn.disabled = false;
+        };
 
 
         // === 8. المناديب (واتساب) والتوجيه الذكي ===
@@ -3778,9 +3775,8 @@ window.smartDistributeBatch = async (bId) => {
         };
 
         window.updateProductWeights = (id, text) => {
-            // الدالة دي بتاخد النص اللي نسخته وتفصله لأرقام وتخزنه
             let weights = text.split('\n')
-                              .map(w => w.replace(/\\D/g, '').trim()) 
+                              .map(w => w.replace(/\D/g, '').trim()) 
                               .filter(w => w !== '')
                               .map(w => parseInt(w));
             storeProducts[id].weightsList = weights;
@@ -3788,6 +3784,7 @@ window.smartDistributeBatch = async (bId) => {
             db.collection("inventory").doc("settings").set({ productsData: storeProducts }, { merge: true });
             renderInventoryUI(); 
         };
+
         
         function renderInventoryUI() { 
             const cont = document.getElementById('products-list-container'); if(!cont) return; 
