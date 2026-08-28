@@ -2570,8 +2570,9 @@
                 let inputHtml = "";
 
                 if (p.isWeightBased) {
-                    let weightsArr = (p.weightsList || '').split('\
-').map(w => w.trim()).filter(w => w !== '');
+                    let weightsArr = (p.weightsList || '').split(/
+?
+/).map(w => w.trim()).filter(w => w !== '');
                     if (weightsArr.length > 0) {
                         let checkboxes = weightsArr.map(w => `
                             <label class="flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-1 rounded shadow-sm cursor-pointer hover:border-indigo-400 transition-colors">
@@ -4024,21 +4025,46 @@ window.deleteProductUI = async (id) => {
 
     
 
-                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === p.name) : null;
-// ... باقي الكود زي ما هو
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name.includes(p.name)) : null;
                 let q = existingItem ? existingItem.quantity : 0;
-                
-                let step = p.isWeightBased ? 0.5 : 1; // الزراير هتزود وتنقص بالنص كيلو لو ده ميزان
                 let icon = p.isWeightBased ? "⚖️" : "";
-                
+                let inputHtml = "";
+
+                if (p.isWeightBased) {
+                    let weightsArr = (p.weightsList || '').split(/
+?
+/).map(w => w.trim()).filter(w => w !== '');
+                    let checkboxes = "";
+                    if (weightsArr.length > 0) {
+                        checkboxes = weightsArr.map(w => `
+                            <label class="flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-1 rounded shadow-sm cursor-pointer hover:border-indigo-400 transition-colors">
+                                <input type="checkbox" class="edit-weight-cb-${pId} w-3 h-3 accent-indigo-600" value="${w}" onchange="calcEditTotal()">
+                                <span class="text-[11px] font-black text-slate-700">${w}</span>
+                            </label>
+                        `).join('');
+                    }
+                    inputHtml = `
+                        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5 mb-2">
+                            <span class="text-[10px] text-slate-500 font-bold px-1">الكمية الحالية:</span>
+                            <input type="number" id="edit-q-${pId}" min="0" step="0.1" value="${q}" class="w-16 border border-slate-200 bg-white rounded text-center font-black text-sm outline-none text-brand-primary" oninput="calcEditTotal()" data-original-q="${q}">
+                        </div>
+                        ${checkboxes ? `<div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scroll p-1 justify-center border-t border-slate-100 pt-2">${checkboxes}</div>` : ''}
+                    `;
+                } else {
+                    let step = 1;
+                    inputHtml = `
+                        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5">
+                            <button onclick="changeEditQty('${pId}', -${step}, false)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
+                            <input type="number" id="edit-q-${pId}" min="0" step="1" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()" data-original-q="${q}">
+                            <button onclick="changeEditQty('${pId}', ${step}, false)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
+                        </div>
+                    `;
+                }
+
                 container.innerHTML += `
                 <div class="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm flex flex-col justify-between">
                     <span class="text-[11px] font-black text-slate-600 block text-center truncate mb-3" title="${p.name}">${p.name} ${icon}</span>
-                    <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5">
-                        <button onclick="changeEditQty('${pId}', -${step}, ${p.isWeightBased})" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
-                        <input type="number" id="edit-q-${pId}" min="0" step="${p.isWeightBased ? '0.1' : '1'}" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()">
-                        <button onclick="changeEditQty('${pId}', ${step}, ${p.isWeightBased})" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
-                    </div>
+                    ${inputHtml}
                 </div>`;
             });
 
@@ -4074,8 +4100,31 @@ window.deleteProductUI = async (id) => {
         window.calcEditTotal = () => { 
             let itemsTotal = 0; 
             Object.keys(storeProducts).forEach(id => { 
-                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
-                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                let inputEl = document.getElementById(`edit-q-${id}`);
+                let q = 0;
+                
+                if (inputEl) {
+                    let baseQ = Number(inputEl.getAttribute('data-original-q')) || 0;
+                    
+                    if (storeProducts[id].isWeightBased) {
+                        let checkedBoxes = Array.from(document.querySelectorAll(`.edit-weight-cb-${id}:checked`));
+                        let addedGrams = checkedBoxes.reduce((sum, cb) => sum + (Number(cb.value) || 0), 0);
+                        let addedKg = addedGrams / 1000;
+                        q = baseQ + addedKg;
+                        inputEl.value = parseFloat(q.toFixed(2));
+                        
+                        let selectedDetails = checkedBoxes.map(cb => cb.value).join(' و ');
+                        if (selectedDetails) {
+                            inputEl.setAttribute('data-new-details', selectedDetails);
+                        } else {
+                            inputEl.removeAttribute('data-new-details');
+                        }
+                    } else {
+                        q = Number(inputEl.value) || 0;
+                    }
+                }
+
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id || i.name.includes(storeProducts[id].name)) : null;
                 let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
                 itemsTotal += (q * price); 
             }); 
@@ -5171,12 +5220,36 @@ window.deleteProductUI = async (id) => {
             let oldBatchId = editingOrderData.batchId;
             let oldItems = editingOrderData.items || [];
             
+            let inventoryNeedsUpdate = false;
+
             Object.keys(storeProducts).forEach(id => { 
-                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                let qInput = document.getElementById(`edit-q-${id}`);
+                let q = Number(qInput?.value) || 0; 
                 if(q > 0) { 
-                    let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                    let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id || i.name.includes(storeProducts[id].name)) : null;
                     let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
-                    newItems.push({ id: id, name: storeProducts[id].name, quantity: q, price: price }); newSubtotal += (q * price); 
+                    
+                    let pName = storeProducts[id].name;
+                    let newDetails = qInput?.getAttribute('data-new-details');
+                    let finalName = existingItem ? existingItem.name : pName; 
+
+                    if (newDetails) {
+                        finalName += ` (+ ${newDetails} جم)`;
+                        let soldWeights = newDetails.split(' و ');
+                        let currentWeightsList = (storeProducts[id].weightsList || '').split(/
+?
+/).map(w => w.trim()).filter(w => w !== '');
+                        soldWeights.forEach(sw => {
+                            let idx = currentWeightsList.indexOf(sw);
+                            if (idx > -1) currentWeightsList.splice(idx, 1);
+                        });
+                        storeProducts[id].weightsList = currentWeightsList.join('
+');
+                        inventoryNeedsUpdate = true;
+                    }
+
+                    newItems.push({ id: id, name: finalName, quantity: q, price: price }); 
+                    newSubtotal += (q * price); 
                 } 
             });
 
@@ -5276,7 +5349,12 @@ window.deleteProductUI = async (id) => {
                     }
                 }
                 
+                if (inventoryNeedsUpdate) {
+                    atomicBatch.set(db.collection("inventory").doc("settings"), { productsData: storeProducts }, { merge: true });
+                }
+                
                  await atomicBatch.commit();
+
                 
                 editingOrderData.total = newTotal; 
                 editingOrderData.items = newItems; 
