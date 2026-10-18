@@ -1408,23 +1408,21 @@
                 customersData.forEach(c => {
                     let location = c.zone || '';
                     if(c.address) location += ' - ' + c.address;
-                    let stickyHtml = c.stickyNote ? `<div class="text-[10px] text-yellow-900 font-black mt-1 max-w-[220px] truncate mx-auto bg-yellow-200/80 px-2 py-0.5 rounded border border-yellow-400" title="${c.stickyNote}"><i class="fa-solid fa-thumbtack text-yellow-700"></i> ${c.stickyNote}</div>` : '';
-                    let details = c.notebook ? `<div class="text-[10px] text-amber-600 font-bold mt-1 max-w-[180px] truncate mx-auto bg-amber-50 px-2 py-1 rounded" title="${c.notebook}"><i class="fa-solid fa-book"></i> نوت: ${c.notebook}</div>` : '';
+                    let details = c.notebook ? `<div class="text-[10px] text-amber-600 font-bold mt-1.5 max-w-[180px] truncate mx-auto bg-amber-50 px-2 py-1 rounded" title="${c.notebook}"><i class="fa-solid fa-book"></i> نوت: ${c.notebook}</div>` : '';
                     let normPhone = window.normalizePhone(c.phone);
-                    let trustBadge = window.getCustomerTrustBadgeHTML ? window.getCustomerTrustBadgeHTML(c) : '';
 
                     tbody += `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row ${c.isBlacklisted ? 'bg-red-50/40' : ''}" data-search="${c.name}${c.phone} ${normPhone}${location} ${c.notebook \vert{}\vert{} ''}${c.stickyNote || ''}">
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-50 customer-row" data-search="${c.name} ${c.phone} ${normPhone} ${location} ${c.notebook || ''}">
                         <td class="py-4 px-6">
-                            <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors flex flex-wrap items-center gap-1.5" onclick="openCustomerCard('${c.phone}')">
-                                <span>${c.name || 'عميل'}</span>
-                                ${trustBadge}${(c.debt && c.debt > 0) ? `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-black inline-block border border-red-200" title="عليه فلوس متبقية">عليه ${c.debt} ج</span>` : ''}
+                            <div class="font-black text-slate-800 text-sm cursor-pointer hover:text-brand-primary transition-colors" onclick="openCustomerCard('${c.phone}')">
+                                ${c.name || 'عميل'} 
+                                ${(c.debt && c.debt > 0) ? `<span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[9px] font-black inline-block ml-1 border border-red-200" title="عليه فلوس متبقية">عليه ${c.debt} ج</span>` : ''}
                             </div>
                             <div class="text-[11px] text-slate-500 font-bold mt-0.5" dir="ltr">${c.phone || ''}</div>
                         </td>
                         <td class="py-4 px-6 text-center">
                             <div class="text-xs font-bold text-slate-700">${location || '<span class="text-slate-400">غير مسجل</span>'}</div>
-                            ${stickyHtml}${details}
+                            ${details}
                         </td>
                         <td class="py-4 px-6 text-center font-black text-slate-700 text-base">${c.ordersCount || 0}</td>
                         <td class="py-4 px-6 text-center font-black text-emerald-600 text-base">${(c.totalSpent || 0).toLocaleString()} <span class="text-[10px]">ج</span></td>
@@ -1439,11 +1437,8 @@
                     if(document.getElementById('search-customer') && document.getElementById('search-customer').value.trim() !== '') filterCustomers();
                 }
                 
-                // تحديث شاشة المديونيات والبلاك ليست والطلبات الحية في كل مرة الأرشيف يتحدث
-                renderDebtsUI();
-                if(window.renderBlacklistUI) window.renderBlacklistUI();
-                if(window.renderOrdersList) window.renderOrdersList();
-
+                // تحديث شاشة المديونيات في كل مرة الأرشيف يتحدث
+                renderDebtsUI(); 
             }).catch(err => console.log("خطأ في جلب الأرشيف: ", err));
         };
 
