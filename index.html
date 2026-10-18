@@ -107,7 +107,6 @@
                 <span class="flex items-center"><i class="fa-solid fa-ban w-7 text-center text-red-500"></i> قائمة البلاك ليست</span>
                 <span id="sidebar-blacklist-badge" class="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">0</span>
             </button>
-
             <div class="pt-6 pb-2 px-2 text-[10px] uppercase font-black text-emerald-300/50 tracking-wider">التحكم والتجهيز</div>
             <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-boxes-packing w-7 text-center text-indigo-400"></i> الأصناف والأسعار</button>
             <button onclick="switchTab('batches', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-layer-group w-7 text-center text-teal-400"></i> إدارة الدفعات</button>
@@ -418,7 +417,37 @@
                             </select>
                         </div>
                         <div class="md:col-span-1">
-                            <label class="text-[10px] font-black text-red-800 b                <div class="flex justify-between items-center bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft shrink-0">
+                            <label class="text-[10px] font-black text-red-800 block mb-1">سبب الحظر (يظهر في الطلبات الحية) *</label>
+                            <input type="text" id="bl-add-reason" placeholder="مثال: طلب الأوردر ورفض الاستلام وقفل الموبايل..." class="w-full rounded-xl border border-red-200 p-2.5 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-red-300">
+                        </div>
+                        <div>
+                            <button onclick="submitQuickBlacklist()" class="w-full bg-red-700 hover:bg-red-800 text-white font-black py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95"><i class="fa-solid fa-ban mr-1"></i> تأكيد الحظر وتفعيل الرقابة</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- جدول البلاك ليست -->
+                <div class="bg-white border border-slate-100 rounded-[1.5rem] shadow-soft overflow-hidden flex-1 flex flex-col">
+                    <div class="overflow-x-auto custom-scroll flex-1">
+                        <table class="w-full text-right text-sm whitespace-nowrap">
+                            <thead class="bg-red-900 text-white sticky top-0 z-10">
+                                <tr>
+                                    <th class="py-4 px-5 font-black text-xs">العميل والأرقام المرتبطة</th>
+                                    <th class="py-4 px-5 font-black text-xs">العنوان المرصود</th>
+                                    <th class="py-4 px-5 font-black text-xs">سبب الحظر</th>
+                                    <th class="py-4 px-5 font-black text-xs text-center">عداد فك الحظر (مدفوع مقدماً)</th>
+                                    <th class="py-4 px-5 font-black text-xs text-center">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="blacklist-tbody" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-batches" class="page-view h-full flex flex-col space-y-6 max-w-5xl mx-auto">
+
+                <div class="flex justify-between items-center bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-layer-group text-teal-500 mr-2"></i> إدارة الدفعات</h3>
                         <p class="text-xs text-slate-500 font-bold mt-1.5">نظم حجوزاتك، حدد الكميات، وتابع المتبقي بدقة.</p>
@@ -888,6 +917,7 @@
                     <textarea id="cm-notebook" onblur="saveCustomerNotebook()" class="w-full bg-white/80 border border-amber-200/80 rounded-xl p-3.5 text-sm font-bold outline-none h-24 focus:bg-white focus:ring-2 focus:ring-amber-200/50 text-slate-700 leading-relaxed custom-scroll transition-all" placeholder="سجل هنا تفاصيل التسليم، مقاسات، أو أي طبع خاص بالعميل..."></textarea>
                 </div>
 
+
                 <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-soft">
                     <h4 class="text-sm font-black text-slate-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-indigo-500"></i> إضافة ملاحظة للسجل الزمني</h4>
                     <select id="cm-note-target" class="w-full mb-3 bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-bold outline-none focus:bg-white focus:ring-2 focus:ring-indigo-100 text-slate-700 transition-all"></select>
@@ -1303,6 +1333,7 @@
             if(tabId === 'trash') renderTrashUI();            
             if(tabId === 'notes') renderNotesUI();
             if(tabId === 'reconciliation') renderReconciliationUI();
+            if(tabId === 'blacklist') renderBlacklistUI();
 
             // الموبايل: نقفل القائمة الجانبية لو داس بإيده بس (عشان متبقاش مزعجة في الرجوع)
             if(window.innerWidth < 768 && !isFromBackButton) toggleSidebar();
