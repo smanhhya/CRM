@@ -102,7 +102,11 @@
             <button onclick="switchTab('orders', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-bolt w-7 text-center text-amber-400"></i> الطلبات الحية</button>
             <button onclick="switchTab('customers', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-users w-7 text-center text-blue-400"></i> أرشيف العملاء</button>
             <button onclick="switchTab('notes', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-clipboard-list w-7 text-center text-rose-400"></i> مركز الملاحظات</button>
-            <button onclick="switchTab('debts', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-500/20 hover:text-white text-emerald-100/70 transition-all border-b border-emerald-900/50 pb-4 mb-2"><i class="fa-solid fa-book-journal-whills w-7 text-center text-red-400"></i> سجل المديونيات</button>
+            <button onclick="switchTab('debts', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-500/20 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-book-journal-whills w-7 text-center text-red-400"></i> سجل المديونيات</button>
+            <button onclick="switchTab('blacklist', this)" class="nav-btn w-full text-right flex items-center justify-between px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-red-600/30 hover:text-white text-emerald-100/70 transition-all border-b border-emerald-900/50 pb-4 mb-2">
+                <span class="flex items-center"><i class="fa-solid fa-ban w-7 text-center text-red-500"></i> قائمة البلاك ليست</span>
+                <span id="sidebar-blacklist-badge" class="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">0</span>
+            </button>
 
             <div class="pt-6 pb-2 px-2 text-[10px] uppercase font-black text-emerald-300/50 tracking-wider">التحكم والتجهيز</div>
             <button onclick="switchTab('inventory', this)" class="nav-btn w-full text-right flex items-center px-4 py-2.5 rounded-xl text-sm font-bold hover:bg-emerald-800/50 hover:text-white text-emerald-100/70 transition-all"><i class="fa-solid fa-boxes-packing w-7 text-center text-indigo-400"></i> الأصناف والأسعار</button>
@@ -364,8 +368,57 @@
                 </div>
             </div>
             
-            <div id="view-batches" class="page-view h-full flex flex-col space-y-6 max-w-5xl mx-auto">
-                <div class="flex justify-between items-center bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft shrink-0">
+            <!-- 🚫 شاشة قائمة البلاك ليست والرقابة الذكية 🚫 -->
+            <div id="view-blacklist" class="page-view h-full flex flex-col max-w-7xl mx-auto space-y-4">
+                <div class="bg-white p-5 rounded-[1.5rem] shadow-soft border border-red-200 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+                    <div>
+                        <h2 class="text-xl font-black text-red-700 flex items-center gap-2"><i class="fa-solid fa-user-slash text-red-600"></i> قائمة البلاك ليست والرقابة الذكية</h2>
+                        <p class="text-xs text-slate-500 font-bold mt-1">الحظر يشمل (الرقم + الاسم + العنوان) لكشف التحايل، ولا يُفك الحظر تلقائياً إلا بعد استكمال الطلبات المشروطة بالدفع المسبق.</p>
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <div class="relative flex-1 md:w-64">
+                            <i class="fa-solid fa-search absolute right-3.5 top-3 text-slate-400 text-xs"></i>
+                            <input type="search" id="search-blacklist" oninput="renderBlacklistUI()" placeholder="ابحث بالاسم أو الرقم أو العنوان..." class="w-full pr-9 pl-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold outline-none focus:bg-white focus:ring-2 focus:ring-red-200">
+                        </div>
+                        <button onclick="openQuickBlacklistModal()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-xs font-black shadow-lg shadow-red-600/20 flex items-center gap-1.5 shrink-0 active:scale-95 transition-all"><i class="fa-solid fa-plus"></i> إضافة للبلاك ليست</button>
+                    </div>
+                </div>
+
+                <!-- فورم إضافة سريعة للبلاك ليست -->
+                <div id="quick-blacklist-box" class="hidden bg-red-50/80 border-2 border-red-200 rounded-[1.5rem] p-5 shadow-soft shrink-0">
+                    <div class="flex justify-between items-center mb-4 pb-2 border-b border-red-200/60">
+                        <h4 class="font-black text-red-800 text-sm"><i class="fa-solid fa-gavel mr-1"></i> إدراج عميل في البلاك ليست</h4>
+                        <button onclick="document.getElementById('quick-blacklist-box').classList.add('hidden')" class="text-red-400 hover:text-red-700"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-3">
+                        <div>
+                            <label class="text-[10px] font-black text-red-800 block mb-1">رقم الموبايل الأساسي *</label>
+                            <input type="tel" id="bl-add-phone" dir="ltr" placeholder="010..." class="w-full rounded-xl border border-red-200 p-2.5 text-xs font-black bg-white outline-none focus:ring-2 focus:ring-red-300">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-red-800 block mb-1">اسم العميل (لكشف تغيير الرقم) *</label>
+                            <input type="text" id="bl-add-name" placeholder="الاسم الكامل..." class="w-full rounded-xl border border-red-200 p-2.5 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-red-300">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-red-800 block mb-1">المنطقة</label>
+                            <input type="text" id="bl-add-zone" placeholder="مثال: ههيا / الزقازيق..." class="w-full rounded-xl border border-red-200 p-2.5 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-red-300">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-black text-red-800 block mb-1">العنوان بالتفصيل (لكشف التحايل) *</label>
+                            <input type="text" id="bl-add-address" placeholder="الشارع / العلامة المميزة..." class="w-full rounded-xl border border-red-200 p-2.5 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-red-300">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                        <div class="md:col-span-1">
+                            <label class="text-[10px] font-black text-red-800 block mb-1">شرط الخروج من البلاك ليست</label>
+                            <select id="bl-add-req" class="w-full rounded-xl border border-red-200 p-2.5 text-xs font-black bg-white text-red-700 outline-none">
+                                <option value="3">3 طلبات مدفوعة مقدماً بالكامل</option>
+                                <option value="2">طلبين (2) مدفوعين مقدماً بالكامل</option>
+                                <option value="1">طلب واحد (1) مدفوع مقدماً</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-1">
+                            <label class="text-[10px] font-black text-red-800 b                <div class="flex justify-between items-center bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-soft shrink-0">
                     <div>
                         <h3 class="font-black text-slate-800 text-xl"><i class="fa-solid fa-layer-group text-teal-500 mr-2"></i> إدارة الدفعات</h3>
                         <p class="text-xs text-slate-500 font-bold mt-1.5">نظم حجوزاتك، حدد الكميات، وتابع المتبقي بدقة.</p>
