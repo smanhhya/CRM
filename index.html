@@ -5101,7 +5101,6 @@ window.deleteProductUI = async (id) => {
 
             let blacklistedList = customersData.filter(c => c.isBlacklisted === true || c.trustRating === 'blacklist');
             
-            // 1. تطابق مباشر بالرقم الأساسي أو البديل أو الأرقام الإضافية (100%)
             for (let bl of blacklistedList) {
                 let blPhones = [
                     window.normalizePhone(bl.phone),
@@ -5114,7 +5113,6 @@ window.deleteProductUI = async (id) => {
                 }
             }
 
-            // 2. كاشف التحايل (تطابق الاسم أو العنوان مع رقم مختلف)
             for (let bl of blacklistedList) {
                 let blName = window.normalizeArabicText(bl.name);
                 let blAddr = window.normalizeArabicText(bl.address);
@@ -5241,7 +5239,6 @@ window.deleteProductUI = async (id) => {
                 await db.collection('customers').doc(cleanBlPhone).set({
                     altPhones: firebase.firestore.FieldValue.arrayUnion(normNew)
                 }, { merge: true });
-                // حظر الرقم الجديد أيضاً كملف مستقل لضمان الحصار الشامل
                 let o = allOrdersRaw.find(x => x.id === orderId);
                 let blCust = customersData.find(c => window.normalizePhone(c.phone) === window.normalizePhone(blPhone));
                 await db.collection('customers').doc(normNew).set({
@@ -5523,6 +5520,7 @@ window.deleteProductUI = async (id) => {
             }
         };
 
+        // الدالة الكاملة لتحديث حالة الطلب (مقفولة بالكامل بـ }; في آخرها)
         window.updateOrderStatus = async (id, s) => { 
             let o = allOrdersRaw.find(x => x.id === id);
             if(!o) return;
@@ -5576,13 +5574,12 @@ window.deleteProductUI = async (id) => {
                     window.refreshCustomersData();
                 }
             }
-            
-            // 🛡️ التعديل الجديد: تنبيه الفريزر لو الكمية هتنزل للسالب قبل ما نحول الأوردر 🛡️
+
+            // 🛡️ تنبيه الفريزر لو الكمية هتنزل للسالب قبل ما نحول الأوردر 🛡️
             let deductingStates = ['processing', 'dispatched', 'completed', 'deferred'];
             let wasInFreezer = deductingStates.includes(oldStatus);
             let isNowInFreezer = deductingStates.includes(s);
 
-            // السيستم هيشيك لو الأوردر ده هيتخصم من الفريزر دلوقتي
             if (!wasInFreezer && isNowInFreezer) {
                 let negativeItems = [];
                 if(o.items) {
@@ -5592,10 +5589,9 @@ window.deleteProductUI = async (id) => {
                     });
                 }
                 
-                // لو لقى صنف هينزل تحت الصفر، بيطلع رسالة التنبيه
                 if (negativeItems.length > 0) {
                     if (!confirm(`⚠️ انتباه: الأصناف دي مش موجود منها عدد كافي في الفريزر:\n(${negativeItems.join('، ')})\n\nهل أنت متأكد؟ (اضغط "موافق" لو عندك منها في مكان تاني ومش ضايفه، أو "إلغاء" وروح عدل الفريزر الأول)`)) {
-                        renderOrdersList(); // عشان نرجع القائمة (Select) لحالتها القديمة لو اليوزر ألغى
+                        renderOrdersList();
                         return; 
                     }
                 }
@@ -5605,15 +5601,15 @@ window.deleteProductUI = async (id) => {
             o.status = s;
             window.syncOrderToGoogleSheet(o, s === 'trash' ? 'delete' : 'update');
         
-            o.manuallyUpdated = true; // علامة التحديث اليدوي
+            o.manuallyUpdated = true;
             if(globalOrdersMap[id]) {
                 globalOrdersMap[id].status = s;
                 globalOrdersMap[id].manuallyUpdated = true;
             }
             if (s === 'completed') {
                 let nowObj = new Date();
-                o.completedAtStr = nowObj.toLocaleDateString('en-US'); // عشان حسابات لوحة القيادة
-                o.completedTimeDisplay = nowObj.toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }); // عشان العرض للعميل
+                o.completedAtStr = nowObj.toLocaleDateString('en-US');
+                o.completedTimeDisplay = nowObj.toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                 if(globalOrdersMap[id]) {
                     globalOrdersMap[id].completedAtStr = o.completedAtStr;
                     globalOrdersMap[id].completedTimeDisplay = o.completedTimeDisplay;
@@ -5622,8 +5618,6 @@ window.deleteProductUI = async (id) => {
 
             renderOrdersList();
             if (s === 'trash') renderTrashUI();
-            // ---------------------------------------------------------
-
 
             try { 
                 let atomicBatch = db.batch();
@@ -5639,7 +5633,6 @@ window.deleteProductUI = async (id) => {
                     updateData.completedTimeDisplay = new Date().toLocaleString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                     updateData.completedAt = firebase.firestore.FieldValue.serverTimestamp();
                     
-                    // ✨ السحر الجديد: الأرشفة التلقائية لو الدفعة بتاعته كانت متأرشفة مسبقاً
                     let targetArchive = archivedBatchesData.find(a => a.originalBatchId === o.batchId);
                     if (targetArchive) {
                         updateData.isArchived = true;
@@ -5665,19 +5658,16 @@ window.deleteProductUI = async (id) => {
                         
                         atomicBatch.update(db.collection('archived_batches').doc(targetArchive.id), archiveUpdate);
                         
-                        // تحديث الذاكرة فوراً عشان تظهر في التقرير
                         targetArchive.totalRevenue += oRev;
                         targetArchive.totalDelivery += oDel;
                         targetArchive.totalDiscount += oDisc;
                         targetArchive.ordersCount += 1;
                         if(o.zone) targetArchive.zonesSummary[o.zone] = (targetArchive.zonesSummary[o.zone] || 0) + 1;
-                        if(o.items) o.items.forEach(i => { targetArchive.itemsSummary[i.name] = (targetArchive.itemsSummary[i.name] || 0) + i.quantity; });
+                        if(o.items) o.items.forEach(i => { targetArchive.itemsSummary[i.name] = (targetArchive.itemsSummary[i.name] || 0) + 1; });
                         
-                        setTimeout(() => alert(`✨ تم اكتشاف أن هذا الطلب ينتمي لدفعة مغلقة ومؤرشفة (${targetArchive.batchName}).
-تم تحويله للأرشيف وتحديث أرباح التقرير الختامي للدفعة تلقائياً!`), 800);
+                        setTimeout(() => alert(`✨ تم اكتشاف أن هذا الطلب ينتمي لدفعة مغلقة ومؤرشفة (${targetArchive.batchName}).\nتم تحويله للأرشيف وتحديث أرباح التقرير الختامي للدفعة تلقائياً!`), 800);
                     }
 
-                    // 🎁 تحديث محفظة نقاط العميل بناءً على قيمة المنتجات فقط (Subtotal) 🎁
                     let ptsPer100 = storeSettings.pointsPer100 || 5;
                     let orderSubtotal = Number(o.subtotal) || 0;
                     if (orderSubtotal >= 100 && o.customerPhone) {
@@ -5691,11 +5681,8 @@ window.deleteProductUI = async (id) => {
                     }
                 }
 
-
-
                 atomicBatch.update(orderRef, updateData); 
                 
-                // 🧊 سحر الفريزر
                 if (!wasInFreezer && isNowInFreezer) {
                     let fzUpdates = {};
                     if(o.items) {
@@ -5739,7 +5726,7 @@ window.deleteProductUI = async (id) => {
                 
                 await atomicBatch.commit();
             } catch(e) { alert("حدث خطأ أثناء تغيير الحالة!"); }
-        }; // <--- دي القفلة اللي كانت ناقصة وموقفة السيستم!
+        };
 
         window.bulkChangeStatus = async (newStatus) => {
             let checked = Array.from(document.querySelectorAll('.bulk-order-cb:checked')).map(cb => cb.value);
