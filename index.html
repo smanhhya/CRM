@@ -695,16 +695,18 @@
                 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
                     <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-regular fa-address-card text-blue-500 mr-1"></i> بيانات العميل</h4>
+                    <div id="no-blacklist-alert" class="hidden mb-4"></div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">الموبايل الأساسي</label><input type="tel" id="no-phone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" oninput="checkCustomerExists()"></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (اختياري)</label><input type="tel" id="no-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="01..."></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">اسم العميل</label><input type="text" id="no-name" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">الموبايل الأساسي</label><input type="tel" id="no-phone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" oninput="checkCustomerExists(); checkNewOrderBlacklistRadar();"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">موبايل بديل (اختياري)</label><input type="tel" id="no-phone-2" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-purple-200 font-bold bg-slate-50 focus:bg-white transition-all text-sm" dir="ltr" placeholder="01..." oninput="checkNewOrderBlacklistRadar()"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">اسم العميل</label><input type="text" id="no-name" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" oninput="checkNewOrderBlacklistRadar()"></div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">منطقة التوصيل</label><select id="no-zone" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" onchange="autoSetDeliveryPrice()"></select></div>
-                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">العنوان التفصيلي (الشارع/المنزل)</label><input type="text" id="no-address" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm"></div>
+                        <div><label class="text-[10px] font-bold text-slate-500 block mb-1.5">العنوان التفصيلي (الشارع/المنزل)</label><input type="text" id="no-address" class="w-full border border-slate-200 rounded-xl p-3 outline-none focus:ring-2 focus:ring-brand-primary/20 font-bold bg-slate-50 focus:bg-white transition-all text-sm" oninput="checkNewOrderBlacklistRadar()"></div>
                     </div>
                 </div>
+
                 
                 <div class="bg-white p-5 rounded-2xl shadow-soft border border-slate-100">
                     <h4 class="text-xs font-black text-slate-800 mb-4 pb-2 border-b border-slate-50"><i class="fa-solid fa-layer-group text-teal-500 mr-1"></i> الربط بالدورات والفرز</h4>
