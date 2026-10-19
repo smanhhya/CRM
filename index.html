@@ -2173,17 +2173,22 @@
                         <a href="tel:${o.customerPhone2}" class="text-purple-500 hover:text-white hover:bg-purple-500 w-5 h-5 flex items-center justify-center bg-purple-100 rounded-full transition-colors" title="اتصال بالرقم البديل"><i class="fa-solid fa-phone text-[8px]"></i></a>
                     </span>` : '';
 
+                let trustAnalysis = window.analyzeOrderCustomerTrust ? window.analyzeOrderCustomerTrust(o) : { cardClass: 'bg-white border-slate-100', badgeHtml: '', bannerHtml: '', stickyHtml: '' };
+
                 return `
-                <div data-id="${o.id}" onclick="highlightOrderCard(this, event)" class="order-card bg-white p-3.5 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group cursor-pointer">
+                <div data-id="${o.id}" onclick="highlightOrderCard(this, event)" class="order-card ${trustAnalysis.cardClass} p-3.5 rounded-[1rem] shadow-sm border hover:shadow-md transition-all relative group cursor-pointer">
                     <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-3 left-3 w-4 h-4 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
                     
+                    ${trustAnalysis.bannerHtml}${trustAnalysis.stickyHtml}
+
                     <div class="flex justify-between items-start mb-1.5 pl-6">
                         <div>
                             <h5 class="font-black text-slate-800 text-sm flex flex-wrap items-center gap-1.5 mb-1">
                                 <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed select-none" onclick="smartNameClick(this, '${o.id}', '${o.customerPhone}', 'customerName')" title="اضغط مرة لفتح ملف العميل.. مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
+                                ${trustAnalysis.badgeHtml}
                                 <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-5 h-5 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[9px]"></i></a>
-                                <span class="text-[10px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
-                                ${phone2Html}
+                                <span class="text-[10px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>${phone2Html}
+                                <button onclick="event.stopPropagation(); quickBanFromOrderCard('${o.id}')" class="text-[9px] bg-red-50 text-red-500 hover:bg-red-600 hover:text-white px-1.5 py-0.5 rounded border border-red-100 font-black transition-colors" title="إدراج سريع في البلاك ليست"><i class="fa-solid fa-ban"></i></button>
                             </h5>
 
                             <p class="text-[10px] text-slate-500 font-bold flex items-center gap-1 flex-wrap">
@@ -2194,15 +2199,15 @@
                         </div>
                         <div class="flex flex-col items-end gap-1">
                             ${sBadge}
-                            <span class="text-[9px] text-slate-400 font-bold tracking-wider" title="تاريخ الطلب الأصلي">طلب: ${d}</span>
-                            ${completedDateHtml}
+                            <span class="text-[9px] text-slate-400 font-bold tracking-wider" title="تاريخ الطلب الأصلي">طلب: ${d}</span>${completedDateHtml}
                         </div>
 
                     </div>
                     
                      <div class="flex flex-wrap gap-1 mb-1.5">
-                        ${paymentBadge} ${batchTagHtml} ${customTagHtml}
+                        ${paymentBadge} ${batchTagHtml}${customTagHtml}
                     </div>
+
 
 
                     <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5">
