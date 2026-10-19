@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سمان ههيا | المتجر الرسمي وتتبع الطلبات</title>
+    <meta name="theme-color" content="#064e3b">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#064e3b',
+                            primary: '#166534',
+                            accent: '#f59e0b',
+                            light: '#ecfdf5'
+                        }
+                    },
+                    fontFamily: { cairo: ['Cairo', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8fafc; -webkit-font-smoothing: antialiased; }
+        .tab-section { display: none; animation: fadeIn 0.25s ease-out forwards; }
+        .tab-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col pb-24">
+
+    <!-- الهيدر وشريط التنقل بين البوابات الثلاث -->
+    <header class="bg-brand-dark text-white sticky top-0 z-50 shadow-lg border-b border-emerald-800">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-amber-400 text-xl shadow-inner">
+                    <i class="fa-solid fa-kiwi-bird"></i>
+                </div>
+                <div>
+                    <h1 id="store-title" class="text-lg md:text-xl font-black tracking-tight">سمان ههيا</h1>
+                    <p class="text-[10px] text-emerald-300 font-bold">طازج من المزرعة • تغليف آمن في عبوات PET شفافة</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 bg-emerald-950/70 p-1 rounded-2xl border border-emerald-800/80">
+                <button onclick="switchPortal('shop')" id="nav-shop" class="portal-btn px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-600 text-white transition-all">
+                    <i class="fa-solid fa-bag-shopping ml-1"></i> المتجر
+                </button>
+                <button onclick="switchPortal('track')" id="nav-track" class="portal-btn px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-200 hover:text-white transition-all">
+                    <i class="fa-solid fa-location-crosshairs ml-1"></i> تتبع طلبك
+                </button>
+                <button onclick="switchPortal('hub')" id="nav-hub" class="portal-btn px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-200 hover:text-white transition-all">
+                    <i class="fa-solid fa-user-gear ml-1"></i> الإدارة والمناديب
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- 1. بوابة المتجر والبيع السريع للعميل -->
+    <!-- ========================================== -->
+    <main id="portal-shop" class="tab-section active max-w-5xl mx-auto w-full px-4 pt-5 space-y-6">
+
+        <!-- بانر حالة الدفعة الحية والمخ الإلكتروني -->
+        <div id="live-batch-banner" class="bg-gradient-to-l from-emerald-900 via-brand-primary to-emerald-800 text-white p-5 rounded-3xl shadow-xl relative overflow-hidden">
+            <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span id="batch-badge-status" class="inline-flex items-center gap-1.5 bg-amber-400 text-slate-900 text-[11px] font-black px-3 py-1 rounded-full mb-2 shadow-sm">
+                        <i class="fa-solid fa-fire"></i> الحجز متاح الآن
+                    </span>
+                    <h2 id="batch-banner-title" class="text-xl md:text-2xl font-black mb-1">سمان مدبوح فريش وتجهيز يومي</h2>
+                    <p id="batch-banner-msg" class="text-xs md:text-sm text-emerald-100 font-bold leading-relaxed">يتم الذبح والتنظيف والتغليف في عبوات PET صحية شفافة لضمان أعلى درجات النظافة والجودة.</p>
+                </div>
+                <div id="batch-dates-box" class="hidden bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3 text-center shrink-0">
+                    <span class="block text-[10px] text-emerald-200 font-bold">موعد التسليم المتوقع</span>
+                    <span id="batch-dates-text" class="text-xs font-black text-amber-300"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- كتالوج المنتجات -->
+        <div>
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base md:text-lg font-black text-slate-800"><i class="fa-solid fa-boxes-packing text-brand-primary ml-1.5"></i> اختر طلبك بكل سهولة</h3>
+                <span id="free-delivery-hint" class="hidden text-xs font-black bg-amber-100 text-amber-800 px-3 py-1 rounded-full border border-amber-200"></span>
+            </div>
+            <div id="store-products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+
+        <!-- نموذج إتمام الطلب السريع -->
+        <div id="checkout-section" class="bg-white rounded-3xl p-6 shadow-md border border-slate-200/80 space-y-5">
+            <h3 class="text-lg font-black text-slate-800 border-b border-slate-100 pb-3 flex items-center justify-between">
+                <span><i class="fa-solid fa-truck-fast text-brand-primary ml-2"></i> بيانات التوصيل السريع</span>
+                <span id="customer-welcome-badge" class="hidden text-xs font-black bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full border border-emerald-200"></span>
+            </h3>
+
+            <!-- تنبيه نقاط الولاء أو البلاك ليست للعميل -->
+            <div id="customer-loyalty-banner" class="hidden"></div>
+            <div id="customer-prepaid-notice" class="hidden bg-amber-50 border-2 border-amber-300 text-amber-900 p-4 rounded-2xl text-xs font-black leading-relaxed">
+                <i class="fa-solid fa-circle-info text-amber-600 ml-1 text-sm"></i>
+                لتأكيد حجزك في هذه الدفعة وضمان أولوية التجهيز، يُرجى تحويل قيمة الطلب مقدماً عبر (فودافون كاش أو إنستاباي) بعد إرسال الطلب مباشرة.
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-black text-slate-600 block mb-1.5">رقم الموبايل (للتعرف التلقائي وتتبع الطلب) *</label>
+                    <input type="tel" id="cust-phone" dir="ltr" oninput="lookupCustomerByPhone(this.value)" placeholder="01012345678" class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-3.5 text-sm font-black outline-none focus:ring-2 focus:ring-brand-primary/20">
+                </div>
+                <div>
+                    <label class="text-xs font-black text-slate-600 block mb-1.5">الاسم الكامل *</label>
+                    <input type="text" id="cust-name" oninput="checkStoreBlacklistRules()" placeholder="اكتب اسمك الثلاثي..." class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-3.5 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-primary/20">
+                </div>
+                <div>
+                    <label class="text-xs font-black text-slate-600 block mb-1.5">منطقة التوصيل *</label>
+                    <select id="cust-zone" onchange="recalcCart()" class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-3.5 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-primary/20">
+                        <option value="">-- اختر منطقتك --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-black text-slate-600 block mb-1.5">العنوان بالتفصيل (الشارع / علامة مميزة) *</label>
+                    <input type="text" id="cust-address" oninput="checkStoreBlacklistRules()" placeholder="مثال: ههيا - شارع الجمهورية بجوار..." class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-3.5 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-primary/20">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs font-black text-slate-600 block mb-1.5">طريقة الدفع المفضلة</label>
+                    <select id="cust-payment" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3.5 text-sm font-bold outline-none">
+                        <option value="cash">💵 الدفع كاش عند الاستلام</option>
+                        <option value="online">💳 دفع مسبق (فودافون كاش / إنستاباي)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs font-black text-slate-600 block mb-1.5">ملاحظات للمندوب أو التجهيز (اختياري)</label>
+                    <input type="text" id="cust-note" placeholder="مثال: الاتصال قبل الوصول بنصف ساعة..." class="w-full border border-slate-200 bg-slate-50 focus:bg-white rounded-xl p-3.5 text-sm font-bold outline-none">
+                </div>
+            </div>
+
+            <!-- ملخص الفاتورة -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/70 space-y-2 text-sm">
+                <div class="flex justify-between font-bold text-slate-600">
+                    <span>قيمة المنتجات:</span>
+                    <span id="summary-subtotal">0 ج.م</span>
+                </div>
+                <div class="flex justify-between font-bold text-slate-600">
+                    <span>رسوم التوصيل:</span>
+                    <span id="summary-delivery">0 ج.م</span>
+                </div>
+                <div id="summary-discount-row" class="hidden flex justify-between font-black text-emerald-600">
+                    <span>خصم نقاط الولاء:</span>
+                    <span id="summary-discount">-0 ج.م</span>
+                </div>
+                <div class="flex justify-between font-black text-lg text-brand-primary pt-2 border-t border-slate-200">
+                    <span>الإجمالي النهائي:</span>
+                    <span id="summary-total">0 ج.م</span>
+                </div>
+            </div>
+
+            <button onclick="submitCustomerOrder()" id="btn-submit-order" class="w-full bg-brand-primary hover:bg-emerald-800 text-white font-black py-4 rounded-2xl shadow-lg shadow-brand-primary/30 text-base transition-all active:scale-95 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب الآن
+            </button>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 2. بوابة تتبع الطلبات الحية للعميل -->
+    <!-- ========================================== -->
+    <section id="portal-track" class="tab-section max-w-3xl mx-auto w-full px-4 pt-6 space-y-6">
+        <div class="bg-white rounded-3xl p-6 shadow-md border border-slate-200/80 text-center space-y-4">
+            <div class="w-16 h-16 rounded-full bg-emerald-50 text-brand-primary flex items-center justify-center text-2xl mx-auto">
+                <i class="fa-solid fa-route"></i>
+            </div>
+            <h2 class="text-xl font-black text-slate-800">تتبع حالة طلبك لحظة بلحظة</h2>
+            <p class="text-xs text-slate-500 font-bold">أدخل رقم الموبايل الذي قمت بالطلب به لمعرفة مرحلة التجهيز وخط سير المندوب</p>
+            <div class="flex gap-2 max-w-md mx-auto">
+                <input type="tel" id="track-phone-input" dir="ltr" placeholder="010..." class="flex-1 border border-slate-200 bg-slate-50 rounded-xl p-3.5 text-center font-black text-base outline-none focus:bg-white focus:ring-2 focus:ring-brand-primary/20">
+                <button onclick="trackCustomerOrders()" class="bg-brand-primary hover:bg-emerald-800 text-white px-6 rounded-xl font-black text-sm shadow-md transition-all">بحث</button>
+            </div>
+        </div>
+
+        <div id="track-results-container" class="space-y-4"></div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 3. بوابة مواقع الإدارة والمناديب والتشغيل -->
+    <!-- ========================================== -->
+    <section id="portal-hub" class="tab-section max-w-4xl mx-auto w-full px-4 pt-6 space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- كارت الانتقال للوحة الإدارة المركزية CRM -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-brand-primary flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-800 mb-1">الإدارة المركزية (CRM)</h3>
+                    <p class="text-xs text-slate-500 font-bold leading-relaxed mb-5">لوحة التحكم الكاملة في الطلبات الحية، الدفعات، الفريزر، أرشيف العملاء، البلاك ليست، وتقفيل الحسابات.</p>
+                </div>
+                <a href="index.html" class="w-full bg-slate-900 hover:bg-black text-white font-black py-3.5 rounded-xl text-center text-sm shadow-md transition-all block">
+                    <i class="fa-solid fa-arrow-up-right-from-square ml-1"></i> فتح لوحة الإدارة المركزية
+                </a>
+            </div>
+
+            <!-- كارت بوابة المندوب السريعة -->
+            <div class="bg-white p-6 rounded-3xl shadow-md border border-slate-200 flex flex-col justify-between">
+                <div>
+                    <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-motorcycle"></i>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-800 mb-1">بوابة المندوب وخطوط السير</h3>
+                    <p class="text-xs text-slate-500 font-bold leading-relaxed mb-4">استعلام سريع للمندوب عن الطلبات الجاهزة للتوصيل أو التي في الطريق حسب المنطقة.</p>
+                    <select id="hub-driver-zone" onchange="loadDriverRouteOrders()" class="w-full border border-slate-200 bg-slate-50 rounded-xl p-3 text-xs font-black outline-none mb-3">
+                        <option value="all">كل المناطق الجاهزة للتسليم</option>
+                    </select>
+                </div>
+                <button onclick="loadDriverRouteOrders()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-xl text-sm shadow-md transition-all">
+                    <i class="fa-solid fa-list-check ml-1"></i> عرض كشف التسليمات الحالية
+                </button>
+            </div>
+        </div>
+
+        <div id="driver-route-results" class="space-y-3"></div>
+    </section>
+
+    <script>
+        // إعدادات الفايربيس المتطابقة مع لوحة الإدارة المركزية
+        const firebaseConfig = { 
+            apiKey: "AIzaSyD7ZJP8n8fhMewPfEsTBANn0h9To_q15BY", 
+            authDomain: "sman-ca8f8.firebaseapp.com", 
+            projectId: "sman-ca8f8", 
+            storageBucket: "sman-ca8f8.firebasestorage.app", 
+            messagingSenderId: "538778803310", 
+            appId: "1:538778803310:web:5eeff42bae534375a21a7f" 
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+
+        let storeSettings = { deliveryZones: [{name: 'ههيا', price: 20}, {name: 'الزقازيق', price: 35}, {name: 'أبو كبير', price: 30}], storeOpen: true, pointsPer100: 5, pointValueInEGP: 0.40 };
+        let storeProducts = {
+            'super': { name: 'طبق سوبر', basePrice: 100, weight: '300-350 جم', isExtra: false },
+            'jumbo': { name: 'طبق جامبو', basePrice: 110, weight: '350-400 جم', isExtra: false, isBest: true },
+            'special': { name: 'طبق سبشيال', basePrice: 120, weight: '400-450 جم', isExtra: false },
+            'superspecial': { name: 'سوبر سبشيال', basePrice: 130, weight: '450-500 جم', isExtra: false },
+            'eggs': { name: 'طبق بيض سمان', basePrice: 50, weight: 'طبق 18 بيضة', isExtra: true }
+        };
+        let storePrices = {};
+        let storeStock = {};
+        let storeBatches = {};
+        let activeBatchId = '';
+        let cart = {};
+        let currentCustomerDoc = null;
+        let redeemPointsDiscount = 0;
+
+        window.normalizePhone = (phone) => {
+            if (!phone) return '';
+            let n = phone.toString()
+                .replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660)
+                .replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0)
+                .replace(/\D/g, '');
+            if (n.length >= 10) {
+                if (n.startsWith('0020')) n = '0' + n.substring(4);
+                else if (n.startsWith('201')) n = '0' + n.substring(2);
+                else if (n.length === 10 && n.startsWith('1')) n = '0' + n;
+            }
+            return n;
+        };
+
+        window.switchPortal = (portal) => {
+            document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+            document.getElementById('portal-' + portal).classList.add('active');
+            document.querySelectorAll('.portal-btn').forEach(b => {
+                b.className = 'portal-btn px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-200 hover:text-white transition-all';
+            });
+            document.getElementById('nav-' + portal).className = 'portal-btn px-3 py-1.5 rounded-xl text-xs font-black bg-emerald-600 text-white transition-all shadow-sm';
+        };
+
+        // تحميل بيانات المتجر والدفعات من الفايربيس
+        async function initStorefront() {
+            try {
+                const snap = await db.collection('inventory').get();
+                snap.forEach(doc => {
+                    if (doc.id === 'settings') {
+                        storeSettings = Object.assign(storeSettings, doc.data());
+                        if (storeSettings.productsData && Object.keys(storeSettings.productsData).length > 0) {
+                            storeProducts = storeSettings.productsData;
+                        }
+                    }
+                    if (doc.id === 'prices') storePrices = doc.data() || {};
+                    if (doc.id === 'stock') storeStock = doc.data() || {};
+                    if (doc.id === 'batches') storeBatches = doc.data() || {};
+                });
+            } catch (e) { console.log('Using fallback catalog'); }
+
+            renderActiveBatchBanner();
+            renderZonesDropdown();
+            renderProductsCatalog();
+        }
+
+        function renderActiveBatchBanner() {
+            let openBatches = Object.keys(storeBatches).filter(id => storeBatches[id] && storeBatches[id].isVisible !== false);
+            if (openBatches.length > 0) {
+                activeBatchId = openBatches[openBatches.length - 1];
+                let b = storeBatches[activeBatchId];
+                document.getElementById('batch-banner-title').innerText = b.name || 'دفعة سمان ههيا الطازجة';
+
+                let currentAge = b.hatchDate ? Math.floor((Date.now() - b.hatchDate) / (1000 * 60 * 60 * 24)) : 25;
+                let slaughterAge = b.slaughterAge || 40;
+                let rem = slaughterAge - currentAge;
+                let msg = '';
+                if (!b.isOpen) msg = '✅ اكتمل حجز هذه الدورة وجاري التجهيز والذبح وتوزيع الطلبات.';
+                else if (rem <= 5) msg = '⏳ أيام قليلة جداً ويكتمل نضج الدفعة! احجز طلبك الآن قبل إغلاق الحجز.';
+                else msg = '📈 الدفعة في مرحلة التسمين والرعاية الفائقة، احجز طلبك ليصلك طازجاً فور الذبح.';
+
+                if (b.urgentNote) msg = '📌 ' + b.urgentNote + ' — ' + msg;
+                document.getElementById('batch-banner-msg').innerText = msg;
+
+                if (b.deliveryStart || b.deliveryEnd) {
+                    document.getElementById('batch-dates-box').classList.remove('hidden');
+                    document.getElementById('batch-dates-text').innerText = (b.deliveryStart || '') + (b.deliveryEnd ? ' إلى ' + b.deliveryEnd : '');
+                }
+            }
+            if (storeSettings.freeDeliveryActive && storeSettings.freeDeliveryThreshold > 0) {
+                let fd = document.getElementById('free-delivery-hint');
+                fd.classList.remove('hidden');
+                fd.innerHTML = `<i class="fa-solid fa-gift ml-1"></i> توصيل مجاني للطلبات فوق ${storeSettings.freeDeliveryThreshold} ج`;
+            }
+        }
+
+        function renderZonesDropdown() {
+            const zSel = document.getElementById('cust-zone');
+            const dSel = document.getElementById('hub-driver-zone');
+            zSel.innerHTML = '<option value="">-- اختر منطقتك --</option>';
+            (storeSettings.deliveryZones || []).forEach(z => {
+                zSel.innerHTML += `<option value="${z.name}" data-price="${z.price}">${z.name} (${z.price} ج)</option>`;
+                if (dSel) dSel.innerHTML += `<option value="${z.name}">${z.name}</option>`;
+            });
+        }
+
+        function renderProductsCatalog() {
+            const grid = document.getElementById('store-products-grid');
+            grid.innerHTML = '';
+            Object.keys(storeProducts).forEach(id => {
+                let p = storeProducts[id];
+                if (p.isHidden) return;
+                let price = storePrices[id] || p.basePrice || 0;
+                let qty = cart[id] || 0;
+
+                grid.innerHTML += `
+                <div class="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden">
+                    ${p.isBest ? '<span class="absolute top-3 left-3 bg-amber-400 text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full shadow-sm">🔥 الأكثر طلباً</span>' : ''}
+                    <div>
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-brand-primary flex items-center justify-center text-xl font-black shrink-0">
+                                <i class="fa-solid ${p.isExtra ? 'fa-egg' : 'fa-drumstick-bite'}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-black text-slate-800 text-base">${p.name}</h4>
+                                <span class="text-xs font-bold text-slate-400">${p.weight || 'تغليف PET شفاف'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-100 mt-2">
+                        <div>
+                            ${p.isDisc && p.oldPrice ? `<span class="text-xs text-red-400 line-through font-bold ml-1">${p.oldPrice} ج</span>` : ''}
+                            <span class="text-xl font-black text-brand-primary">${price} <span class="text-xs">ج.م</span></span>
+                        </div>
+                        <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                            <button onclick="updateCartQty('${id}', -1)" class="w-8 h-8 rounded-lg bg-white text-red-500 font-black shadow-sm hover:bg-red-50">-</button>
+                            <span id="qty-disp-${id}" class="w-6 text-center font-black text-sm">${qty}</span>
+                            <button onclick="updateCartQty('${id}', 1)" class="w-8 h-8 rounded-lg bg-brand-primary text-white font-black shadow-sm hover:bg-emerald-800">+</button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        window.updateCartQty = (id, delta) => {
+            cart[id] = Math.max(0, (cart[id] || 0) + delta);
+            let el = document.getElementById('qty-disp-' + id);
+            if (el) el.innerText = cart[id];
+            recalcCart();
+        };
+
+        window.recalcCart = () => {
+            let subtotal = 0;
+            Object.keys(cart).forEach(id => {
+                let q = cart[id] || 0;
+                if (q > 0 && storeProducts[id]) {
+                    let price = storePrices[id] || storeProducts[id].basePrice || 0;
+                    subtotal += q * price;
+                }
+            });
+
+            let zSel = document.getElementById('cust-zone');
+            let delFee = 0;
+            if (zSel && zSel.selectedIndex > 0) {
+                delFee = parseInt(zSel.options[zSel.selectedIndex].getAttribute('data-price')) || 0;
+            }
+            if (storeSettings.freeDeliveryActive && storeSettings.freeDeliveryThreshold > 0 && subtotal >= storeSettings.freeDeliveryThreshold) {
+                delFee = 0;
+            }
+
+            let total = Math.max(0, subtotal + delFee - redeemPointsDiscount);
+            document.getElementById('summary-subtotal').innerText = subtotal + ' ج.م';
+            document.getElementById('summary-delivery').innerText = delFee + ' ج.م';
+            document.getElementById('summary-total').innerText = total + ' ج.م';
+        };
+
+        // التعرف التلقائي على العميل وفحص نقاط الولاء والبلاك ليست
+        let lookupTimer;
+        window.lookupCustomerByPhone = (val) => {
+            clearTimeout(lookupTimer);
+            let phone = window.normalizePhone(val);
+            if (phone.length < 11) return;
+
+            lookupTimer = setTimeout(async () => {
+                try {
+                    let doc = await db.collection('customers').doc(phone).get();
+                    if (doc.exists) {
+                        currentCustomerDoc = doc.data();
+                        if (currentCustomerDoc.name && !document.getElementById('cust-name').value) {
+                            document.getElementById('cust-name').value = currentCustomerDoc.name;
+                        }
+                        if (currentCustomerDoc.zone) {
+                            document.getElementById('cust-zone').value = currentCustomerDoc.zone;
+                        }
+                        if (currentCustomerDoc.address && !document.getElementById('cust-address').value) {
+                            document.getElementById('cust-address').value = currentCustomerDoc.address;
+                        }
+
+                        let wb = document.getElementById('customer-welcome-badge');
+                        wb.classList.remove('hidden');
+                        wb.innerText = '👋 أهلاً بعودتك يا ' + (currentCustomerDoc.name || 'عميلنا العزيز');
+
+                        // عرض محفظة النقاط إن وجدت
+                        let pts = currentCustomerDoc.walletPoints || 0;
+                        let ptVal = storeSettings.pointValueInEGP || 0.40;
+                        let egpVal = Math.floor(pts * ptVal);
+                        let loyaltyBox = document.getElementById('customer-loyalty-banner');
+                        if (pts > 0 && egpVal > 0 && !currentCustomerDoc.isBlacklisted) {
+                            loyaltyBox.className = 'bg-amber-50 border border-amber-200 p-3.5 rounded-2xl flex justify-between items-center';
+                            loyaltyBox.innerHTML = `
+                                <div class="text-xs font-black text-amber-900"><i class="fa-solid fa-coins text-amber-500 ml-1"></i> لديك ${pts} نقطة ولاء (تساوي خصم ${egpVal} ج.م)</div>
+                                <button onclick="applyLoyaltyDiscount(${egpVal})" class="bg-amber-500 text-white px-3 py-1.5 rounded-xl text-xs font-black">استخدام الخصم</button>
+                            `;
+                        }
+                        checkStoreBlacklistRules();
+                        recalcCart();
+                    }
+                } catch (e) {}
+            }, 350);
+        };
+
+        window.applyLoyaltyDiscount = (amount) => {
+            redeemPointsDiscount = amount;
+            document.getElementById('summary-discount-row').classList.remove('hidden');
+            document.getElementById('summary-discount').innerText = '-' + amount + ' ج.م';
+            recalcCart();
+        };
+
+        window.checkStoreBlacklistRules = () => {
+            let notice = document.getElementById('customer-prepaid-notice');
+            let paySelect = document.getElementById('cust-payment');
+            if (currentCustomerDoc && (currentCustomerDoc.isBlacklisted || currentCustomerDoc.trustRating === 'blacklist')) {
+                notice.classList.remove('hidden');
+                paySelect.value = 'online';
+            } else {
+                notice.classList.add('hidden');
+            }
+        };
+
+        // إرسال الطلب مباشرة لقاعدة البيانات ليظهر في الطلبات الحية
+        window.submitCustomerOrder = async () => {
+            let phone = window.normalizePhone(document.getElementById('cust-phone').value);
+            let name = document.getElementById('cust-name').value.trim();
+            let zone = document.getElementById('cust-zone').value;
+            let address = document.getElementById('cust-address').value.trim();
+            let note = document.getElementById('cust-note').value.trim();
+            let paymentMethod = document.getElementById('cust-payment').value;
+
+            let items = [];
+            let subtotal = 0;
+            let batchUpdates = {};
+
+            Object.keys(cart).forEach(id => {
+                let q = cart[id] || 0;
+                if (q > 0 && storeProducts[id]) {
+                    let price = storePrices[id] || storeProducts[id].basePrice || 0;
+                    items.push({ id: id, name: storeProducts[id].name, quantity: q, price: price });
+                    subtotal += q * price;
+                    batchUpdates[id] = q;
+                }
+            });
+
+            if (items.length === 0) return alert('برجاء اختيار صنف واحد على الأقل من المتجر!');
+            if (!phone || phone.length < 11 || !name || !zone || !address) {
+                return alert('برجاء إكمال رقم الموبايل والاسم والمنطقة والعنوان بالتفصيل!');
+            }
+
+            let zSel = document.getElementById('cust-zone');
+            let deliveryFee = parseInt(zSel.options[zSel.selectedIndex].getAttribute('data-price')) || 0;
+            if (storeSettings.freeDeliveryActive && storeSettings.freeDeliveryThreshold > 0 && subtotal >= storeSettings.freeDeliveryThreshold) {
+                deliveryFee = 0;
+            }
+            let total = Math.max(0, subtotal + deliveryFee - redeemPointsDiscount);
+
+            let btn = document.getElementById('btn-submit-order');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري تسجيل طلبك...';
+
+            try {
+                let batchName = (activeBatchId && storeBatches[activeBatchId]) ? storeBatches[activeBatchId].name : '';
+                let isBL = currentCustomerDoc && (currentCustomerDoc.isBlacklisted || currentCustomerDoc.trustRating === 'blacklist');
+
+                let orderData = {
+                    customerName: name,
+                    customerPhone: phone,
+                    zone: zone,
+                    customerAddress: address,
+                    batchId: activeBatchId || '',
+                    batchName: batchName,
+                    paymentMethod: isBL ? 'cash' : paymentMethod,
+                    isPrepaidConfirmed: false,
+                    subtotal: subtotal,
+                    deliveryFee: deliveryFee,
+                    discount: redeemPointsDiscount,
+                    total: total,
+                    driverNote: note,
+                    adminNote: isBL ? '[طلب من الموقع لعميل بلاك ليست - يلزم تحصيل الدفع المسبق قبل التجهيز]' : '',
+                    items: items,
+                    status: 'new',
+                    orderDate: new Date().toLocaleDateString('en-US'),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                let batch = db.batch();
+                let newOrderRef = db.collection('orders').doc();
+                batch.set(newOrderRef, orderData);
+
+                let custRef = db.collection('customers').doc(phone);
+                batch.set(custRef, {
+                    name: name,
+                    phone: phone,
+                    zone: zone,
+                    address: address,
+                    ordersCount: firebase.firestore.FieldValue.increment(1),
+                    totalSpent: firebase.firestore.FieldValue.increment(total),
+                    lastOrder: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                if (activeBatchId) {
+                    let bookedMap = {};
+                    Object.keys(batchUpdates).forEach(pId => {
+                        bookedMap[pId] = firebase.firestore.FieldValue.increment(batchUpdates[pId]);
+                    });
+                    batch.set(db.collection('inventory').doc('batches'), { [activeBatchId]: { booked: bookedMap } }, { merge: true });
+                }
+
+                await batch.commit();
+
+                cart = {};
+                renderProductsCatalog();
+                recalcCart();
+                alert('🎉 تم تسجيل طلبك بنجاح في سمان ههيا! يمكنك الآن متابعة حالة طلبك لحظة بلحظة من تبويب (تتبع طلبك).');
+                document.getElementById('track-phone-input').value = phone;
+                switchPortal('track');
+                trackCustomerOrders();
+            } catch (e) {
+                alert('حدث خطأ أثناء إرسال الطلب، برجاء المحاولة مرة أخرى.');
+            }
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> تأكيد وإرسال الطلب الآن';
+        };
+
+        // دالة تتبع الطلبات الحية للعميل
+        window.trackCustomerOrders = async () => {
+            let phone = window.normalizePhone(document.getElementById('track-phone-input').value);
+            let cont = document.getElementById('track-results-container');
+            if (!phone || phone.length < 10) return alert('برجاء كتابة رقم موبايل صحيح!');
+
+            cont.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-2xl text-brand-primary"></i></div>';
+            try {
+                let snap = await db.collection('orders').where('customerPhone', '==', phone).get();
+                let list = [];
+                snap.forEach(d => list.push({ id: d.id, ...d.data() }));
+                list.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+
+                if (list.length === 0) {
+                    cont.innerHTML = '<div class="bg-white p-8 rounded-3xl text-center font-bold text-slate-400 border border-slate-200">لا توجد طلبات مسجلة بهذا الرقم حالياً.</div>';
+                    return;
+                }
+
+                cont.innerHTML = list.slice(0, 5).map(o => {
+                    let steps = [
+                        { key: 'new', label: 'تم استلام الطلب', icon: 'fa-receipt' },
+                        { key: 'processing', label: 'جاري الذبح والتجهيز', icon: 'fa-box-open' },
+                        { key: 'dispatched', label: 'في الطريق مع المندوب', icon: 'fa-motorcycle' },
+                        { key: 'completed', label: 'تم التسليم', icon: 'fa-circle-check' }
+                    ];
+                    let rank = { new: 1, deferred: 1, no_answer: 1, processing: 2, dispatched: 3, completed: 4 };
+                    let curRank = rank[o.status] || 1;
+                    let itemsStr = (o.items || []).map(i => `${i.quantity}x ${i.name}`).join(' + ');
+
+                    let stepperHtml = o.status === 'canceled'
+                        ? '<div class="bg-red-50 text-red-600 p-3 rounded-xl text-center font-black text-xs">تم إلغاء هذا الطلب</div>'
+                        : `<div class="grid grid-cols-4 gap-2 pt-3">
+                            ${steps.map((st, idx) => {
+                                let active = (idx + 1) <= curRank;
+                                return `<div class="text-center">
+                                    <div class="w-9 h-9 mx-auto rounded-full flex items-center justify-center text-xs mb-1 ${active ? 'bg-brand-primary text-white shadow-md' : 'bg-slate-100 text-slate-400'}">
+                                        <i class="fa-solid ${st.icon}"></i>
+                                    </div>
+                                    <span class="block text-[10px] font-black ${active ? 'text-brand-primary' : 'text-slate-400'}">${st.label}</span>
+                                </div>`;
+                            }).join('')}
+                        </div>`;
+
+                    return `
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border border-slate-200 space-y-3">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div>
+                                <span class="text-xs font-black text-slate-800">${o.batchName || 'طلب سمان ههيا'}</span>
+                                <span class="block text-[10px] text-slate-400 font-bold">تاريخ الطلب: ${o.orderDate || ''}</span>
+                            </div>
+                            <span class="text-lg font-black text-brand-primary">${o.total} ج.م</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-600 bg-slate-50 p-3 rounded-xl">${itemsStr}</p>
+                        ${stepperHtml}
+                    </div>`;
+                }).join('');
+            } catch (e) {
+                cont.innerHTML = '<div class="text-center text-red-500 font-bold">حدث خطأ أثناء جلب حالة الطلب.</div>';
+            }
+        };
+
+        // بوابة المندوب لعرض كشف التسليمات الجاهزة
+        window.loadDriverRouteOrders = async () => {
+            let zoneFilter = document.getElementById('hub-driver-zone').value;
+            let cont = document.getElementById('driver-route-results');
+            cont.innerHTML = '<div class="text-center py-6"><i class="fa-solid fa-spinner fa-spin text-xl text-blue-600"></i></div>';
+            try {
+                let snap = await db.collection('orders').where('status', 'in', ['processing', 'dispatched']).get();
+                let orders = [];
+                snap.forEach(d => {
+                    let data = d.data();
+                    if (zoneFilter === 'all' || data.zone === zoneFilter) orders.push({ id: d.id, ...data });
+                });
+
+                if (orders.length === 0) {
+                    cont.innerHTML = '<div class="bg-white p-6 rounded-2xl text-center text-slate-400 font-bold text-xs">لا توجد طلبات قيد التجهيز أو في الطريق لهذه المنطقة حالياً.</div>';
+                    return;
+                }
+
+                cont.innerHTML = orders.map(o => `
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                        <div>
+                            <h4 class="font-black text-sm text-slate-800">${o.customerName} <span class="text-xs text-blue-600">(${o.zone})</span></h4>
+                            <p class="text-xs font-bold text-slate-500 mt-0.5">${o.customerAddress || ''}</p>
+                            <p class="text-[11px] font-bold text-emerald-700 mt-1">${(o.items || []).map(i => i.quantity + 'x ' + i.name).join(' ، ')}</p>
+                            ${o.driverNote ? `<p class="text-[10px] font-black text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">🛵 ${o.driverNote}</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                            <span class="font-black text-base text-brand-primary">${o.paymentMethod === 'online' ? '0 ج (خالص أونلاين)' : (o.total + ' ج')}</span>
+                            <a href="tel:${o.customerPhone}" class="bg-emerald-600 text-white px-3 py-2 rounded-xl text-xs font-black"><i class="fa-solid fa-phone ml-1"></i> اتصال</a>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                cont.innerHTML = '<div class="text-center text-red-500 font-bold text-xs">تعذر تحميل كشف المندوب.</div>';
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', initStorefront);
+    </script>
+</body>
+</html>
