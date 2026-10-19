@@ -2220,29 +2220,17 @@
                         <a href="tel:${o.customerPhone2}" class="text-purple-500 hover:text-white hover:bg-purple-500 w-5 h-5 flex items-center justify-center bg-purple-100 rounded-full transition-colors" title="اتصال بالرقم البديل"><i class="fa-solid fa-phone text-[8px]"></i></a>
                     </span>` : '';
 
-                let trustAnalysis = { cardClass: 'bg-white border-slate-100', badgeHtml: '', bannerHtml: '', stickyHtml: '' };
-                try {
-                    if (typeof window.fastAnalyzeOrderTrust === 'function') {
-                        trustAnalysis = window.fastAnalyzeOrderTrust(o);
-                    }
-                } catch (e) {}
-
                 return `
-                <div data-id="${o.id}" onclick="highlightOrderCard(this, event)" class="order-card ${trustAnalysis.cardClass} p-3.5 rounded-[1rem] shadow-sm border hover:shadow-md transition-all relative group cursor-pointer">
+                <div data-id="${o.id}" onclick="highlightOrderCard(this, event)" class="order-card bg-white p-3.5 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group cursor-pointer">
                     <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-3 left-3 w-4 h-4 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
                     
-                    ${trustAnalysis.bannerHtml}
-                    ${trustAnalysis.stickyHtml}
-
                     <div class="flex justify-between items-start mb-1.5 pl-6">
                         <div>
                             <h5 class="font-black text-slate-800 text-sm flex flex-wrap items-center gap-1.5 mb-1">
                                 <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed select-none" onclick="smartNameClick(this, '${o.id}', '${o.customerPhone}', 'customerName')" title="اضغط مرة لفتح ملف العميل.. مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
-                                ${trustAnalysis.badgeHtml}
                                 <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-5 h-5 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[9px]"></i></a>
                                 <span class="text-[10px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
                                 ${phone2Html}
-                                <button onclick="event.stopPropagation(); quickBanFromOrderCard('${o.id}')" class="text-[9px] bg-red-50 text-red-500 hover:bg-red-600 hover:text-white px-1.5 py-0.5 rounded border border-red-100 font-black transition-colors" title="إدراج سريع في البلاك ليست"><i class="fa-solid fa-ban"></i></button>
                             </h5>
 
                             <p class="text-[10px] text-slate-500 font-bold flex items-center gap-1 flex-wrap">
@@ -2262,6 +2250,7 @@
                      <div class="flex flex-wrap gap-1 mb-1.5">
                         ${paymentBadge} ${batchTagHtml} ${customTagHtml}
                     </div>
+
 
                     <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5">
                         ${itemsStr}
@@ -2323,115 +2312,6 @@
             if (openInlineNoteId && openInlineNoteField) {
                 setTimeout(() => { toggleInlineNotes(null, openInlineNoteId, openInlineNoteField, true); }, 50);
             }
-        };
-
-        // ⚡ محرك فائق السرعة (Cached O(1)) لتحليل الثقة والبلاك ليست بدون أي تهنيج ⚡
-        window._trustCacheTime = 0;
-        window._custPhoneMap = {};
-        window._blacklistedCache = [];
-
-        window.rebuildTrustCacheIfNeeded = () => {
-            let now = Date.now();
-            if (now - window._trustCacheTime < 1500 && Object.keys(window._custPhoneMap).length > 0) return;
-            window._trustCacheTime = now;
-            window._custPhoneMap = {};
-            window._blacklistedCache = [];
-
-            if (!Array.isArray(customersData)) return;
-            for (let i = 0; i < customersData.length; i++) {
-                let c = customersData[i];
-                if (!c) continue;
-                let p1 = window.normalizePhone(c.phone);
-                if (p1) window._custPhoneMap[p1] = c;
-                if (c.phone2) {
-                    let p2 = window.normalizePhone(c.phone2);
-                    if (p2) window._custPhoneMap[p2] = c;
-                }
-                if (Array.isArray(c.altPhones)) {
-                    for (let j = 0; j < c.altPhones.length; j++) {
-                        let ap = window.normalizePhone(c.altPhones[j]);
-                        if (ap) window._custPhoneMap[ap] = c;
-                    }
-                }
-                if (c.isBlacklisted === true || c.trustRating === 'blacklist') {
-                    window._blacklistedCache.push(c);
-                }
-            }
-        };
-
-        window.findBlacklistedCustomerMatch = (phone, phone2, name, address) => {
-            try {
-                window.rebuildTrustCacheIfNeeded();
-                let normP1 = window.normalizePhone(phone);
-                let normP2 = window.normalizePhone(phone2);
-
-                if (normP1 && window._custPhoneMap[normP1] && (window._custPhoneMap[normP1].isBlacklisted || window._custPhoneMap[normP1].trustRating === 'blacklist')) {
-                    return { type: 'exact', customer: window._custPhoneMap[normP1] };
-                }
-                if (normP2 && window._custPhoneMap[normP2] && (window._custPhoneMap[normP2].isBlacklisted || window._custPhoneMap[normP2].trustRating === 'blacklist')) {
-                    return { type: 'exact', customer: window._custPhoneMap[normP2] };
-                }
-
-                if (window._blacklistedCache.length === 0) return null;
-
-                let normName = window.normalizeArabicText ? window.normalizeArabicText(name) : (name || '').trim();
-                let normAddr = window.normalizeArabicText ? window.normalizeArabicText(address) : (address || '').trim();
-
-                for (let i = 0; i < window._blacklistedCache.length; i++) {
-                    let bl = window._blacklistedCache[i];
-                    let blName = window.normalizeArabicText ? window.normalizeArabicText(bl.name) : (bl.name || '').trim();
-                    let blAddr = window.normalizeArabicText ? window.normalizeArabicText(bl.address) : (bl.address || '').trim();
-
-                    let nameMatch = (normName.length >= 6 && blName.length >= 6 && (normName === blName || normName.includes(blName) || blName.includes(normName)));
-                    let addrMatch = (normAddr.length >= 8 && blAddr.length >= 8 && (normAddr === blAddr || normAddr.includes(blAddr) || blAddr.includes(normAddr)));
-
-                    if (nameMatch || addrMatch) {
-                        return {
-                            type: 'suspected',
-                            customer: bl,
-                            reason: (nameMatch && addrMatch) ? 'تطابق الاسم والعنوان معاً' : (nameMatch ? 'تطابق الاسم' : 'تطابق العنوان التفصيلي')
-                        };
-                    }
-                }
-            } catch (err) {}
-            return null;
-        };
-
-        window.fastAnalyzeOrderTrust = (o) => {
-            let def = { cardClass: 'bg-white border-slate-100', badgeHtml: '', bannerHtml: '', stickyHtml: '' };
-            if (!o) return def;
-            window.rebuildTrustCacheIfNeeded();
-
-            let normP = window.normalizePhone(o.customerPhone);
-            let cust = normP ? window._custPhoneMap[normP] : null;
-            let blMatch = window.findBlacklistedCustomerMatch(o.customerPhone, o.customerPhone2, o.customerName, o.customerAddress);
-
-            let cardClass = 'bg-white border-slate-100';
-            let badgeHtml = window.getCustomerTrustBadgeHTML ? window.getCustomerTrustBadgeHTML(cust) : '';
-            let bannerHtml = '';
-            let stickyHtml = '';
-
-            if (cust && cust.stickyNote) {
-                stickyHtml = '<div class="mb-2 bg-yellow-100 border-r-4 border-yellow-500 text-yellow-900 px-3 py-1.5 rounded-lg text-[11px] font-black flex items-center justify-between shadow-sm"><span><i class="fa-solid fa-thumbtack text-yellow-600 mr-1"></i> ملاحظة الإدارة الثابتة: ' + cust.stickyNote + '</span></div>';
-            }
-
-            if (blMatch && blMatch.type === 'exact') {
-                let blCust = blMatch.customer;
-                let cur = blCust.blacklistPrepaidCount || 0;
-                let req = blCust.blacklistRequiredOrders || 3;
-                let isPrepaid = (o.isPrepaidConfirmed === true || o.paymentMethod === 'online');
-                cardClass = 'bg-red-50/50 border-2 border-red-500 ring-2 ring-red-500/10';
-                badgeHtml = '<span class="bg-red-600 text-white px-2 py-0.5 rounded-md text-[9px] font-black animate-pulse">🚫 بلاك ليست (' + cur + '/' + req + ')</span>';
-                bannerHtml = '<div class="mb-2.5 p-3 rounded-xl ' + (isPrepaid ? 'bg-emerald-900 text-white border border-emerald-700' : 'bg-red-600 text-white') + ' shadow-md"><div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"><div><div class="text-xs font-black flex items-center gap-1.5"><i class="fa-solid ' + (isPrepaid ? 'fa-shield-check text-emerald-300' : 'fa-triangle-exclamation text-amber-300') + '"></i> ' + (isPrepaid ? ('تم تأكيد الدفع المسبق لهذا الطلب (الالتزام الحالي: ' + cur + ' من ' + req + ')') : ('حظر بلاك ليست: ممنوع التجهيز إلا بعد الدفع المسبق! (الالتزام: ' + cur + ' من ' + req + ')')) + '</div><p class="text-[10px] font-bold opacity-90 mt-0.5">📌 سبب الحظر: ' + (blCust.blacklistReason || 'رفض استلام طلب سابق / غير ملتزم') + '</p></div><button onclick="event.stopPropagation(); toggleOrderPrepaidConfirmation(\'' + o.id + '\')" class="shrink-0 px-3 py-1.5 rounded-lg text-[10px] font-black shadow-sm transition-all ' + (isPrepaid ? 'bg-white text-emerald-800 hover:bg-red-100 hover:text-red-700' : 'bg-amber-400 text-slate-900 hover:bg-amber-300') + '">' + (isPrepaid ? '✔️ مدفوع مقدماً (إلغاء؟)' : '💰 تأكيد استلام الدفع المسبق') + '</button></div></div>';
-            } else if (blMatch && blMatch.type === 'suspected') {
-                let blCust = blMatch.customer;
-                cardClass = 'bg-orange-50/40 border-2 border-orange-400';
-                bannerHtml = '<div class="mb-2.5 p-2.5 rounded-xl bg-orange-500 text-white shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"><div class="text-[11px] font-black"><i class="fa-solid fa-user-secret mr-1"></i> اشتباه تحايل بلاك ليست (' + blMatch.reason + ') مع العميل المحظور: "' + (blCust.name || '') + '" (' + (blCust.phone || '') + ') - السبب: ' + (blCust.blacklistReason || 'غير محدد') + '</div><button onclick="event.stopPropagation(); linkNewPhoneToBlacklistedCustomer(\'' + blCust.phone + '\', \'' + o.customerPhone + '\', \'' + o.id + '\')" class="shrink-0 bg-slate-900 hover:bg-black text-amber-400 px-3 py-1 rounded-lg text-[10px] font-black shadow-sm">🔗 ضم الرقم للبلاك ليست فوراً</button></div>';
-            } else if (cust && cust.trustRating === 'tiring') {
-                cardClass = 'bg-orange-50/20 border-orange-300';
-            }
-
-            return { cardClass: cardClass, badgeHtml: badgeHtml, bannerHtml: bannerHtml, stickyHtml: stickyHtml };
         };
 
 
