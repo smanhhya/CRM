@@ -2039,18 +2039,14 @@
         };
         // --- نهاية إضافات الترتيب والتظليل والملاحظات المنزلقة ---
 
-        // دالة رسم كروت الأوردرات (مُحدثة بالملاحظات الجديدة)
-        // ==========================================
-         window.renderOrdersList = () => {
+        window.renderOrdersList = () => {
             const container = document.getElementById('orders-list-vertical'); if(!container) return;
             let filterText = (document.getElementById('search-order').value || '').toLowerCase();
             
-            // ضفنا dispatched و canceled هنا لضمان عمل العدادات بشكل كامل
             let dynamicCounts = { new: 0, processing: 0, dispatched: 0, deferred: 0, no_answer: 0, completed: 0, canceled: 0 };
 
-            // --- التعديل السحري: فصل الكلمات العادية عن المدخلات المتطابقة (Exact Entities) ---
             let filterWords = [];
-            let exactPhrases = []; // هنا خزان الكلمات اللي بين علامات تنصيص
+            let exactPhrases = [];
             let quotesMatch = filterText.match(/"([^"]+)"/g);
             if (quotesMatch) {
                 quotesMatch.forEach(q => {
@@ -2059,7 +2055,6 @@
                 });
             }
             filterWords = filterWords.concat(filterText.split(' ').filter(w => w.trim() !== ''));
-            // -----------------------------------------------------------------
 
             let filteredBase = allOrdersRaw.filter(o => {
                 let itemsString = (o.items && Array.isArray(o.items)) ? o.items.map(i => i.name).join(' ') : '';
@@ -2068,27 +2063,20 @@
                 let normPhone1 = window.normalizePhone(o.customerPhone);
                 let normPhone2 = window.normalizePhone(o.customerPhone2);
 
-                // 1. توحيد النص بالكامل لأرقام إنجليزية لضمان التطابق التام
                 let searchStr = `${o.customerName || ''} ${o.customerPhone || ''} ${normPhone1} ${o.customerPhone2 || ''} ${normPhone2} ${bNameSearch} ${o.zone || ''} ${itemsString} ${o.adminNote || ''} ${o.driverNote || ''}`.toLowerCase();
                 searchStr = searchStr.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
 
-                // 2. فحص الكلمات العادية للبحث الحر
                 let matchSearch = filterWords.length === 0 ? true : filterWords.every(word => {
                     let engWord = word.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660).replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
                     let normWord = window.normalizePhone(word);
-                    
-                    // الفلترة برقم التليفون هتشتغل بس لو الرقم أكبر من 5 أرقام
                     return searchStr.includes(engWord) || (normWord !== '' && normWord.length > 5 && searchStr.includes(normWord));
                 });
 
-                // 3. الفحص المتطابق الصارم (Strict Exact Match) للمدخلات المحددة (الأصناف والدفعات)
                 let matchExact = exactPhrases.length === 0 ? true : exactPhrases.every(p => {
                     let isBatch = bNameSearch.toLowerCase() === p;
                     let isZone = (o.zone || '').toLowerCase() === p;
                     let isName = (o.customerName || '').toLowerCase() === p;
-                    // البحث ككيان مستقل داخل مصفوفة الأصناف
                     let isItem = o.items ? o.items.some(i => i.name.toLowerCase() === p) : false;
-                    
                     return isBatch || isZone || isItem || isName || searchStr.includes(p);
                 });
 
@@ -2099,7 +2087,6 @@
                 } else if(currentSmartFilter === 'high_value') {
                     matchSmart = Number(o.total) >= 500; 
                 }
-                // دمجنا كل الشروط هنا وضيفنا شرط إخفاء المؤرشف (!o.isArchived)
                 if (matchSearch && matchExact && matchSmart && o.status !== 'trash' && !o.isArchived) {
                     if (dynamicCounts[o.status] !== undefined) dynamicCounts[o.status]++;
                     return true;
@@ -2108,18 +2095,15 @@
                 return false;
             });
 
-            // ضفنا dispatched و canceled لضمان تحديث الأرقام لحظياً
             ['new', 'processing', 'dispatched', 'deferred', 'no_answer', 'completed', 'canceled'].forEach(s => { 
                 let b = document.getElementById(`badge-${s}`); 
                 if(b) b.innerText = dynamicCounts[s] || 0; 
             });
 
-
             let filtered = filteredBase.filter(o => {
                 return (currentOrderTab === 'all') || (o.status === currentOrderTab);
             });
 
-            // تطبيق الترتيب التصاعدي أو التنازلي
             filtered.sort((a, b) => {
                 let timeA = a.createdAt?.toMillis() || 0;
                 let timeB = b.createdAt?.toMillis() || 0;
@@ -2130,10 +2114,14 @@
                 container.innerHTML = '<div class="text-center text-slate-400 py-16 font-bold border-2 border-dashed border-slate-200 rounded-[2rem]">لا توجد طلبات في هذا القسم.</div>'; 
                 return; 
             }
+
+            if (typeof window.rebuildTrustCacheIfNeeded === 'function') {
+                window.rebuildTrustCacheIfNeeded();
+            }
+
             container.innerHTML = filtered.map(o => {
                 let d = o.orderDate || (o.createdAt ? new Date(o.createdAt.toMillis()).toLocaleDateString('en-US') : 'غير محدد');
                 
-                // إضافة عرض تاريخ التسليم لو الأوردر مكتمل
                 let completedDateHtml = '';
                 if (o.status === 'completed') {
                     let cTime = o.completedTimeDisplay || (o.completedAtStr ? o.completedAtStr : 'تم التسليم');
@@ -2159,11 +2147,9 @@
                     ? '<span class="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-sm" title="تم الدفع مسبقاً"><i class="fa-solid fa-check-double"></i> خالص (أونلاين)</span>' 
                     : '<span class="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-sm"><i class="fa-solid fa-money-bill-1-wave"></i> كاش</span>';
                 
-                // إضافة بادج أحمر لو الأوردر ده اتعمل عليه فلوس متبقية
                 if(o.debt && o.debt > 0) {
                     paymentBadge += ` <span class="text-[10px] bg-red-500 text-white px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-sm"><i class="fa-solid fa-triangle-exclamation"></i> آجل (${o.debt} ج)</span>`;
                 }
-                // التعديل: عدم رسم بادج الدفعة لو كان اسمها undefined
                 let batchTagHtml = (o.batchName && o.batchName !== 'undefined') ? `<span onclick="document.getElementById('search-order').value='${o.batchName}'; renderOrdersList();" class="text-[10px] bg-slate-50 text-slate-500 border border-slate-200 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 cursor-pointer hover:bg-slate-600 hover:text-white transition-colors shadow-sm" title="اضغط لفلترة هذه الدفعة"><i class="fa-solid fa-layer-group"></i> الدفعة: ${o.batchName}</span>` : '';
 
                 let phone2Html = o.customerPhone2 ? `
@@ -2173,17 +2159,24 @@
                         <a href="tel:${o.customerPhone2}" class="text-purple-500 hover:text-white hover:bg-purple-500 w-5 h-5 flex items-center justify-center bg-purple-100 rounded-full transition-colors" title="اتصال بالرقم البديل"><i class="fa-solid fa-phone text-[8px]"></i></a>
                     </span>` : '';
 
+                let trustInfo = (typeof window.fastAnalyzeOrderTrust === 'function') ? window.fastAnalyzeOrderTrust(o) : { cardClass: 'bg-white border-slate-100', badgeHtml: '', bannerHtml: '', stickyHtml: '' };
+
                 return `
-                <div data-id="${o.id}" onclick="highlightOrderCard(this, event)" class="order-card bg-white p-3.5 rounded-[1rem] shadow-sm border border-slate-100 hover:shadow-md transition-all relative group cursor-pointer">
+                <div data-id="${o.id}" onclick="highlightOrderCard(this, event)" class="order-card ${trustInfo.cardClass} p-3.5 rounded-[1rem] shadow-sm border hover:shadow-md transition-all relative group cursor-pointer">
                     <input type="checkbox" value="${o.id}" onchange="toggleBulkActionBar()" class="bulk-order-cb absolute top-3 left-3 w-4 h-4 accent-brand-primary cursor-pointer opacity-0 group-hover:opacity-100 checked:opacity-100 transition-opacity z-10">
                     
+                    ${trustInfo.bannerHtml}
+                    ${trustInfo.stickyHtml}
+
                     <div class="flex justify-between items-start mb-1.5 pl-6">
                         <div>
                             <h5 class="font-black text-slate-800 text-sm flex flex-wrap items-center gap-1.5 mb-1">
                                 <span class="cursor-pointer hover:text-brand-primary transition-colors border-b border-transparent hover:border-brand-primary border-dashed select-none" onclick="smartNameClick(this, '${o.id}', '${o.customerPhone}', 'customerName')" title="اضغط مرة لفتح ملف العميل.. مرتين للتعديل السريع">${o.customerName || 'بدون اسم'}</span>
+                                ${trustInfo.badgeHtml}
                                 <a href="tel:${o.customerPhone}" class="text-emerald-500 hover:text-white hover:bg-emerald-500 w-5 h-5 flex items-center justify-center bg-emerald-50 rounded-full transition-colors" title="اتصال مباشر"><i class="fa-solid fa-phone text-[9px]"></i></a>
                                 <span class="text-[10px] text-slate-400 font-bold cursor-pointer border-b border-transparent hover:border-slate-400 border-dashed" dir="ltr" ondblclick="inlineEdit(this, '${o.id}', 'customerPhone')" title="اضغط مرتين للتعديل السريع">${o.customerPhone}</span>
                                 ${phone2Html}
+                                <button onclick="event.stopPropagation(); quickBanFromOrderCard('${o.id}')" class="text-[9px] bg-red-50 text-red-500 hover:bg-red-600 hover:text-white px-1.5 py-0.5 rounded border border-red-100 font-black transition-colors" title="إدراج سريع في البلاك ليست"><i class="fa-solid fa-ban"></i></button>
                             </h5>
 
                             <p class="text-[10px] text-slate-500 font-bold flex items-center gap-1 flex-wrap">
@@ -2203,7 +2196,6 @@
                      <div class="flex flex-wrap gap-1 mb-1.5">
                         ${paymentBadge} ${batchTagHtml} ${customTagHtml}
                     </div>
-
 
                     <div class="bg-slate-50/80 p-2.5 rounded-lg border border-slate-100/50 mb-2 flex flex-wrap gap-1.5">
                         ${itemsStr}
@@ -2266,7 +2258,6 @@
                 setTimeout(() => { toggleInlineNotes(null, openInlineNoteId, openInlineNoteField, true); }, 50);
             }
         };
-
            
 
         window.openNoteOptions = (id) => {
