@@ -4081,8 +4081,8 @@ window.smartDistributeBatch = async (bId) => {
                         </div>
                     </div>
                     ${p.isWeightBased ? (() => {
-                        let wList = (p.weightsList || '').split('
-').map(w => w.trim()).filter(w => w !== '');
+                        let wList = (p.weightsList || '').split('\n').map(w => w.trim()).filter(w => w !== '');
+
                         let totalGrams = wList.reduce((sum, w) => sum + (Number(w) || 0), 0);
                         let totalKilos = (totalGrams / 1000).toFixed(2);
                         return `<div class="mt-2 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
