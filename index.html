@@ -2770,8 +2770,7 @@
                 let inputHtml = "";
 
                 if (p.isWeightBased) {
-                    let weightsArr = (p.weightsList || '').split('
-').map(w => w.trim()).filter(w => w !== '');
+                let weightsArr = (p.weightsList || '').split('\n').map(w => w.trim()).filter(w => w !== '');
                     let checkboxes = weightsArr.map(w => `
                         <label class="flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-1 rounded shadow-sm cursor-pointer hover:border-indigo-400 transition-colors">
                             <input type="checkbox" class="weight-cb-${id} w-3.5 h-3.5 accent-indigo-600" value="${w}" onchange="calcTotal('no')">
