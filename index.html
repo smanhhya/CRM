@@ -2770,18 +2770,34 @@
                 let inputHtml = "";
 
                 if (p.isWeightBased) {
-                    let poolCount = window.getProductWeightsArray ? window.getProductWeightsArray(id).length : 0;
+                    let weightsArr = (p.weightsList || '').split('
+').map(w => w.trim()).filter(w => w !== '');
+                    let checkboxes = weightsArr.map(w => `
+                        <label class="flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-1 rounded shadow-sm cursor-pointer hover:border-indigo-400 transition-colors">
+                            <input type="checkbox" class="weight-cb-${id} w-3.5 h-3.5 accent-indigo-600" value="${w}" onchange="calcTotal('no')">
+                            <span class="text-[11px] font-black text-slate-700">${w}g</span>
+                        </label>
+                    `).join('');
+                    
                     inputHtml = `
-                        <input type="number" id="no-q-${id}" min="0" step="1" class="w-full border border-indigo-200 bg-white rounded-lg p-2 text-center font-black text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm transition-all" placeholder="العدد (مثلاً 5)" oninput="calcTotal('no')">
-                        <span class="block text-[9px] font-black text-indigo-500 mt-1">يحجز بالعدد ويُوزن عند التجهيز (متاح ${poolCount} بالفريزر)</span>
-                    `;
+                    <div class="flex flex-col gap-2 w-full text-right">
+                        <div class="flex items-center justify-between gap-1 bg-white p-1 rounded-lg border border-slate-200">
+                            <span class="text-[9px] font-bold text-slate-500 mr-1">حجز عدد (بدون وزن):</span>
+                            <input type="number" id="no-count-${id}" min="0" step="1" class="w-12 border-none bg-slate-50 rounded p-1 text-center font-black text-brand-primary outline-none focus:ring-2 focus:ring-brand-primary/20" placeholder="0" oninput="calcTotal('no')">
+                        </div>
+                        <div class="border-t border-slate-100 pt-1">
+                            <span class="text-[8px] font-black text-indigo-500 block mb-1">أو تحديد الأوزان المتاحة:</span>
+                            ${weightsArr.length > 0 ? `<div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto custom-scroll p-1 justify-center bg-slate-100/50 rounded border border-slate-200/50">${checkboxes}</div>` : `<div class="text-[9px] text-red-500 font-bold text-center">لا توجد أوزان</div>`}
+                        </div>
+                        <input type="hidden" id="no-q-${id}" value="0">
+                    </div>`;
                 } else {
                     inputHtml = `<input type="number" id="no-q-${id}" min="0" step="1" class="w-full border-none bg-white rounded-lg p-2 text-center font-black text-brand-primary outline-none focus:ring-2 focus:ring-brand-primary/20 shadow-sm transition-all" placeholder="0" oninput="calcTotal('no')">`;
                 }
 
                 container.innerHTML += `
-                <div class="bg-slate-50 border border-slate-100 p-2 rounded-xl text-center flex flex-col justify-between">
-                    <span class="text-[10px] font-bold text-slate-600 block truncate mb-2" title="${p.name}">${p.name} ${icon}</span>
+                <div class="bg-slate-50 border border-slate-100 p-2 rounded-xl flex flex-col justify-between ${p.isWeightBased ? 'col-span-2 sm:col-span-3' : ''}">
+                    <span class="text-[11px] font-bold text-slate-600 block text-center mb-2" title="${p.name}">${p.name} ${icon}</span>
                     ${inputHtml}
                 </div>`;
             });
@@ -2812,15 +2828,36 @@
                 let selectedDetails = "";
 
                 // سحب الأوزان وجمعها أوتوماتيك لو الصنف ده ميزان
-                if (p.isWeightBased && document.querySelectorAll(`.weight-cb-${id}`).length > 0) {
+                if (p.isWeightBased) {
                     let checkedBoxes = Array.from(document.querySelectorAll(`.weight-cb-${id}:checked`));
-                    let totalGrams = checkedBoxes.reduce((sum, cb) => sum + (Number(cb.value) || 0), 0);
-                    q = totalGrams / 1000; // التحويل لكيلو لضربه في السعر
-                    selectedDetails = checkedBoxes.map(cb => cb.value).join(' و ');
+                    let countInput = Number(document.getElementById(`${prefix}-count-${id}`)?.value) || 0;
                     
+                    if (checkedBoxes.length > 0) {
+                        // لو اختار أوزان فعلية، نحسب بالوزن
+                        let totalGrams = checkedBoxes.reduce((sum, cb) => sum + (Number(cb.value) || 0), 0);
+                        q = totalGrams / 1000; // التحويل لكيلو لضربه في السعر
+                        selectedDetails = checkedBoxes.map(cb => cb.value).join(' و ');
+                        
+                        // لو هو مختار أوزان، هنخلي مربع العدد يقرأ عدد المربعات اللي اتحددت أوتوماتيك
+                        if(document.getElementById(`${prefix}-count-${id}`)) {
+                            document.getElementById(`${prefix}-count-${id}`).value = checkedBoxes.length;
+                        }
+                    } else if (countInput > 0) {
+                        // لو كتب عدد بس من غير ما يختار أوزان (حجز مبدئي)
+                        q = 0; // السعر هيكون 0 لإننا لسه منعرفش الوزن الحقيقي
+                        selectedDetails = `حجز ${countInput} عدد (لم يوزن)`;
+                    } else {
+                        q = 0;
+                        selectedDetails = "";
+                    }
+
                     if(document.getElementById(`${prefix}-q-${id}`)) {
                         document.getElementById(`${prefix}-q-${id}`).value = q;
-                        document.getElementById(`${prefix}-q-${id}`).setAttribute('data-details', selectedDetails);
+                        if(selectedDetails) {
+                            document.getElementById(`${prefix}-q-${id}`).setAttribute('data-details', selectedDetails);
+                        } else {
+                            document.getElementById(`${prefix}-q-${id}`).removeAttribute('data-details');
+                        }
                     }
                 } else {
                     q = Number(document.getElementById(`${prefix}-q-${id}`)?.value) || 0; 
@@ -2945,9 +2982,13 @@
 
             Object.keys(storeProducts).forEach(id => {
                 let qInput = document.getElementById(`no-q-${id}`);
-                let q = Number(qInput?.value) || 0;
+                let countInput = document.getElementById(`no-count-${id}`);
+                let kilos = Number(qInput?.value) || 0;
+                let count = Number(countInput?.value) || 0;
+                let isWeight = storeProducts[id].isWeightBased;
                 
-                if(q > 0) { 
+                // لو الصنف ميزان (عنده وزن أو عدد)، لو صنف عادي (عنده كمية)
+                if((isWeight && (kilos > 0 || count > 0)) || (!isWeight && kilos > 0)) { 
                     let price = storePrices[id] || storeProducts[id].basePrice;
                     if(useOldPrice && storeProducts[id].oldBatchPrice > 0) {
                         price = storeProducts[id].oldBatchPrice;
@@ -2956,32 +2997,42 @@
                     let pName = storeProducts[id].name;
                     let details = qInput?.getAttribute('data-details');
                     
-                    // إضافة الأوزان جنب اسم الفرخة عشان تظهر في ورقة التحضير وواتساب
-                    let finalName = details ? `${pName} (${details} جم)` : pName;
-
-                    items.push({ id: id, name: finalName, quantity: q, price: price }); 
+                    let finalQty = isWeight ? count : kilos;
+                    let finalName = pName;
                     
-                    // خصم الأوزان المتباعة من قائمة المخزن أوتوماتيك
-                    if (storeProducts[id].isWeightBased && details) {
+                    if (isWeight) {
+                        if (kilos > 0) {
+                            finalName = `${pName} (${kilos.toFixed(3)} كجم - الأوزان: ${details})`;
+                        } else {
+                            finalName = `${pName} (حجز عدد ${count} - لم يُوزن)`;
+                        }
+                    } else if (details) {
+                        finalName = `${pName} (${details} جم)`;
+                    }
+
+                    let itemTotalCost = isWeight ? (kilos * price) : (kilos * price);
+
+                    items.push({ id: id, name: finalName, quantity: finalQty, price: price }); 
+                    
+                    if (isWeight && kilos > 0 && details) {
                         let soldWeights = details.split(' و ');
-                        let currentWeightsList = (storeProducts[id].weightsList || '').split('\
-').map(w => w.trim()).filter(w => w !== '');
+                        let currentWeightsList = (storeProducts[id].weightsList || '').split('\n').map(w => w.trim()).filter(w => w !== '');
                         
                         soldWeights.forEach(sw => {
                             let idx = currentWeightsList.indexOf(sw);
                             if (idx > -1) currentWeightsList.splice(idx, 1);
                         });
                         
-                        storeProducts[id].weightsList = currentWeightsList.join('\
-');
+                        storeProducts[id].weightsList = currentWeightsList.join('\n');
                         inventoryNeedsUpdate = true;
                     }
-                    subtotal += (q * price); 
-                    if(batchId) batchUpdates[id] = q;
                     
-                    ticktickItemsStr += `[ ${q} ] ${pName} = ${q * price} ج.م\n`; 
+                    subtotal += itemTotalCost; 
+                    if(batchId) batchUpdates[id] = finalQty;
+                    
+                    ticktickItemsStr += `[ ${finalQty} ] ${finalName} = ${itemTotalCost} ج.م\n`; 
  
-                    ticktickItemsTitleArr.push(`${q} ${pName}`);
+                    ticktickItemsTitleArr.push(`${finalQty} ${pName}`);
                     autoHashtags.push('#' + pName.replace(/\s+/g, '_'));
                 }
             });
@@ -4030,10 +4081,22 @@ window.smartDistributeBatch = async (bId) => {
                             ${p.isDisc ? `<input type="number" value="${oldPrice}" onchange="storeProducts['${id}'].oldPrice = parseInt(this.value) || 0" class="w-20 border-none bg-white rounded-lg p-1.5 text-[11px] font-black text-red-400 text-center line-through shadow-sm outline-none focus:ring-2 focus:ring-red-100" placeholder="السعر القديم">` : ''}
                         </div>
                     </div>
-                    ${p.isWeightBased ? `<div class="mt-2 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100"><label class="text-[10px] font-black text-indigo-700 block mb-2"><i class="fa-solid fa-list-ol mr-1"></i> رصيد الأوزان المتاحة بالجرام (كل وزن في سطر منفصل):</label><textarea onchange="storeProducts['${id}'].weightsList = this.value; saveAllSettings();" class="w-full border border-indigo-200 rounded-lg p-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-300 custom-scroll" rows="3" placeholder="مثال:
+                    ${p.isWeightBased ? (() => {
+                        let wList = (p.weightsList || '').split('
+').map(w => w.trim()).filter(w => w !== '');
+                        let totalGrams = wList.reduce((sum, w) => sum + (Number(w) || 0), 0);
+                        let totalKilos = (totalGrams / 1000).toFixed(2);
+                        return `<div class="mt-2 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-[10px] font-black text-indigo-700"><i class="fa-solid fa-list-ol mr-1"></i> رصيد الأوزان بالجرام:</label>
+                                <span class="bg-indigo-600 text-white text-[10px] px-2 py-1 rounded-lg font-black shadow-sm">العدد: ${wList.length} | الإجمالي: ${totalKilos} كجم</span>
+                            </div>
+                            <textarea onchange="storeProducts['${id}'].weightsList = this.value; saveAllSettings(); renderInventoryUI();" class="w-full border border-indigo-200 rounded-lg p-2 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-300 custom-scroll" rows="4" placeholder="مثال:
 2200
 2150
-1980">${p.weightsList || ''}</textarea></div>` : ''}
+1980">${p.weightsList || ''}</textarea>
+                        </div>`;
+                    })() : ''}
                 </div>`; 
             }); 
         }
