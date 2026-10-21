@@ -3544,90 +3544,154 @@
         // ==========================================
         let currentEditingBatchId = null;
         // =========================================================
-        // 🔪 نظام إتمام الذبح وترحيل البواقي من الدفعة للفريزر 🔪
         // =========================================================
-        window.openSlaughterModal = (bId) => {
+        // 🔪 نظام إتمام الذبح المطور وترحيل الفائض للفريزر وحساب قيمة الدفعة 🔪
+        // =========================================================
+        window.openSmartSlaughterModal = (bId) => {
             const b = storeBatches[bId];
-            if(!b) return;
+            if (!b) return alert("لم يتم العثور على بيانات هذه الدفعة!");
             document.getElementById('slaughter-batch-id').value = bId;
-            
+            if (document.getElementById('slaughter-batch-title')) {
+                document.getElementById('slaughter-batch-title').innerText = b.name || '';
+            }
+
             let html = '';
             Object.keys(storeProducts).forEach(pId => {
-                let qty = (b.stock && b.stock[pId]) ? b.stock[pId] : 0;
-                let booked = (b.booked && b.booked[pId]) ? b.booked[pId] : 0;
-                let remaining = qty - booked; // بنجيب الصافي اللي متباعش
-                
-                if(remaining > 0) {
+                let p = storeProducts[pId];
+                if (!p) return;
+                let qty = (b.stock && b.stock[pId]) ? Number(b.stock[pId]) : 0;
+                let booked = (b.booked && b.booked[pId]) ? Number(b.booked[pId]) : 0;
+                let price = storePrices[pId] || p.basePrice || 0;
+
+                if (p.isWeightBased) {
                     html += `
-                    <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-100 mb-2">
-                        <span class="font-black text-sm">${storeProducts[pId].name}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] text-slate-400">الكمية المتبقية:</span>
-                            <input type="number" id="slaughter-qty-${pId}" value="${remaining}" max="${remaining}" min="0" class="w-16 border border-slate-200 rounded p-1 text-center font-bold text-rose-600 outline-none focus:ring-2 focus:ring-rose-200">
+                    <div class="bg-indigo-50/70 p-3.5 rounded-2xl border border-indigo-200 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-indigo-950 text-sm">${p.name} ⚖️ (بالوزن)</span>
+                            <span class="text-[10px] font-black bg-white text-indigo-700 px-2 py-0.5 rounded border border-indigo-100">محجوز بالدفعة: ${booked} | الكيلو: ${price}ج</span>
+                        </div>
+                        <textarea id="slaughter-weights-${pId}" rows="2" class="w-full border border-indigo-200 rounded-xl p-2 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-indigo-300 resize-none" placeholder="الصق أوزان الفرخات المذبوحة بالجرام هنا (مثال: 2360 ثم سطر جديد)..."></textarea>
+                    </div>`;
+                } else {
+                    html += `
+                    <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-200/80 shadow-sm">
+                        <div>
+                            <span class="font-black text-slate-800 text-sm block">${p.name}</span>
+                            <span class="text-[10px] font-bold text-slate-400">المسجل: ${qty} | المحجوز للعملاء: <strong class="text-blue-600">${booked}</strong> | السعر: ${price}ج</span>
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <span class="text-[9px] font-black text-rose-600">إجمالي المذبوح الفعلي:</span>
+                            <input type="number" id="slaughter-qty-${pId}" value="${qty}" min="0" class="w-20 border border-rose-200 bg-rose-50/40 focus:bg-white rounded-lg p-1.5 text-center font-black text-rose-700 outline-none focus:ring-2 focus:ring-rose-300">
                         </div>
                     </div>`;
                 }
             });
-            
-            if(html === '') html = '<div class="text-center text-slate-400 text-xs font-bold py-4">كل الكميات في هذه الدفعة محجوزة أو مباعة! لا يوجد شيء للترحيل.</div>';
-            document.getElementById('slaughter-items-container').innerHTML = html;
+
+            document.getElementById('slaughter-items-container').innerHTML = html || '<div class="text-center text-slate-400 text-xs font-bold py-4">لا توجد أصناف مسجلة في المتجر.</div>';
             openModal('slaughter-modal');
         };
+        window.openSlaughterModal = window.openSmartSlaughterModal;
 
-        window.confirmBatchSlaughter = async () => {
+        window.confirmSmartBatchSlaughter = async () => {
             let bId = document.getElementById('slaughter-batch-id').value;
             let b = storeBatches[bId];
-            if(!b) return;
+            if (!b) return;
 
             let btn = document.getElementById('btn-confirm-slaughter');
             let origHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الترحيل...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التسجيل والترحيل للفريزر...';
             btn.disabled = true;
 
             let fzUpdates = {};
-            let newStock = {...b.stock};
-            let totalMoved = 0;
+            let newStock = { ...(b.stock || {}) };
+            let expectedValue = 0;
+            let totalSlaughtered = 0;
+            let settingsUpdated = false;
 
             Object.keys(storeProducts).forEach(pId => {
-                let input = document.getElementById(`slaughter-qty-${pId}`);
-                if(input) {
-                    let val = parseInt(input.value) || 0;
-                    if(val > 0) {
-                        fzUpdates[pId] = firebase.firestore.FieldValue.increment(val);
-                        storeFreezer[pId] = (storeFreezer[pId] || 0) + val; // تحديث الفريزر اللحظي
-                        newStock[pId] -= val; // خصم اللي اترحّل من الدفعة
-                        totalMoved += val;
+                let p = storeProducts[pId];
+                if (!p) return;
+                let price = storePrices[pId] || p.basePrice || 0;
+
+                if (p.isWeightBased) {
+                    let wInput = document.getElementById(`slaughter-weights-${pId}`);
+                    if (wInput && wInput.value.trim() !== '') {
+                        let raw = wInput.value.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660)
+                                              .replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
+                        let matches = raw.match(/\b\d{3,5}\b/g) || [];
+                        let newWeights = matches.map(Number).filter(w => w >= 300 && w <= 15000);
+                        if (newWeights.length > 0) {
+                            let existingPool = window.getProductWeightsArray ? window.getProductWeightsArray(pId) : [];
+                            let mergedPool = [...existingPool, ...newWeights].sort((x, y) => y - x);
+                            storeProducts[pId].weightsList = mergedPool.join('\n');
+                            storeFreezer[pId] = mergedPool.length;
+                            fzUpdates[pId] = mergedPool.length;
+                            newStock[pId] = newWeights.length;
+                            let totalKg = newWeights.reduce((s, w) => s + w, 0) / 1000;
+                            expectedValue += Math.round(totalKg * price);
+                            totalSlaughtered += newWeights.length;
+                            settingsUpdated = true;
+                        }
+                    }
+                } else {
+                    let input = document.getElementById(`slaughter-qty-${pId}`);
+                    if (input) {
+                        let slaughteredQty = parseInt(input.value) || 0;
+                        if (slaughteredQty > 0) {
+                            newStock[pId] = slaughteredQty;
+                            expectedValue += (slaughteredQty * price);
+                            totalSlaughtered += slaughteredQty;
+                            fzUpdates[pId] = firebase.firestore.FieldValue.increment(slaughteredQty);
+                            storeFreezer[pId] = (storeFreezer[pId] || 0) + slaughteredQty;
+                        }
                     }
                 }
             });
 
-            if(totalMoved > 0) {
-                try {
-                    let atomicBatch = db.batch();
-                    // تزويد الفريزر
+            if (totalSlaughtered === 0) {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+                return alert("برجاء إدخال كمية صنف واحد على الأقل تم ذبحه!");
+            }
+
+            try {
+                let atomicBatch = db.batch();
+                if (Object.keys(fzUpdates).length > 0) {
                     atomicBatch.set(db.collection('inventory').doc('freezer'), fzUpdates, { merge: true });
-                    // خصم من الدفعة وتقفيلها للعملاء
-                    atomicBatch.set(db.collection('inventory').doc('batches'), { 
-                        [bId]: { stock: newStock, isOpen: false, isVisible: false } 
-                    }, { merge: true });
-                    
-                    await atomicBatch.commit();
-                    
-                    b.stock = newStock;
-                    b.isOpen = false;
-                    b.isVisible = false;
-                    renderBatchesUI();
-                    closeModal('slaughter-modal');
-                    showToast("تم ترحيل المتبقي للفريزر بنجاح! ❄️");
-                } catch (e) {
-                    alert("حدث خطأ أثناء الترحيل لقاعدة البيانات!");
                 }
-            } else {
-                alert("لم تقم بتحديد كميات لترحيلها!");
+                if (settingsUpdated) {
+                    atomicBatch.set(db.collection('inventory').doc('settings'), { productsData: storeProducts }, { merge: true });
+                }
+                let slaughterTimestamp = Date.now();
+                atomicBatch.set(db.collection('inventory').doc('batches'), {
+                    [bId]: {
+                        stock: newStock,
+                        isOpen: false,
+                        slaughteredAt: slaughterTimestamp,
+                        expectedValue: expectedValue
+                    }
+                }, { merge: true });
+
+                await atomicBatch.commit();
+
+                b.stock = newStock;
+                b.isOpen = false;
+                b.slaughteredAt = slaughterTimestamp;
+                b.expectedValue = expectedValue;
+
+                renderBatchesUI();
+                renderInventoryUI();
+                closeModal('slaughter-modal');
+                alert(`✅ تم تأكيد ذبح الدفعة بنجاح!\n- تم قفل الحجز على الدفعة.\n- تم ترحيل الكميات لمخزن الفريزر.\n- القيمة المتوقعة للدفعة: ${expectedValue.toLocaleString()} ج.م`);
+            } catch (e) {
+                console.error(e);
+                alert("حدث خطأ أثناء حفظ بيانات الذبح في قاعدة البيانات!");
             }
             btn.innerHTML = origHtml;
             btn.disabled = false;
         };
+        window.confirmBatchSlaughter = window.confirmSmartBatchSlaughter;
+
 
 // =====================================================================
 // 🧠 خوارزمية التوزيع الذكي بناءً على آخر دفعتين (Smart Distribution)
