@@ -1220,25 +1220,43 @@
                     </div>
                     <div class="flex gap-2">
                         <textarea id="wp-new-weights-input" rows="2" class="flex-1 border border-slate-200 rounded-xl p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-200 resize-none" placeholder="اكتب الأوزان بالجرام (مثال: 2360 ثم مسافة أو سطر جديد) أو الصق القائمة هنا..."></textarea>
-                        <button onclick="appendNewWeightsToPool()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-xl text-xs font-black shadow-sm shrink-0 transition-all active:scale-95">إض    <div id="slaughter-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[115] hidden flex items-center justify-center p-4 transition-opacity">
-        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+                        <button onclick="appendNewWeightsToPool()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-xl text-xs font-black shadow-sm shrink-0 transition-all active:scale-95">إضافة للمخزن</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-white shrink-0 flex gap-2">
+                <button id="wp-confirm-btn" onclick="confirmOrderWeightsSelection()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3.5 rounded-xl transition-all shadow-lg shadow-indigo-600/20 active:scale-95 flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-check-double text-amber-300"></i> اعتماد الأوزان المحددة وخصمها من الفريزر
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🔪 شاشة إتمام الذبح المطورة 🔪 -->
+    <div id="slaughter-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[125] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-rose-50 to-white shrink-0">
-                <h3 class="text-lg font-black text-rose-800"><i class="fa-solid fa-knife-kitchen text-rose-500 mr-2"></i> إتمام الذبح للدفعة</h3>
+                <div>
+                    <h3 class="text-lg font-black text-rose-800"><i class="fa-solid fa-knife-kitchen text-rose-500 mr-2"></i> إتمام الذبح للدفعة: <span id="slaughter-batch-title" class="text-slate-800"></span></h3>
+                </div>
                 <button onclick="closeModal('slaughter-modal')" class="bg-white text-slate-400 w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="p-6 overflow-y-auto custom-scroll flex-1 bg-slate-50/50">
-                <p class="text-[10px] font-bold text-slate-500 mb-5 leading-relaxed bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                    <i class="fa-solid fa-circle-info text-rose-500 mr-1"></i> <strong>سجل الكميات اللي تم ذبحها وتجهيزها من الدفعة دي.</strong><br>
-                    السيستم هيقفل حجز الدفعة أوتوماتيك (لإبلاغ العملاء)، وهيرحل الكميات دي لـ "الفريزر" مباشرة، ويحسب القيمة المتوقعة للدفعة.
+                <p class="text-[10px] font-bold text-slate-500 mb-4 leading-relaxed bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                    <i class="fa-solid fa-circle-info text-rose-500 mr-1"></i> <strong>سجل إجمالي ما تم ذبحه فعلياً من الدفعة.</strong><br>
+                    السيستم هيقفل حجز الدفعة أوتوماتيك، ويرحل الفائض غير المحجوز لـ "مخزن الفريزر" مباشرة، ويحسب القيمة المتوقعة للدفعة.
                 </p>
                 <div id="slaughter-items-container" class="space-y-3 mb-4"></div>
                 <input type="hidden" id="slaughter-batch-id">
             </div>
             <div class="p-5 border-t border-slate-100 bg-white shrink-0">
-                <button onclick="confirmBatchSlaughter()" id="btn-confirm-slaughter" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-check-double"></i> تأكيد الذبح والترحيل للفريزر</button>
+                <button onclick="confirmSmartBatchSlaughter()" id="btn-confirm-slaughter" class="w-full bg-rose-600 hover:bg-rose-700 text-white font-black py-3.5 rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"><i class="fa-solid fa-check-double"></i> تأكيد الذبح والترحيل للفريزر</button>
             </div>
         </div>
     </div>
+
+
     <!-- 🔗 شاشة ربط الطلب بأرشيف 🔗 -->
     <div id="link-archive-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
@@ -2968,6 +2986,7 @@
                 }
             });
             if(items.length === 0) return alert('يجب إضافة صنف واحد على الأقل للسلة!');
+
             
             let btn = document.getElementById('btn-save-order'); 
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ والتصدير...'; 
