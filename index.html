@@ -1170,8 +1170,57 @@
         </div>
     </div>
 
-    <!-- 🔪 شاشة إتمام الذبح 🔪 -->
-    <div id="slaughter-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[115] hidden flex items-center justify-center p-4 transition-opacity">
+    <!-- ⚖️ شاشة تسكين أوزان الفراخ للطلبات الحية وإدارة أوزان الفريزر ⚖️ -->
+    <div id="weight-picker-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[130] hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[92vh]">
+            <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-white shrink-0">
+                <div>
+                    <h3 class="text-lg font-black text-indigo-900"><i class="fa-solid fa-scale-balanced text-indigo-600 mr-2"></i> <span id="wp-modal-title">تسكين أوزان الطلب</span></h3>
+                    <p id="wp-modal-subtitle" class="text-[11px] font-bold text-slate-500 mt-0.5"></p>
+                </div>
+                <button onclick="closeModal('weight-picker-modal')" class="bg-white text-slate-400 w-8 h-8 rounded-full flex items-center justify-center hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="p-5 overflow-y-auto custom-scroll flex-1 bg-slate-50/60 space-y-4">
+                <!-- شريط الملخص اللحظي -->
+                <div class="grid grid-cols-3 gap-2 bg-indigo-900 text-white p-3.5 rounded-2xl shadow-md text-center">
+                    <div>
+                        <span class="block text-[10px] text-indigo-200 font-bold">العدد المحدد</span>
+                        <span id="wp-selected-count" class="text-lg font-black text-amber-400">0 / 0</span>
+                    </div>
+                    <div class="border-x border-indigo-700/60">
+                        <span class="block text-[10px] text-indigo-200 font-bold">إجمالي الوزن</span>
+                        <span id="wp-selected-kg" class="text-lg font-black text-white">0.000 <small class="text-[10px]">كجم</small></span>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] text-indigo-200 font-bold">الحساب الفعلي</span>
+                        <span id="wp-selected-price" class="text-lg font-black text-emerald-400">0 <small class="text-[10px]">ج.م</small></span>
+                    </div>
+                </div>
+
+                <!-- أزرار الاختيار السريع -->
+                <div id="wp-quick-select-bar" class="flex flex-wrap gap-1.5 justify-between items-center bg-white p-2.5 rounded-xl border border-slate-200/80">
+                    <span class="text-[10px] font-black text-slate-500"><i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-1"></i> اختيار تلقائي للعدد:</span>
+                    <div class="flex gap-1.5">
+                        <button onclick="autoPickWeights('heavy')" class="bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 px-2.5 py-1 rounded-lg text-[10px] font-black transition-colors">من الأثقل</button>
+                        <button onclick="autoPickWeights('medium')" class="bg-amber-50 hover:bg-amber-500 hover:text-white text-amber-700 px-2.5 py-1 rounded-lg text-[10px] font-black transition-colors">من المتوسط</button>
+                        <button onclick="autoPickWeights('light')" class="bg-emerald-50 hover:bg-emerald-600 hover:text-white text-emerald-700 px-2.5 py-1 rounded-lg text-[10px] font-black transition-colors">من الأخف</button>
+                        <button onclick="autoPickWeights('clear')" class="bg-red-50 hover:bg-red-500 hover:text-white text-red-600 px-2 py-1 rounded-lg text-[10px] font-black transition-colors">إلغاء التحديد</button>
+                    </div>
+                </div>
+
+                <!-- قائمة الشيك بوكس [X] للأوزان -->
+                <div id="wp-checkboxes-list" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto custom-scroll p-1"></div>
+
+                <!-- قسم إضافة أوزان جديدة سريعة للفريزر -->
+                <div class="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[11px] font-black text-slate-700"><i class="fa-solid fa-plus-circle text-emerald-500 mr-1"></i> إضافة أوزان جديدة لمخزن الفريزر (بالجرام):</label>
+                        <span id="wp-stock-summary" class="text-[10px] font-black bg-cyan-50 text-cyan-800 px-2 py-0.5 rounded border border-cyan-200"></span>
+                    </div>
+                    <div class="flex gap-2">
+                        <textarea id="wp-new-weights-input" rows="2" class="flex-1 border border-slate-200 rounded-xl p-2 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-200 resize-none" placeholder="اكتب الأوزان بالجرام (مثال: 2360 ثم مسافة أو سطر جديد) أو الصق القائمة هنا..."></textarea>
+                        <button onclick="appendNewWeightsToPool()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 rounded-xl text-xs font-black shadow-sm shrink-0 transition-all active:scale-95">إض    <div id="slaughter-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[115] hidden flex items-center justify-center p-4 transition-opacity">
         <div class="bg-white rounded-[2rem] shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-rose-50 to-white shrink-0">
                 <h3 class="text-lg font-black text-rose-800"><i class="fa-solid fa-knife-kitchen text-rose-500 mr-2"></i> إتمام الذبح للدفعة</h3>
@@ -2703,19 +2752,11 @@
                 let inputHtml = "";
 
                 if (p.isWeightBased) {
-                    let weightsArr = (p.weightsList || '').split('\
-').map(w => w.trim()).filter(w => w !== '');
-                    if (weightsArr.length > 0) {
-                        let checkboxes = weightsArr.map(w => `
-                            <label class="flex items-center gap-1 bg-white border border-slate-200 px-1.5 py-1 rounded shadow-sm cursor-pointer hover:border-indigo-400 transition-colors">
-                                <input type="checkbox" class="weight-cb-${id} w-3 h-3 accent-indigo-600" value="${w}" onchange="calcTotal('no')">
-                                <span class="text-[11px] font-black text-slate-700">${w}</span>
-                            </label>
-                        `).join('');
-                        inputHtml = `<div class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto custom-scroll p-1 justify-center">${checkboxes}</div><input type="hidden" id="no-q-${id}" value="0">`;
-                    } else {
-                        inputHtml = `<div class="text-[10px] text-red-500 font-bold p-2 bg-red-50 rounded border border-red-100">رصيد الأوزان فارغ</div><input type="hidden" id="no-q-${id}" value="0">`;
-                    }
+                    let poolCount = window.getProductWeightsArray ? window.getProductWeightsArray(id).length : 0;
+                    inputHtml = `
+                        <input type="number" id="no-q-${id}" min="0" step="1" class="w-full border border-indigo-200 bg-white rounded-lg p-2 text-center font-black text-indigo-700 outline-none focus:ring-2 focus:ring-indigo-300 shadow-sm transition-all" placeholder="العدد (مثلاً 5)" oninput="calcTotal('no')">
+                        <span class="block text-[9px] font-black text-indigo-500 mt-1">يحجز بالعدد ويُوزن عند التجهيز (متاح ${poolCount} بالفريزر)</span>
+                    `;
                 } else {
                     inputHtml = `<input type="number" id="no-q-${id}" min="0" step="1" class="w-full border-none bg-white rounded-lg p-2 text-center font-black text-brand-primary outline-none focus:ring-2 focus:ring-brand-primary/20 shadow-sm transition-all" placeholder="0" oninput="calcTotal('no')">`;
                 }
@@ -4989,25 +5030,464 @@ window.deleteProductUI = async (id) => {
         // تفعيل المزامنة فور تشغيل الكود
         activateFreezerSync();
 
+        // =========================================================
+        // ⚖️ منظومة الفراخ البيضاء والميزان الذكي (حجز بالعدد + تخريج بالوزن) ⚖️
+        // =========================================================
+        window.getProductWeightsArray = (pId) => {
+            let p = storeProducts[pId];
+            if (!p || !p.weightsList) return [];
+            return p.weightsList.toString()
+                .split(/[\n,،]+/)
+                .map(line => line.trim())
+                .filter(line => {
+                    if (!line) return false;
+                    // لو السطر مكتوب جمبه [X] أو [x] يبقى اتباع ومش متاح
+                    if (/^\[\s*[xX✓✔]\s*\]/.test(line)) return false;
+                    return /\d{3,5}/.test(line);
+                })
+                .map(line => {
+                    let m = line.match(/(\d{3,5})/);
+                    return m ? parseInt(m[1]) : 0;
+                })
+                .filter(w => w > 0)
+                .sort((a, b) => b - a); // ترتيب تنازلي من الأكبر للأصغر
+        };
+
+        window.saveProductWeightsArray = async (pId, weightsArr) => {
+            if (!storeProducts[pId]) return;
+            let sorted = [...weightsArr].map(Number).filter(n => n > 0).sort((a, b) => b - a);
+            storeProducts[pId].weightsList = sorted.join('\n');
+            storeFreezer[pId] = sorted.length;
+            storeStock[pId] = sorted.length;
+
+            try {
+                let batch = db.batch();
+                batch.set(db.collection('inventory').doc('settings'), { productsData: storeProducts }, { merge: true });
+                batch.set(db.collection('inventory').doc('freezer'), { [pId]: sorted.length }, { merge: true });
+                batch.set(db.collection('inventory').doc('stock'), { [pId]: sorted.length }, { merge: true });
+                await batch.commit();
+                renderInventoryUI();
+                generateDynamicOrderInputs();
+            } catch (e) {
+                console.log('Error saving weights array:', e);
+            }
+        };
+
+        // تحديث دالة حساب الإجمالي في الإنشاء: لو الصنف بالوزن والعميل بيدخل عدد الفرخات (مثلاً 5)، ميضربش 5 × سعر الكيلو كأنها 5 كيلو، بل يسيب السعر 0 لحين اختيار الأوزان الفعلية
+        const _origCalcTotalWeightPatch = window.calcTotal;
+        window.calcTotal = (prefix) => {
+            let itemsTotal = 0;
+            let useOldPriceCheckbox = document.getElementById(`${prefix}-use-old-price`);
+            let useOldPrice = useOldPriceCheckbox ? useOldPriceCheckbox.checked : false;
+
+            Object.keys(storeProducts).forEach(id => {
+                let p = storeProducts[id];
+                let qInput = document.getElementById(`${prefix}-q-${id}`);
+                let q = Number(qInput?.value) || 0;
+                let price = storePrices[id] || p.basePrice || 0;
+                if (useOldPrice && p.oldBatchPrice > 0) price = p.oldBatchPrice;
+
+                if (p.isWeightBased) {
+                    // في مرحلة الحجز بالعدد، السعر النهائي بيتحدد لما نختار الأوزان بالجرام في الطلبات الحية
+                    if (q > 0 && qInput) {
+                        qInput.setAttribute('data-details', `حجز ${q} عدد - بانتظار الميزان`);
+                    }
+                } else {
+                    itemsTotal += (q * price);
+                }
+            });
+            document.getElementById(`${prefix}-price`).value = itemsTotal;
+            let d = Number(document.getElementById(`${prefix}-delivery`).value) || 0;
+            if (storeSettings.freeDeliveryActive && storeSettings.freeDeliveryThreshold > 0 && itemsTotal >= storeSettings.freeDeliveryThreshold) {
+                d = 0;
+                document.getElementById(`${prefix}-delivery`).value = 0;
+            }
+            let disc = Number(document.getElementById(`${prefix}-discount`).value) || 0;
+            let final = itemsTotal + d - disc;
+            document.getElementById(`${prefix}-total`).value = final > 0 ? final : 0;
+        };
+
+        // نافذة الفريزر المطورة (تعرض العدد + إجمالي الكيلوهات + إجمالي الفلوس للأصناف الموزونة)
         window.openFreezerModal = () => {
-            activateFreezerSync(); // للتأكيد
+            activateFreezerSync();
             openModal('freezer-modal');
             let cont = document.getElementById('freezer-items-container');
-            
             cont.innerHTML = '';
+
             Object.keys(storeProducts).forEach(id => {
-                let currentCount = storeFreezer[id] || 0;
-                cont.innerHTML += `
-                <div class="flex justify-between items-center bg-white shadow-sm border border-slate-100 p-3 rounded-xl hover:border-cyan-200 transition-colors">
-                    <span class="font-black text-slate-700 text-sm">${storeProducts[id].name}</span>
-                    <div class="flex items-center gap-2">
-                        <button onclick="updateFreezerCount('${id}', -1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-red-500 hover:bg-red-50 font-black transition-colors active:scale-95"><i class="fa-solid fa-minus"></i></button>
-                        <input type="number" id="fz-${id}" value="${currentCount}" onchange="setFreezerCount('${id}', this.value)" class="w-16 border border-slate-200 bg-slate-50 text-center font-black text-cyan-700 text-base rounded-lg py-1 outline-none focus:ring-2 focus:ring-cyan-300 focus:bg-white transition-all">
-                        <button onclick="updateFreezerCount('${id}', 1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-emerald-600 hover:bg-emerald-50 font-black transition-colors active:scale-95"><i class="fa-solid fa-plus"></i></button>
-                    </div>
-                </div>`;
+                let p = storeProducts[id];
+                if (p.isWeightBased) {
+                    let wArr = window.getProductWeightsArray(id);
+                    let count = wArr.length;
+                    let totalGrams = wArr.reduce((s, w) => s + w, 0);
+                    let totalKg = (totalGrams / 1000).toFixed(3);
+                    let kiloPrice = storePrices[id] || p.basePrice || 0;
+                    let totalValue = Math.round((totalGrams / 1000) * kiloPrice);
+
+                    cont.innerHTML += `
+                    <div class="bg-indigo-50/70 shadow-sm border-2 border-indigo-200 p-3.5 rounded-2xl space-y-2.5">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-indigo-950 text-sm">${p.name} ⚖️</span>
+                            <span class="text-[10px] font-black bg-indigo-600 text-white px-2.5 py-0.5 rounded-full">سعر الكيلو: ${kiloPrice} ج</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 bg-white p-2.5 rounded-xl border border-indigo-100 text-center">
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400">العدد الفعلي</span>
+                                <span class="text-sm font-black text-indigo-700">${count} فرخة</span>
+                            </div>
+                            <div class="border-x border-slate-100">
+                                <span class="block text-[9px] font-bold text-slate-400">إجمالي الوزن</span>
+                                <span class="text-sm font-black text-cyan-700">${totalKg} كجم</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-bold text-slate-400">قيمة المخزون</span>
+                                <span class="text-sm font-black text-emerald-600">${totalValue.toLocaleString()} ج</span>
+                            </div>
+                        </div>
+                        <button onclick="closeModal('freezer-modal'); openWeightPickerForStockOnly('${id}')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-2 rounded-xl text-xs shadow-sm transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-list-check"></i> عرض وإدارة الأوزان الفردية (${count})
+                        </button>
+                    </div>`;
+                } else {
+                    let currentCount = storeFreezer[id] || 0;
+                    cont.innerHTML += `
+                    <div class="flex justify-between items-center bg-white shadow-sm border border-slate-100 p-3 rounded-xl hover:border-cyan-200 transition-colors">
+                        <span class="font-black text-slate-700 text-sm">${p.name}</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="updateFreezerCount('${id}', -1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-red-500 hover:bg-red-50 font-black transition-colors active:scale-95"><i class="fa-solid fa-minus"></i></button>
+                            <input type="number" id="fz-${id}" value="${currentCount}" onchange="setFreezerCount('${id}', this.value)" class="w-16 border border-slate-200 bg-slate-50 text-center font-black text-cyan-700 text-base rounded-lg py-1 outline-none focus:ring-2 focus:ring-cyan-300 focus:bg-white transition-all">
+                            <button onclick="updateFreezerCount('${id}', 1)" class="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg text-emerald-600 hover:bg-emerald-50 font-black transition-colors active:scale-95"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>`;
+                }
             });
         };
+
+        // متغيرات نافذة تسكين الأوزان
+        window._wpCurrentOrderId = null;
+        window._wpCurrentProductId = null;
+        window._wpCurrentItemIndex = -1;
+        window._wpTargetBirdsCount = 0;
+        window._wpCombinedWeightsPool = [];
+
+        // فتح نافذة الأوزان لإدارة مخزن الفريزر فقط
+        window.openWeightPickerForStockOnly = (pId) => {
+            window._wpCurrentOrderId = null;
+            window._wpCurrentProductId = pId;
+            window._wpCurrentItemIndex = -1;
+            window._wpTargetBirdsCount = 0;
+
+            let p = storeProducts[pId];
+            window._wpCombinedWeightsPool = window.getProductWeightsArray(pId).map(w => ({ weight: w, checked: false }));
+
+            document.getElementById('wp-modal-title').innerText = `مخزن أوزان: ${p.name}`;
+            document.getElementById('wp-modal-subtitle').innerText = `أي وزن تعلم عليه [X] هنا وتضغط اعتماد سيتم اعتباره مباعاً وحذفه من الفريزر`;
+            document.getElementById('wp-quick-select-bar').classList.add('hidden');
+            document.getElementById('wp-confirm-btn').innerHTML = `<i class="fa-solid fa-trash-can mr-1"></i> حذف الأوزان المحددة [X] من الفريزر وتحديث الرصيد`;
+
+            renderWeightPickerCheckboxes();
+            openModal('weight-picker-modal');
+        };
+
+        // فتح نافذة تسكين الأوزان لطلب حي محدد
+        window.openOrderWeightPicker = (orderId, itemIndex) => {
+            let o = allOrdersRaw.find(x => x.id === orderId);
+            if (!o || !o.items || !o.items[itemIndex]) return;
+            let item = o.items[itemIndex];
+            let pId = item.id;
+            let p = storeProducts[pId];
+            if (!p) return;
+
+            window._wpCurrentOrderId = orderId;
+            window._wpCurrentProductId = pId;
+            window._wpCurrentItemIndex = itemIndex;
+
+            // استخراج الأوزان التي كانت مربوطة بهذا الطلب سابقاً (إن وجدت) لإتاحتها للتعديل
+            let prevWeights = Array.isArray(item.selectedWeights) ? item.selectedWeights.map(Number) : [];
+            let targetCount = item.bookedCount || (prevWeights.length > 0 ? prevWeights.length : Math.round(item.quantity || 1));
+            window._wpTargetBirdsCount = targetCount;
+
+            let availablePool = window.getProductWeightsArray(pId);
+            let combined = [];
+
+            // نضع أوزان العميل المختارة سابقاً في المقدمة وهي معلمة [X]
+            prevWeights.forEach(w => combined.push({ weight: w, checked: true, wasHis: true }));
+            // ثم نضع كل الأوزان المتاحة في الفريزر
+            availablePool.forEach(w => combined.push({ weight: w, checked: false, wasHis: false }));
+
+            // ترتيب الكل تنازلياً من الكبير للصغير
+            combined.sort((a, b) => b.weight - a.weight);
+            window._wpCombinedWeightsPool = combined;
+
+            document.getElementById('wp-modal-title').innerText = `تسكين أوزان: ${o.customerName}`;
+            document.getElementById('wp-modal-subtitle').innerText = `الصنف: ${p.name} | المطلوب للعميل: ${targetCount} فرخات | سعر الكيلو: ${storePrices[pId] || p.basePrice} ج`;
+            document.getElementById('wp-quick-select-bar').classList.remove('hidden');
+            document.getElementById('wp-confirm-btn').innerHTML = `<i class="fa-solid fa-check-double text-amber-300 mr-1"></i> اعتماد الأوزان وتحديث فاتورة العميل والفريزر`;
+
+            renderWeightPickerCheckboxes();
+            openModal('weight-picker-modal');
+        };
+
+        window.renderWeightPickerCheckboxes = () => {
+            let pId = window._wpCurrentProductId;
+            let p = storeProducts[pId];
+            let kiloPrice = storePrices[pId] || p?.basePrice || 0;
+            let listEl = document.getElementById('wp-checkboxes-list');
+
+            let totalAvailable = window._wpCombinedWeightsPool.length;
+            let totalKgPool = (window._wpCombinedWeightsPool.reduce((s, x) => s + x.weight, 0) / 1000).toFixed(2);
+            document.getElementById('wp-stock-summary').innerText = `الإجمالي: ${totalAvailable} فرخة (${totalKgPool} كجم)`;
+
+            if (totalAvailable === 0) {
+                listEl.innerHTML = `<div class="col-span-full text-center py-8 text-slate-400 font-bold text-xs border-2 border-dashed border-slate-200 rounded-xl bg-white">لا توجد أوزان مسجلة في الفريزر حالياً.. أضف الأوزان من المربع بالأسفل 👇</div>`;
+                updateWeightPickerLiveSummary();
+                return;
+            }
+
+            listEl.innerHTML = window._wpCombinedWeightsPool.map((obj, idx) => {
+                let birdPrice = Math.round((obj.weight / 1000) * kiloPrice);
+                let activeClass = obj.checked
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-md scale-[1.02]'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-indigo-400';
+                let mark = obj.checked ? '[X]' : '[ ]';
+                return `
+                <div onclick="toggleSingleWeightItem(${idx})" class="cursor-pointer border-2 rounded-xl p-2.5 transition-all flex items-center justify-between select-none ${activeClass}">
+                    <div class="flex items-center gap-1.5">
+                        <span class="font-mono text-xs font-black ${obj.checked ? 'text-amber-300' : 'text-slate-400'}">${mark}</span>
+                        <span class="font-black text-sm">${obj.weight} <small class="text-[9px] opacity-80">جم</small></span>
+                    </div>
+                    <span class="text-[10px] font-black px-1.5 py-0.5 rounded ${obj.checked ? 'bg-indigo-800 text-emerald-300' : 'bg-emerald-50 text-emerald-700'}">${birdPrice} ج</span>
+                </div>`;
+            }).join('');
+
+            updateWeightPickerLiveSummary();
+        };
+
+        window.toggleSingleWeightItem = (idx) => {
+            if (!window._wpCombinedWeightsPool[idx]) return;
+            window._wpCombinedWeightsPool[idx].checked = !window._wpCombinedWeightsPool[idx].checked;
+            renderWeightPickerCheckboxes();
+        };
+
+        window.updateWeightPickerLiveSummary = () => {
+            let pId = window._wpCurrentProductId;
+            let p = storeProducts[pId];
+            let kiloPrice = storePrices[pId] || p?.basePrice || 0;
+
+            let selected = window._wpCombinedWeightsPool.filter(x => x.checked);
+            let selCount = selected.length;
+            let totalGrams = selected.reduce((s, x) => s + x.weight, 0);
+            let totalKg = (totalGrams / 1000).toFixed(3);
+            let totalEgp = Math.round((totalGrams / 1000) * kiloPrice);
+
+            let targetStr = window._wpTargetBirdsCount > 0 ? `${selCount} / ${window._wpTargetBirdsCount}` : `${selCount}`;
+            document.getElementById('wp-selected-count').innerText = targetStr;
+            document.getElementById('wp-selected-kg').innerHTML = `${totalKg} <small class="text-[10px]">كجم</small>`;
+            document.getElementById('wp-selected-price').innerHTML = `${totalEgp.toLocaleString()} <small class="text-[10px]">ج.م</small>`;
+        };
+
+        window.autoPickWeights = (mode) => {
+            let target = window._wpTargetBirdsCount || 1;
+            window._wpCombinedWeightsPool.forEach(x => x.checked = false);
+            if (mode === 'clear') {
+                renderWeightPickerCheckboxes();
+                return;
+            }
+            let len = window._wpCombinedWeightsPool.length;
+            if (len === 0) return;
+
+            if (mode === 'heavy') {
+                for (let i = 0; i < Math.min(target, len); i++) window._wpCombinedWeightsPool[i].checked = true;
+            } else if (mode === 'light') {
+                for (let i = len - 1; i >= Math.max(0, len - target); i--) window._wpCombinedWeightsPool[i].checked = true;
+            } else if (mode === 'medium') {
+                let start = Math.max(0, Math.floor((len - target) / 2));
+                for (let i = start; i < Math.min(len, start + target); i++) window._wpCombinedWeightsPool[i].checked = true;
+            }
+            renderWeightPickerCheckboxes();
+        };
+
+        // إضافة أوزان جديدة (يدعم لصق قائمة مثل [X] 2360 و [ ] 1520 أو أرقام عادية)
+        window.appendNewWeightsToPool = async () => {
+            let input = document.getElementById('wp-new-weights-input');
+            let raw = input.value.trim();
+            if (!raw) return;
+
+            // تحويل الأرقام العربي لإنجليزي
+            raw = raw.replace(/[\u0660-\u0669]/g, c => c.charCodeAt(0) - 0x0660)
+                     .replace(/[\u06F0-\u06F9]/g, c => c.charCodeAt(0) - 0x06F0);
+
+            let lines = raw.split(/[\n,،]+/);
+            let addedWeights = [];
+
+            lines.forEach(line => {
+                line = line.trim();
+                if (!line) return;
+                // لو السطر فيه [X] يبقى متباع بالفعل، نتجاهله من الإضافة كمتاح
+                if (/^\[\s*[xX✓✔]\s*\]/.test(line)) return;
+                // لو السطر فيه [ ] أو رقم مباشر نسحب كل الأرقام اللي من 3 لـ 5 خانات
+                let matches = line.match(/\b\d{3,5}\b/g);
+                if (matches) {
+                    matches.forEach(m => {
+                        let w = parseInt(m);
+                        if (w >= 500 && w <= 15000) addedWeights.push(w);
+                    });
+                }
+            });
+
+            if (addedWeights.length === 0) {
+                return alert('لم يتم العثور على أوزان متاحة للإضافة! تأكد من كتابة الوزن بالجرام (مثال: 2350 أو [ ] 1520).');
+            }
+
+            addedWeights.forEach(w => window._wpCombinedWeightsPool.push({ weight: w, checked: false }));
+            window._wpCombinedWeightsPool.sort((a, b) => b.weight - a.weight);
+
+            // حفظ المتاح في المخزن فوراً
+            let remainingUnchecked = window._wpCombinedWeightsPool.filter(x => !x.checked).map(x => x.weight);
+            await window.saveProductWeightsArray(window._wpCurrentProductId, remainingUnchecked);
+
+            input.value = '';
+            renderWeightPickerCheckboxes();
+        };
+
+        // اعتماد الأوزان المختارة وخصمها من الفريزر وتحديث سعر الطلب الحي
+        window.confirmOrderWeightsSelection = async () => {
+            let pId = window._wpCurrentProductId;
+            let p = storeProducts[pId];
+            if (!p) return;
+
+            let chosenObjs = window._wpCombinedWeightsPool.filter(x => x.checked);
+            let remainingObjs = window._wpCombinedWeightsPool.filter(x => !x.checked);
+            let remainingWeights = remainingObjs.map(x => x.weight);
+
+            // لو فاتح النافذة من الفريزر مباشرة لحذف المباع فقط
+            if (!window._wpCurrentOrderId) {
+                await window.saveProductWeightsArray(pId, remainingWeights);
+                closeModal('weight-picker-modal');
+                alert(`تم تحديث رصيد أوزان (${p.name}) في الفريزر! المتبقي الآن: ${remainingWeights.length} فرخة.`);
+                return;
+            }
+
+            let o = allOrdersRaw.find(x => x.id === window._wpCurrentOrderId);
+            if (!o || !o.items || !o.items[window._wpCurrentItemIndex]) return;
+
+            if (chosenObjs.length === 0) {
+                if (!confirm('لم تقم بتحديد أي وزن! هل تريد إلغاء الأوزان من هذا الطلب وإرجاعها للفريزر؟')) return;
+            } else if (window._wpTargetBirdsCount > 0 && chosenObjs.length !== window._wpTargetBirdsCount) {
+                if (!confirm(`تنبيه: العميل كان حاجز (${window._wpTargetBirdsCount}) فرخات، وأنت اخترت الآن (${chosenObjs.length}) فرخات.\nهل تريد المتابعة بهذا العدد؟`)) return;
+            }
+
+            let btn = document.getElementById('wp-confirm-btn');
+            let origText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري خصم الأوزان وتحديث الحساب...';
+            btn.disabled = true;
+
+            try {
+                let chosenWeights = chosenObjs.map(x => x.weight);
+                let totalGrams = chosenWeights.reduce((s, w) => s + w, 0);
+                let totalKg = Number((totalGrams / 1000).toFixed(3));
+                let kiloPrice = storePrices[pId] || p.basePrice || 0;
+                let itemTotalPrice = Math.round(totalKg * kiloPrice);
+
+                let item = o.items[window._wpCurrentItemIndex];
+                // حفظ العدد الأصلي المحجوز
+                if (!item.bookedCount) item.bookedCount = chosenWeights.length || item.quantity || 1;
+
+                if (chosenWeights.length > 0) {
+                    item.selectedWeights = chosenWeights;
+                    item.bookedCount = chosenWeights.length;
+                    item.quantity = 1; // نخلّي الكمية الحسابية 1 والسعر هو إجمالي وزن الفرخات عشان الفاتورة تطلع مظبوطة بالمللي
+                    item.price = itemTotalPrice;
+                    item.name = `${p.name} [${chosenWeights.length} فرخة: ${chosenWeights.join('+')} جم = ${totalKg} كجم]`;
+                } else {
+                    item.selectedWeights = [];
+                    item.quantity = item.bookedCount;
+                    item.price = 0;
+                    item.name = `${p.name} (حجز ${item.bookedCount} - بانتظار الميزان)`;
+                }
+
+                // إعادة حساب إجمالي الطلب بالكامل
+                let newSubtotal = 0;
+                o.items.forEach(i => {
+                    newSubtotal += (Number(i.quantity) * Number(i.price));
+                });
+
+                let delFee = Number(o.deliveryFee) || 0;
+                if (storeSettings.freeDeliveryActive && storeSettings.freeDeliveryThreshold > 0 && newSubtotal >= storeSettings.freeDeliveryThreshold) {
+                    delFee = 0;
+                }
+                let disc = Number(o.discount) || 0;
+                let newTotal = Math.max(0, newSubtotal + delFee - disc);
+
+                let oldTotal = Number(o.total) || 0;
+                let diffTotal = newTotal - oldTotal;
+
+                // حفظ الأوزان المتبقية في الفريزر وتحديث الطلب في الداتابيز
+                await window.saveProductWeightsArray(pId, remainingWeights);
+                await db.collection('orders').doc(o.id).update({
+                    items: o.items,
+                    subtotal: newSubtotal,
+                    deliveryFee: delFee,
+                    total: newTotal
+                });
+
+                if (diffTotal !== 0 && o.customerPhone) {
+                    let cleanPhone = o.customerPhone.startsWith('0') ? o.customerPhone : '0' + o.customerPhone;
+                    db.collection('customers').doc(cleanPhone).set({
+                        totalSpent: firebase.firestore.FieldValue.increment(diffTotal)
+                    }, { merge: true }).catch(() => {});
+                }
+
+                closeModal('weight-picker-modal');
+                renderOrdersList();
+            } catch (e) {
+                alert('حدث خطأ أثناء حفظ الأوزان!');
+            }
+            btn.innerHTML = origText;
+            btn.disabled = false;
+        };
+
+        // إضافة زر (⚖️ تسكين الأوزان) تلقائياً على كروت الطلبات الحية التي تحتوي على فراخ بالوزن
+        window.injectWeightButtonsOnOrderCards = () => {
+            try {
+                const cards = document.querySelectorAll('#orders-list-vertical .order-card');
+                cards.forEach(card => {
+                    if (card.getAttribute('data-weight-btn-done') === '1') return;
+                    card.setAttribute('data-weight-btn-done', '1');
+
+                    const orderId = card.getAttribute('data-id');
+                    const o = (globalOrdersMap && globalOrdersMap[orderId]) ? globalOrdersMap[orderId] : allOrdersRaw.find(x => x.id === orderId);
+                    if (!o || !Array.isArray(o.items)) return;
+
+                    o.items.forEach((item, idx) => {
+                        let p = storeProducts[item.id];
+                        let isWeightItem = (p && p.isWeightBased) || (item.selectedWeights && item.selectedWeights.length > 0) || (item.name && item.name.includes('بانتظار الميزان'));
+                        if (!isWeightItem) return;
+
+                        let hasWeights = Array.isArray(item.selectedWeights) && item.selectedWeights.length > 0;
+                        let targetCnt = item.bookedCount || item.quantity || 1;
+                        let btnHtml = hasWeights
+                            ? `<button onclick="event.stopPropagation(); openOrderWeightPicker('${o.id}', ${idx})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1.5 rounded-lg text-[10px] font-black shadow-sm flex items-center gap-1 transition-all"><i class="fa-solid fa-scale-balanced text-amber-300"></i> تعديل الأوزان (${item.selectedWeights.length} فرخة)</button>`
+                            : `<button onclick="event.stopPropagation(); openOrderWeightPicker('${o.id}', ${idx})" class="bg-amber-400 hover:bg-amber-500 text-slate-900 px-3 py-1.5 rounded-lg text-[10px] font-black shadow-sm flex items-center gap-1 animate-pulse transition-all"><i class="fa-solid fa-scale-balanced"></i> ⚖️ تسكين الأوزان الآن (مطلوب ${targetCnt})</button>`;
+
+                        let itemsBox = card.querySelector('.bg-slate-50\\/80');
+                        if (itemsBox) {
+                            itemsBox.insertAdjacentHTML('beforeend', btnHtml);
+                        }
+                    });
+                });
+            } catch (e) {}
+        };
+
+        if (typeof window.renderOrdersList === 'function' && !window._isWeightRenderWrapped) {
+            const _prevRenderOrdersForWeight = window.renderOrdersList;
+            window.renderOrdersList = function() {
+                _prevRenderOrdersForWeight.apply(this, arguments);
+                window.injectWeightButtonsOnOrderCards();
+            };
+            window._isWeightRenderWrapped = true;
+        }
+
 
         window.updateFreezerCount = (id, amount) => {
             let input = document.getElementById(`fz-${id}`);
