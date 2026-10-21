@@ -4276,27 +4276,66 @@ window.deleteProductUI = async (id) => {
             
             Object.keys(storeProducts).forEach(pId => {
                 let p = storeProducts[pId];
-
-    
-
-                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || i.name === p.name) : null;
-// ... باقي الكود زي ما هو
+                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === pId || (i.name && i.name.startsWith(p.name))) : null;
                 let q = existingItem ? existingItem.quantity : 0;
-                
-                let step = p.isWeightBased ? 0.5 : 1; // الزراير هتزود وتنقص بالنص كيلو لو ده ميزان
                 let icon = p.isWeightBased ? "⚖️" : "";
-                
-                container.innerHTML += `
-                <div class="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm flex flex-col justify-between">
-                    <span class="text-[11px] font-black text-slate-600 block text-center truncate mb-3" title="${p.name}">${p.name} ${icon}</span>
-                    <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5">
-                        <button onclick="changeEditQty('${pId}', -${step}, ${p.isWeightBased})" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
-                        <input type="number" id="edit-q-${pId}" min="0" step="${p.isWeightBased ? '0.1' : '1'}" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()">
-                        <button onclick="changeEditQty('${pId}', ${step}, ${p.isWeightBased})" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
-                    </div>
-                </div>`;
-            });
 
+                if (p.isWeightBased) {
+                    // استخراج الأوزان التي كانت مختارة لهذا العميل سابقاً (إن وجدت)
+                    let prevWeights = [];
+                    if (existingItem && Array.isArray(existingItem.selectedWeights)) {
+                        prevWeights = existingItem.selectedWeights.map(String);
+                    } else if (existingItem && existingItem.name && existingItem.name.includes('الأوزان:')) {
+                        let m = existingItem.name.match(/\b\d{3,5}\b/g);
+                        if (m) prevWeights = m;
+                    }
+                    let bookedCount = existingItem ? (existingItem.bookedCount || prevWeights.length || q) : 0;
+                    let availWeights = window.getProductWeightsArray ? window.getProductWeightsArray(pId).map(String) : (p.weightsList || '').split('\n').map(w => w.trim()).filter(w => w !== '');
+
+                    // دمج أوزان العميل الحالية (معلمة صح) + أوزان الفريزر المتاحة
+                    let combinedCheckboxesHtml = '';
+                    prevWeights.forEach(w => {
+                        combinedCheckboxesHtml += `
+                        <label class="flex items-center gap-1 bg-indigo-50 border border-indigo-300 px-2 py-1 rounded-lg shadow-sm cursor-pointer">
+                            <input type="checkbox" class="edit-weight-cb-${pId} w-3.5 h-3.5 accent-indigo-600" value="${w}" data-was-his="1" checked onchange="calcEditTotal()">
+                            <span class="text-[11px] font-black text-indigo-800">${w}g</span>
+                        </label>`;
+                    });
+                    availWeights.forEach(w => {
+                        combinedCheckboxesHtml += `
+                        <label class="flex items-center gap-1 bg-white border border-slate-200 px-2 py-1 rounded-lg shadow-sm cursor-pointer hover:border-indigo-400 transition-colors">
+                            <input type="checkbox" class="edit-weight-cb-${pId} w-3.5 h-3.5 accent-indigo-600" value="${w}" onchange="calcEditTotal()">
+                            <span class="text-[11px] font-black text-slate-700">${w}g</span>
+                        </label>`;
+                    });
+
+                    container.innerHTML += `
+                    <div class="bg-indigo-50/40 border border-indigo-200 p-3 rounded-2xl shadow-sm flex flex-col justify-between col-span-2 md:col-span-3 space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-black text-indigo-900">${p.name} ${icon} (سعر الكيلو: ${storePrices[pId] || p.basePrice} ج)</span>
+                            <div class="flex items-center gap-1.5 bg-white px-2.5 py-1 rounded-lg border border-indigo-100">
+                                <span class="text-[10px] font-bold text-slate-500">العدد المحجوز:</span>
+                                <input type="number" id="edit-count-${pId}" min="0" step="1" value="${bookedCount}" class="w-12 border-none bg-slate-50 rounded p-0.5 text-center font-black text-indigo-700 outline-none" oninput="calcEditTotal()">
+                            </div>
+                        </div>
+                        <div class="border-t border-indigo-100 pt-2">
+                            <span class="text-[10px] font-black text-indigo-600 block mb-1.5"><i class="fa-solid fa-check-Square mr-1"></i> اختر الأوزان الفعلية للعميل (تُخصم من الفريزر فوراً عند الحفظ):</span>
+                            ${(prevWeights.length + availWeights.length) > 0 ? `<div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto custom-scroll p-1.5 bg-white rounded-xl border border-indigo-100">${combinedCheckboxesHtml}</div>` : `<div class="text-[10px] text-red-500 font-bold text-center py-2 bg-white rounded-lg">لا توجد أوزان مسجلة في الفريزر حالياً</div>`}
+                        </div>
+                        <input type="hidden" id="edit-q-${pId}" value="0">
+                    </div>`;
+                } else {
+                    container.innerHTML += `
+                    <div class="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm flex flex-col justify-between">
+                        <span class="text-[11px] font-black text-slate-600 block text-center truncate mb-3" title="${p.name}">${p.name} ${icon}</span>
+                        <div class="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl p-1.5">
+                            <button onclick="changeEditQty('${pId}', -1, false)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-minus text-xs"></i></button>
+                            <input type="number" id="edit-q-${pId}" min="0" step="1" value="${q}" class="w-12 border-none bg-transparent text-center font-black text-base outline-none text-brand-primary" oninput="calcEditTotal()">
+                            <button onclick="changeEditQty('${pId}', 1, false)" class="w-8 h-8 bg-white shadow-sm rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center justify-center font-black"><i class="fa-solid fa-plus text-xs"></i></button>
+                        </div>
+                    </div>`;
+                }
+            });
 
             let bSel = document.getElementById('edit-batch'); 
             bSel.innerHTML = '<option value="">-- بدون دورة مسجلة --</option>';
@@ -4318,7 +4357,6 @@ window.deleteProductUI = async (id) => {
 
         window.changeEditQty = (pId, amount, isWeight = false) => { 
             let input = document.getElementById(`edit-q-${pId}`); 
-            // لو वजन بناخد الرقم بكسوره (parseFloat)، لو عدد بناخده صحيح (parseInt)
             let val = isWeight ? parseFloat(input.value) || 0 : parseInt(input.value) || 0; 
             val += amount; 
             if(val < 0) val = 0; 
@@ -4329,10 +4367,35 @@ window.deleteProductUI = async (id) => {
         window.calcEditTotal = () => { 
             let itemsTotal = 0; 
             Object.keys(storeProducts).forEach(id => { 
-                let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
-                let existingItem = editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
-                let price = existingItem ? existingItem.price : (storePrices[id] || storeProducts[id].basePrice || 0); 
-                itemsTotal += (q * price); 
+                let p = storeProducts[id];
+                let existingItem = editingOrderData && editingOrderData.items ? editingOrderData.items.find(i => i.id === id) : null;
+                let kiloPrice = storePrices[id] || p.basePrice || 0;
+
+                if (p.isWeightBased) {
+                    let checkedBoxes = Array.from(document.querySelectorAll(`.edit-weight-cb-${id}:checked`));
+                    let countInput = document.getElementById(`edit-count-${id}`);
+                    let qInput = document.getElementById(`edit-q-${id}`);
+                    if (checkedBoxes.length > 0) {
+                        let totalGrams = checkedBoxes.reduce((sum, cb) => sum + (Number(cb.value) || 0), 0);
+                        let kilos = totalGrams / 1000;
+                        let cost = Math.round(kilos * kiloPrice);
+                        itemsTotal += cost;
+                        if (countInput) countInput.value = checkedBoxes.length;
+                        if (qInput) {
+                            qInput.value = kilos;
+                            qInput.setAttribute('data-details', checkedBoxes.map(cb => cb.value).join(' و '));
+                        }
+                    } else {
+                        if (qInput) {
+                            qInput.value = 0;
+                            qInput.removeAttribute('data-details');
+                        }
+                    }
+                } else {
+                    let q = Number(document.getElementById(`edit-q-${id}`)?.value) || 0; 
+                    let price = existingItem ? existingItem.price : kiloPrice; 
+                    itemsTotal += (q * price); 
+                }
             }); 
             document.getElementById('edit-price').value = itemsTotal; 
             let d = Number(document.getElementById('edit-delivery').value) || 0; let disc = Number(document.getElementById('edit-discount').value) || 0; 
