@@ -3076,7 +3076,24 @@
 };
 
 
-        // === 8. المناديب (واتساب) والتوجيه الذكي ===
+
+
+        window.toggleAllDispatchCheckboxes = () => { 
+            let cbs = document.querySelectorAll('.disp-cb'); 
+            let allChecked = Array.from(cbs).every(cb => cb.checked); 
+            cbs.forEach(cb => cb.checked = !allChecked); 
+        };
+        
+        window.toggleZoneCheckboxes = (className) => { 
+            let cbs = document.querySelectorAll('.' + className); 
+            let allChecked = Array.from(cbs).every(cb => cb.checked); 
+            cbs.forEach(cb => cb.checked = !allChecked); 
+        };
+
+        // متغير سري لحفظ بيانات التوجيه عشان تتحدث في الداتا بيز بعد الإرسال
+        window.pendingDispatchData = null; 
+
+        // === 8. المناديب (واتساب) والتوجيه الذكي المطور ===
         window.openDispatchModal = () => {
             const sel = document.getElementById('dispatch-driver-select'); 
             sel.innerHTML = '<option value="">-- اختر المندوب --</option>';
@@ -3108,12 +3125,27 @@
                                     <input type="checkbox" class="disp-cb zone-cb-${index} mt-1 accent-indigo-500 w-4 h-4 cursor-pointer" value="${o.id}">
                                     <div class="flex-1">
                                         <div class="flex justify-between items-start mb-1.5">
-                                            <h5 class="font-black text-sm text-slate-800">${o.customerName}</h5>
-                                            <span class="text-brand-primary font-black text-sm">${o.total} <span class="text-[10px]">ج</span></span>
+                                            <div>
+                                                <h5 class="font-black text-sm text-slate-800">${o.customerName}</h5>
+                                                <span class="text-[11px] font-bold text-slate-500" dir="ltr"><i class="fa-solid fa-phone text-[9px] text-emerald-500 mr-1"></i>${o.customerPhone || ''}</span>
+                                            </div>
+                                            <span class="text-brand-primary font-black text-sm">${o.paymentMethod === 'online' ? '<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-lg">خالص أونلاين</span>' : o.total + ' <span class="text-[10px]">ج</span>'}</span>
                                         </div>
+
+                                        <!-- خانة إضافة أو تعديل الرقم البديل مباشرة قبل الإرسال للمندوب -->
+                                        <div class="flex items-center gap-2 my-2 bg-white p-2 rounded-lg border border-purple-100 shadow-sm">
+                                            <i class="fa-solid fa-mobile-screen-button text-purple-500 text-xs"></i>
+                                            <span class="text-[10px] font-black text-purple-700 whitespace-nowrap">رقم بديل:</span>
+                                            <input type="tel" dir="ltr" value="${o.customerPhone2 || ''}" 
+                                                onchange="updateDispatchAltPhone('${o.id}', '${o.customerPhone}', this.value)" 
+                                                placeholder="أضف رقم بديل للمندوب..." 
+                                                class="w-full text-xs font-bold text-slate-700 bg-transparent border-none outline-none placeholder:text-slate-300">
+                                        </div>
+
                                         <p class="text-[11px] text-slate-500 font-bold mb-2 leading-relaxed"><i class="fa-solid fa-location-arrow text-slate-400 mr-1"></i> ${o.customerAddress ? o.customerAddress : 'بدون تفاصيل'}</p>
                                         <p class="text-[10px] text-slate-600 font-bold bg-white p-2 rounded-lg inline-block border border-slate-200"><i class="fa-solid fa-box-open text-amber-500 mr-1"></i> ${o.items ? o.items.map(i=>`${i.quantity}x ${i.name}`).join('، ') : ''}</p>
-                                        ${o.adminNote ? `<p class="text-[10px] font-bold text-amber-700 mt-2 bg-amber-50/80 p-2 rounded-lg border border-amber-100/50 leading-relaxed"><i class="fa-solid fa-pen-to-square text-amber-500 mr-1"></i> ${o.adminNote}</p>` : ''}
+                                        ${o.driverNote ? `<p class="text-[10px] font-bold text-blue-700 mt-2 bg-blue-50/80 p-2 rounded-lg border border-blue-100/50 leading-relaxed"><i class="fa-solid fa-motorcycle text-blue-500 mr-1"></i> للمندوب: ${o.driverNote}</p>` : ''}
+                                        ${o.adminNote ? `<p class="text-[10px] font-bold text-amber-700 mt-2 bg-amber-50/80 p-2 rounded-lg border border-amber-100/50 leading-relaxed"><i class="fa-solid fa-pen-to-square text-amber-500 mr-1"></i> إداري: ${o.adminNote}</p>` : ''}
                                     </div>
                                 </div>
                             `).join('')}
@@ -3125,27 +3157,35 @@
             openModal('dispatch-modal');
         };
 
-        window.toggleAllDispatchCheckboxes = () => { 
-            let cbs = document.querySelectorAll('.disp-cb'); 
-            let allChecked = Array.from(cbs).every(cb => cb.checked); 
-            cbs.forEach(cb => cb.checked = !allChecked); 
-        };
-        
-        window.toggleZoneCheckboxes = (className) => { 
-            let cbs = document.querySelectorAll('.' + className); 
-            let allChecked = Array.from(cbs).every(cb => cb.checked); 
-            cbs.forEach(cb => cb.checked = !allChecked); 
-        };
+        // دالة حفظ الرقم البديل فوراً عند كتابته في نافذة التوجيه
+        window.updateDispatchAltPhone = async (orderId, mainPhone, newAltPhone) => {
+            let cleanAlt = window.normalizePhone(newAltPhone);
+            
+            // تحديث في الذاكرة الحية فوراً عشان يظهر في الرسالة بدون انتظار
+            let orderObj = dispatchOrdersRaw.find(o => o.id === orderId);
+            if (orderObj) orderObj.customerPhone2 = cleanAlt;
+            let rawObj = allOrdersRaw.find(o => o.id === orderId);
+            if (rawObj) rawObj.customerPhone2 = cleanAlt;
 
-        // متغير سري لحفظ بيانات التوجيه عشان تتحدث في الداتا بيز بعد الإرسال
-        window.pendingDispatchData = null; 
+            try {
+                // حفظ في مستند الطلب
+                await db.collection('orders').doc(orderId).update({ customerPhone2: cleanAlt });
+                // حفظ في ملف العميل بالأرشيف
+                if (mainPhone) {
+                    let cleanMain = mainPhone.startsWith('0') ? mainPhone : '0' + mainPhone;
+                    await db.collection('customers').doc(cleanMain).set({ phone2: cleanAlt }, { merge: true });
+                }
+            } catch (e) {
+                console.log("خطأ في تحديث الرقم البديل:", e);
+            }
+        };
 
         window.previewDispatchMessage = () => {
             const selectElement = document.getElementById('dispatch-driver-select'); 
             const phone = selectElement.value; 
             if(!phone) return alert("رجاءً اختر المندوب من القائمة!");
             
-            const driverName = selectElement.options[selectElement.selectedIndex].text;
+            const driverName = selectElement.options[selectElement.selectedIndex].text.split(' (')[0];
             let selectedIds = Array.from(document.querySelectorAll('.disp-cb:checked')).map(cb => cb.value); 
             if(selectedIds.length === 0) return alert("قم بتحديد طلبات لإرسالها!");
             
@@ -3157,53 +3197,74 @@
                 if(!zonesMap[zName]) zonesMap[zName] = []; 
                 zonesMap[zName].push(o); 
                 
-                // التعديل: بنجمع فلوس الأوردرات الكاش فقط في إجمالي تحصيل المندوب
                 if (o.paymentMethod !== 'online') {
                     totalMoneyToCollect += Number(o.total) || 0; 
                 }
-                
                 totalOrders++; 
             });            
 
-            
-            // كودك الأصلي للرسالة (لم يتم المساس به)
-            let dispatchTemplate = storeSettings.dispatchTemplate || "📦 طلب من {اسم_العميل}\n📱 {رقم_العميل}\n📍 {المنطقة} - {العنوان}\n🛒 الطلبات:\n{تفاصيل_الطلبات}\n💰 الإجمالي: {الإجمالي_النهائي} ج.م";
+            let todayStr = new Date().toLocaleDateString('ar-EG');
 
-            let msg = `*🗺️ خريطة تسليمات المندوب: ${driverName}*\n📦 إجمالي الأوردرات: ${totalOrders}\n💰 إجمالي التحصيل: ${totalMoneyToCollect} ج\n---------------------\n\n`;
+            // رأس الرسالة العامة للمندوب
+            let msg = `*🗺️ خط سير المندوب: ${driverName}*\n📅 التاريخ: ${todayStr}\n📦 إجمالي الأوردرات: ${totalOrders} طلب\n💰 إجمالي الكاش المطلوب: ${totalMoneyToCollect} ج.م\n════════════════════\n\n`;
             
             Object.keys(zonesMap).forEach(zone => { 
-                msg += `*📍 خط سير: ${zone}*\n`; 
-                zonesMap[zone].forEach((o, i) => { 
-                    // الحماية هنا اهي
+                let zoneOrders = zonesMap[zone];
+                msg += `*📍 خط سير: ${zone} (${zoneOrders.length} طلب)*\n════════════════════\n\n`; 
+                
+                zoneOrders.forEach((o, i) => { 
                     let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(item => `${item.quantity} ${item.name}`).join(' + ') : 'بدون تفاصيل';
+                    
+                    let isOnline = (o.paymentMethod === 'online');
+                    let subtotalForDriver = isOnline ? '0' : (o.subtotal || o.total);
+                    let deliveryForDriver = isOnline ? '0' : (o.deliveryFee || 0);
+                    let finalTotalForDriver = isOnline ? '0 ج.م (الحساب خالص أونلاين ✅)' : `${o.total} ج.م`;
+                    
+                    // تجهيز سطر الرقم البديل لو موجود
+                    let altPhoneLine = o.customerPhone2 ? `\n📱 بديل: ${o.customerPhone2}` : '';
+                    let addressText = o.customerAddress ? `${o.zone || ''} - ${o.customerAddress}` : (o.zone || 'بدون عنوان تفصيلي');
 
-                    // تصفير كل المتغيرات المالية للمندوب لو الأوردر أونلاين
-                    let subtotalForDriver = (o.paymentMethod === 'online') ? '0' : (o.subtotal || o.total);
-                    let deliveryForDriver = (o.paymentMethod === 'online') ? '0' : (o.deliveryFee || 0);
-                    let finalTotalForDriver = (o.paymentMethod === 'online') ? '0 (الحساب خالص أونلاين)' : o.total;
+                    // إذا كان هناك قالب مخصص في الإعدادات يتم استخدامه، وإلا نستخدم القالب الاحترافي الجديد
+                    let orderBlock = '';
+                    if (storeSettings.dispatchTemplate && storeSettings.dispatchTemplate.trim() !== '') {
+                        orderBlock = storeSettings.dispatchTemplate
+                            .replace(/{اسم_العميل}/g, o.customerName || '')
+                            .replace(/{رقم_العميل}/g, (o.customerPhone || '') + altPhoneLine)
+                            .replace(/{الرقم_البديل}/g, o.customerPhone2 || 'لا يوجد')
+                            .replace(/{المنطقة}/g, o.zone || '')
+                            .replace(/{العنوان}/g, o.customerAddress || '')
+                            .replace(/{تفاصيل_الطلبات}/g, itemsStr)
+                            .replace(/{إجمالي_الطلب}/g, subtotalForDriver)
+                            .replace(/{التوصيل}/g, deliveryForDriver)
+                            .replace(/{الإجمالي_النهائي}/g, finalTotalForDriver);
+                        
+                        msg += `*👤 [ ${i+1} ]* ${orderBlock}\n`;
+                    } else {
+                        msg += `*👤 [ ${i+1} ] ${o.customerName || 'عميل'}*\n`;
+                        msg += `📞 أساسي: ${o.customerPhone || ''}${altPhoneLine}\n`;
+                        msg += `🏠 العنوان: ${addressText}\n`;
+                        msg += `🛒 الأصناف: ${itemsStr}\n`;
+                        msg += isOnline ? `💳 *المطلوب تحصيله: ${finalTotalForDriver}*\n` : `💰 *المطلوب تحصيله: ${finalTotalForDriver}*\n`;
+                    }
 
-                    let orderMsg = dispatchTemplate
-                        .replace(/{اسم_العميل}/g, o.customerName || '')
-                        .replace(/{رقم_العميل}/g, o.customerPhone || '')
-                        .replace(/{المنطقة}/g, o.zone || '')
-                        .replace(/{العنوان}/g, o.customerAddress || '')
-                        .replace(/{تفاصيل_الطلبات}/g, itemsStr)
-                        .replace(/{إجمالي_الطلب}/g, subtotalForDriver)
-                        .replace(/{التوصيل}/g, deliveryForDriver)
-                        .replace(/{الإجمالي_النهائي}/g, finalTotalForDriver);
+                    // إضافة ملاحظات المندوب بشكل بارز
+                    if (o.driverNote) {
+                        let cleanDriverNote = o.driverNote.split('\n---\n').pop(); // جلب آخر ملاحظة صافية
+                        msg += `🛵 ملاحظة: ${cleanDriverNote}\n`;
+                    }
 
-
-
-                    msg += `\n${i+1}- ` + orderMsg + `\n`; 
-                    if (o.driverNote) msg += `🛵 ملاحظة للمندوب: ${o.driverNote}\n`;
-                    // التنبيه السحري للمندوب عشان ما يطالبش العميل بفلوس
-                    if (o.paymentMethod === 'online') msg += `💳 *تنبيه للمندوب: الحساب خالص (مدفوع أونلاين)*\n`;
+                    // فاصل واضح ومسافة مريحة بين كل عميل والعميل الذي يليه داخل نفس المنطقة
+                    if (i < zoneOrders.length - 1) {
+                        msg += `\n────────────────────\n\n`;
+                    } else {
+                        msg += `\n`;
+                    }
                 }); 
 
-                msg += `\n➖➖➖➖➖➖➖➖\n\n`; 
+                // فاصل عريض بين كل منطقة والأخرى
+                msg += `════════════════════\n\n`; 
             });
             
-            // تجهيز البيانات للتحديث في الداتابيز
             let cleanPhone = (phone || '').toString().trim();
             let waNumber = cleanPhone.startsWith('0') ? '2' + cleanPhone : cleanPhone;
             
@@ -3212,10 +3273,11 @@
                 selectedIds: selectedIds
             };
             
-            // تظبيط شكل الكلام للقراءة بوضوح في الصفحة الجديدة
-            let formattedMsg = msg.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/<strong>/g, '<strong class="text-indigo-700">');
+            // تنسيق الرسالة في شاشة المراجعة والطباعة بشكل سليم
+            let formattedMsg = msg
+                .replace(/\*(.*?)\*/g, '<strong class="text-indigo-700">$1</strong>')
+                .replace(/\n/g, '<br>');
             
-            // سحر الـ UX: فتح صفحة مراجعة مستقلة بالرسالة وزرار الواتساب والطباعة
             let reviewWindow = window.open('', '', 'width=800,height=900');
             reviewWindow.document.write(`
                 <html lang="ar" dir="rtl">
@@ -3223,11 +3285,11 @@
                     <title>مراجعة رسالة المندوب</title>
                     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
                     <style>
-                        body { font-family: 'Cairo', sans-serif; padding: 30px; color: #1e293b; background: #f8fafc; font-size: 18px; line-height: 1.8; margin: 0; }
+                        body { font-family: 'Cairo', sans-serif; padding: 30px; color: #1e293b; background: #f8fafc; font-size: 17px; line-height: 1.9; margin: 0; }
                         .container { max-width: 800px; margin: auto; padding-bottom: 50px; }
                         .header { text-align: center; margin-bottom: 20px; color: #1e293b; font-weight: 900; }
                         .content { background: #fff; border: 2px dashed #cbd5e1; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px;}
-                        .text-indigo-700 { color: #4338ca; font-size: 20px;}
+                        .text-indigo-700 { color: #4338ca; font-size: 19px; font-weight: 900; }
                         .btn-wa { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 18px; font-size: 20px; cursor: pointer; background: #25D366; color: white; font-weight: 900; border: none; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); font-family: 'Cairo', sans-serif; transition: 0.3s;}
                         .btn-wa:hover { background: #1ebd57; transform: translateY(-2px); }
                         .btn-print { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 15px; font-size: 16px; cursor: pointer; background: #1e293b; color: white; font-weight: bold; border: none; border-radius: 12px; margin-bottom: 15px; font-family: 'Cairo', sans-serif;}
@@ -3245,10 +3307,9 @@
                 </html>
             `);
             reviewWindow.document.close();
-            
-            // قفل نافذة التوجيه في السيستم الأساسي عشان متبقاش زحمة
             closeModal('dispatch-modal');
         };
+
 
         // دالة مخفية بتشتغل لما تدوس على زرار الواتساب في الصفحة الجديدة عشان تحدث الداتا
         window.executeDispatchUpdates = async () => {
