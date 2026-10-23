@@ -3216,15 +3216,21 @@
                     let itemsStr = (o.items && Array.isArray(o.items)) ? o.items.map(item => `${item.quantity} ${item.name}`).join(' + ') : 'بدون تفاصيل';
                     
                     let isOnline = (o.paymentMethod === 'online');
-                    let subtotalForDriver = isOnline ? '0' : (o.subtotal || o.total);
-                    let deliveryForDriver = isOnline ? '0' : (o.deliveryFee || 0);
-                    let finalTotalForDriver = isOnline ? '0 ج.م (الحساب خالص أونلاين ✅)' : `${o.total} ج.م`;
+                    let subtotalVal = Number(o.subtotal) || Number(o.total) || 0;
+                    let deliveryVal = Number(o.deliveryFee) || 0;
+                    let discountVal = Number(o.discount) || 0;
+                    let totalVal = Number(o.total) || 0;
+
+                    let subtotalForDriver = isOnline ? '0' : subtotalVal;
+                    let deliveryForDriver = isOnline ? '0' : deliveryVal;
+                    let discountTextForTemplate = discountVal > 0 ? `${discountVal} ج.م` : '0 ج.م';
+                    let finalTotalForDriver = isOnline ? '0 ج.م (الحساب خالص أونلاين ✅)' : `${totalVal} ج.م`;
                     
                     // تجهيز سطر الرقم البديل لو موجود
                     let altPhoneLine = o.customerPhone2 ? `\n📱 بديل: ${o.customerPhone2}` : '';
                     let addressText = o.customerAddress ? `${o.zone || ''} - ${o.customerAddress}` : (o.zone || 'بدون عنوان تفصيلي');
 
-                    // إذا كان هناك قالب مخصص في الإعدادات يتم استخدامه، وإلا نستخدم القالب الاحترافي الجديد
+                    // إذا كان هناك قالب مخصص في الإعدادات يتم استخدامه، وإلا نستخدم القالب الاحترافي المفصل
                     let orderBlock = '';
                     if (storeSettings.dispatchTemplate && storeSettings.dispatchTemplate.trim() !== '') {
                         orderBlock = storeSettings.dispatchTemplate
@@ -3236,20 +3242,35 @@
                             .replace(/{تفاصيل_الطلبات}/g, itemsStr)
                             .replace(/{إجمالي_الطلب}/g, subtotalForDriver)
                             .replace(/{التوصيل}/g, deliveryForDriver)
+                            .replace(/{الخصم}/g, discountTextForTemplate)
                             .replace(/{الإجمالي_النهائي}/g, finalTotalForDriver);
                         
                         msg += `*👤 [ ${i+1} ]* ${orderBlock}\n`;
+                        // لو فيه خصم ومش محطوط في القالب المخصص، نضيفه تحت عشان المندوب يشوفه
+                        if (!isOnline && discountVal > 0 && !storeSettings.dispatchTemplate.includes('{الخصم}')) {
+                            msg += `🎁 *خصم: -${discountVal} ج.م* (الصافي: ${totalVal} ج.م)\n`;
+                        }
                     } else {
                         msg += `*👤 [ ${i+1} ] ${o.customerName || 'عميل'}*\n`;
                         msg += `📞 أساسي: ${o.customerPhone || ''}${altPhoneLine}\n`;
                         msg += `🏠 العنوان: ${addressText}\n`;
                         msg += `🛒 الأصناف: ${itemsStr}\n`;
-                        msg += isOnline ? `💳 *المطلوب تحصيله: ${finalTotalForDriver}*\n` : `💰 *المطلوب تحصيله: ${finalTotalForDriver}*\n`;
+                        
+                        if (isOnline) {
+                            if (discountVal > 0) msg += `🎁 خصم مطبق: ${discountVal} ج.م\n`;
+                            msg += `💳 *المطلوب تحصيله: ${finalTotalForDriver}*\n`;
+                        } else {
+                            msg += `📦 الحساب: ${subtotalVal} ج طلبات + ${deliveryVal} ج توصيل\n`;
+                            if (discountVal > 0) {
+                                msg += `🎁 *خصم خاص: -${discountVal} ج.م*\n`;
+                            }
+                            msg += `💰 *الصافي المطلوب تحصيله: ${totalVal} ج.م*\n`;
+                        }
                     }
 
                     // إضافة ملاحظات المندوب بشكل بارز
                     if (o.driverNote) {
-                        let cleanDriverNote = o.driverNote.split('\n---\n').pop(); // جلب آخر ملاحظة صافية
+                        let cleanDriverNote = o.driverNote.split('\n---\n').pop();
                         msg += `🛵 ملاحظة: ${cleanDriverNote}\n`;
                     }
 
@@ -3309,7 +3330,6 @@
             reviewWindow.document.close();
             closeModal('dispatch-modal');
         };
-
 
         // دالة مخفية بتشتغل لما تدوس على زرار الواتساب في الصفحة الجديدة عشان تحدث الداتا
         window.executeDispatchUpdates = async () => {
