@@ -3291,6 +3291,7 @@
             
             window.pendingDispatchData = {
                 driverName: driverName,
+                driverPhone: phone,
                 selectedIds: selectedIds
             };
             
@@ -3336,7 +3337,7 @@
             if(!window.pendingDispatchData) return;
             let data = window.pendingDispatchData;
             for (let id of data.selectedIds) { 
-                try { await db.collection('orders').doc(id).update({ driverName: data.driverName, status: 'dispatched' }); } catch(e) { } 
+                try { await db.collection('orders').doc(id).update({ driverName: data.driverName, driverPhone: data.driverPhone, status: 'dispatched' }); } catch(e) { } 
             }
             window.pendingDispatchData = null; // تفريغ البيانات بعد التنفيذ
         };
@@ -4131,7 +4132,7 @@ window.deleteProductUI = async (id) => {
             if(dCont) { 
                 dCont.innerHTML = ''; 
                 (storeSettings.drivers || []).forEach((d, i) => { 
-                    dCont.innerHTML += `<div class="flex gap-2 mb-2"><input type="text" value="${d.name}" onchange="storeSettings.drivers[${i}].name=this.value" placeholder="اسم المندوب" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all"><input type="text" value="${d.phone}" onchange="storeSettings.drivers[${i}].phone=this.value" placeholder="رقم الواتساب" class="w-32 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-left" dir="ltr"><button onclick="storeSettings.drivers.splice(${i}, 1); renderSettingsUI();" class="w-10 bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></div>`; 
+                    dCont.innerHTML += `<div class="flex gap-2 mb-2"><input type="text" value="${d.name}" onchange="storeSettings.drivers[${i}].name=this.value" placeholder="اسم المندوب" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all"><input type="text" value="${d.phone}" onchange="storeSettings.drivers[${i}].phone=this.value" placeholder="رقم الواتساب" class="w-32 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-left" dir="ltr"><input type="text" value="${d.pin || ''}" onchange="storeSettings.drivers[${i}].pin=this.value" placeholder="الرقم السري" class="w-24 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-100 transition-all text-center"><button onclick="storeSettings.drivers.splice(${i}, 1); renderSettingsUI();" class="w-10 bg-slate-100 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></div>`; 
                 }); 
             } 
             
@@ -4144,7 +4145,7 @@ window.deleteProductUI = async (id) => {
         }
 
         window.addNewZoneUI = () => { if(!storeSettings.deliveryZones) storeSettings.deliveryZones = []; storeSettings.deliveryZones.push({name:'', price:0}); renderSettingsUI(); }; 
-        window.addNewDriverUI = () => { if(!storeSettings.drivers) storeSettings.drivers = []; storeSettings.drivers.push({name:'', phone:''}); renderSettingsUI(); };
+        window.addNewDriverUI = () => { if(!storeSettings.drivers) storeSettings.drivers = []; storeSettings.drivers.push({name:'', phone:'', pin:''}); renderSettingsUI(); };
 
         window.saveAllSettings = async () => {
             const btn = document.getElementById('global-save-btn'); const origHtml = btn.innerHTML; 
